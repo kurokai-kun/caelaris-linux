@@ -21,7 +21,22 @@ breeze
 breeze-gtk
 breeze-icons
 xdg-desktop-portal-kde
-packagekit-qt6
+discover
+
+# ==========================================================
+# GNOME Desktop & Core Applications (Dual Session Support)
+# ==========================================================
+gnome-shell
+gnome-control-center
+gnome-session
+nautilus
+ptyxis
+gnome-text-editor
+gnome-calculator
+gnome-disk-utility
+gnome-system-monitor
+xdg-desktop-portal-gnome
+
 # Browser & Media
 firefox
 vlc

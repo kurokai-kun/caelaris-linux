@@ -1,5 +1,5 @@
 # ==========================================================
-# NovaOS Core Linux Base & Hardware Support
+# Core Linux Base & Hardware Support
 # ==========================================================
 base
 base-devel
@@ -23,7 +23,19 @@ pciutils
 inxi
 
 # ==========================================================
-# Performance, Power & Memory Management (Fedora/CachyOS Standard)
+# Arch Live Boot Infrastructure
+# ==========================================================
+archiso
+mkinitcpio
+mkinitcpio-archiso
+arch-install-scripts
+syslinux
+edk2-shell
+memtest86+
+memtest86+-efi
+
+# ==========================================================
+# Performance, Power & Memory Management (CachyOS/Fedora)
 # ==========================================================
 zram-generator
 ananicy-cpp
@@ -34,20 +46,25 @@ snapper
 snap-pac
 
 # ==========================================================
-# Networking & Connectivity
+# Networking, Connectivity & Internet Diagnostics
 # ==========================================================
 networkmanager
 network-manager-applet
 iw
-wpa_supplicant
 iwd
+wpa_supplicant
 bluez
 bluez-utils
 curl
 wget
 rsync
 openssh
-git
+net-tools
+bind
+traceroute
+nmap
+ethtool
+iproute2
 
 # ==========================================================
 # Audio & Multimedia Stack (PipeWire)
@@ -83,7 +100,7 @@ xorg-xwayland
 plymouth
 
 # ==========================================================
-# Fonts & Appearance
+# Fonts, Glyphs & Emojis (Fixes all '?' missing glyphs)
 # ==========================================================
 noto-fonts
 noto-fonts-cjk
@@ -91,35 +108,53 @@ noto-fonts-emoji
 ttf-dejavu
 ttf-liberation
 ttf-jetbrains-mono-nerd
+ttf-font-awesome
+ttf-nerd-fonts-symbols
+gnu-free-fonts
 
 # ==========================================================
-# Terminal & CLI Essentials
+# Comprehensive Arch CLI Essentials & Productivity Tools
 # ==========================================================
 bash-completion
 zsh
+zsh-completions
 fastfetch
 htop
 btop
 nano
 vim
+neovim
 which
 sudo
 polkit
-flatpak
-arch-install-scripts
+git
+reflector
+pacman-contrib
+ripgrep
+fd
+fzf
+tree
+bat
+eza
+less
+man-db
+man-pages
 
-# ==========================================================
-# GUI Runtime for Welcome App & System Tools
-# ==========================================================
+# Archive formats
+zip
+unzip
+p7zip
+unrar
+tar
+gzip
+bzip2
+xz
+zstd
+
+# App center & packaging runtime
+flatpak
 python
 python-gobject
 gtk3
 gtk4
 libadwaita
-syslinux
-memtest86+
-edk2-shell
-memtest86+-efi
-mkinitcpio-archiso
-archiso
-mkinitcpio

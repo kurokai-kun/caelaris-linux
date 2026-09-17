@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Install Caelaris Linux
+GenericName=Live System Installer
+Comment=Install Caelaris Linux permanently to your disk
+Exec=sudo -E calamares
+Icon=calamares
+Terminal=false
+StartupNotify=true
+Categories=System;

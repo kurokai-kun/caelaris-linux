@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# Create liveuser if not present
+# 1. Create liveuser if not present
 if ! id -u liveuser >/dev/null 2>&1; then
     useradd -m -g users -G wheel,video,audio,optical,storage,input,power -s /bin/bash liveuser
     passwd -d liveuser || true
@@ -9,12 +9,24 @@ if ! id -u liveuser >/dev/null 2>&1; then
     chmod 0440 /etc/sudoers.d/liveuser
 fi
 
-# Copy skel files to liveuser home
+# 2. Copy skeleton files & desktop shortcuts
 if [ -d /etc/skel ]; then
     cp -rf /etc/skel/. /home/liveuser/
 fi
+
+# Ensure Desktop directory exists and shortcuts are executable
+mkdir -p /home/liveuser/Desktop
+if [ -f /home/liveuser/Desktop/install-caelaris.desktop ]; then
+    chmod +x /home/liveuser/Desktop/install-caelaris.desktop
+fi
+
 chown -R liveuser:users /home/liveuser
 
-# Silence releng automated script message
+# 3. Configure Flathub app store backend for Discover
+if which flatpak >/dev/null 2>&1; then
+    flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || true
+fi
+
+# 4. Clean up releng residue
 touch /root/.automated_script.sh
 chmod +x /root/.automated_script.sh

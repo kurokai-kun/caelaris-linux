@@ -61,7 +61,14 @@ fi
 mkdir -p "${BUILD_PROFILE}/airootfs/etc"
 cp "${ROOT_DIR}/shared/branding/os-release" "${BUILD_PROFILE}/airootfs/etc/os-release"
 
-# 8. Configure Graphical Boot & Display Manager
+# 8. Brand Bootloader Menus (UEFI systemd-boot, GRUB, and Syslinux)
+echo "Branding bootloader entries to Caelaris Linux..."
+find "${BUILD_PROFILE}/efiboot" "${BUILD_PROFILE}/grub" "${BUILD_PROFILE}/syslinux" -type f \( -name "*.conf" -o -name "*.cfg" \) -exec sed -i \
+    -e 's/Arch Linux install medium/Caelaris Linux/g' \
+    -e 's/Arch Linux/Caelaris Linux/g' \
+    -e 's/archlinux/caelaris/g' {} + 2>/dev/null || true
+
+# 9. Configure Graphical Boot & Display Manager
 mkdir -p "${BUILD_PROFILE}/airootfs/etc/systemd/system/sysinit.target.wants"
 ln -sf /usr/lib/systemd/system/graphical.target "${BUILD_PROFILE}/airootfs/etc/systemd/system/default.target"
 ln -sf /etc/systemd/system/caelaris-live-setup.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/sysinit.target.wants/caelaris-live-setup.service"
@@ -78,7 +85,7 @@ if [[ "$EDITION" == "gnome" ]]; then
     ln -sf /usr/lib/systemd/system/gdm.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/graphical.target.wants/gdm.service"
 fi
 
-# Remove releng console autologin on tty1 so SDDM/GDM takes the screen
+# Remove releng console autologin on tty1 so SDDM takes the screen
 rm -rf "${BUILD_PROFILE}/airootfs/etc/systemd/system/getty@tty1.service.d"
 
 mkdir -p "$OUT_DIR"
