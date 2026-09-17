@@ -2,7 +2,6 @@
 # KDE Plasma Desktop & Core Applications
 # ==========================================================
 plasma-meta
-plasma-wayland-session
 plasma-nm
 plasma-pa
 powerdevil
