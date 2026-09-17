@@ -36,7 +36,10 @@ fi
 # 2. Overlay our edition-specific profile
 cp -r "${PROFILE_SRC}/." "$BUILD_PROFILE/"
 
-# 3. Append our shared packages and desktop packages
+# 3. Append our shared packages, desktop packages, and baseline packages
+if [ -f "/usr/share/archiso/configs/releng/packages.x86_64" ]; then
+    cat "/usr/share/archiso/configs/releng/packages.x86_64" >> "${BUILD_PROFILE}/packages.x86_64"
+fi
 cat "${ROOT_DIR}/shared/packages.common" >> "${BUILD_PROFILE}/packages.x86_64"
 cat "${PROFILE_SRC}/packages.x86_64" >> "${BUILD_PROFILE}/packages.x86_64"
 
