@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Caelaris Welcome
+Comment=Caelaris Linux First Steps and Welcome Assistant
+Exec=/usr/bin/caelaris-welcome
+Icon=distributor-logo
+Terminal=false
+Type=Application
+Categories=System;Settings;
+StartupNotify=true

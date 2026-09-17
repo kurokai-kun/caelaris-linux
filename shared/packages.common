@@ -1,0 +1,118 @@
+# ==========================================================
+# NovaOS Core Linux Base & Hardware Support
+# ==========================================================
+base
+base-devel
+linux
+linux-headers
+linux-firmware
+amd-ucode
+intel-ucode
+btrfs-progs
+dosfstools
+e2fsprogs
+exfatprogs
+f2fs-tools
+ntfs-3g
+xfsprogs
+efibootmgr
+grub
+sysfsutils
+usbutils
+pciutils
+inxi
+
+# ==========================================================
+# Performance, Power & Memory Management (Fedora/CachyOS Standard)
+# ==========================================================
+zram-generator
+ananicy-cpp
+power-profiles-daemon
+gamemode
+lib32-gamemode
+snapper
+snap-pac
+
+# ==========================================================
+# Networking & Connectivity
+# ==========================================================
+networkmanager
+network-manager-applet
+wireless_tools
+wpa_supplicant
+iwd
+bluez
+bluez-utils
+curl
+wget
+rsync
+openssh
+git
+
+# ==========================================================
+# Audio & Multimedia Stack (PipeWire)
+# ==========================================================
+pipewire
+pipewire-alsa
+pipewire-pulse
+pipewire-jack
+wireplumber
+alsa-utils
+pavucontrol
+gst-plugins-base
+gst-plugins-good
+gst-plugins-bad
+gst-plugins-ugly
+ffmpeg
+
+# ==========================================================
+# Graphics Drivers & Display Infrastructure
+# ==========================================================
+mesa
+mesa-utils
+vulkan-intel
+vulkan-radeon
+vulkan-tools
+xf86-video-amdgpu
+xf86-video-ati
+xf86-video-nouveau
+xorg-server
+xorg-xinit
+wayland
+xorg-xwayland
+plymouth
+
+# ==========================================================
+# Fonts & Appearance
+# ==========================================================
+noto-fonts
+noto-fonts-cjk
+noto-fonts-emoji
+ttf-dejavu
+ttf-liberation
+ttf-jetbrains-mono-nerd
+
+# ==========================================================
+# Terminal & CLI Essentials
+# ==========================================================
+bash-completion
+zsh
+fastfetch
+htop
+btop
+nano
+vim
+which
+sudo
+polkit
+flatpak
+arch-install-scripts
+
+# ==========================================================
+# GUI Runtime for Welcome App & System Tools
+# ==========================================================
+python
+python-gobject
+gtk3
+gtk4
+libadwaita

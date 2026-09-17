@@ -1,0 +1,31 @@
+# Product branding for Caelaris Linux
+---
+componentName:  default
+
+strings:
+    productName:         Caelaris Linux
+    shortProductName:    Caelaris
+    version:             2026.09
+    shortVersion:        2026.09
+    versionedName:       Caelaris Linux 2026.09
+    shortVersionedName:  Caelaris 2026.09
+    bootloaderEntryName: Caelaris Linux
+    productUrl:          https://github.com/yourusername/caelaris
+    supportUrl:          https://github.com/yourusername/caelaris/issues
+    knownIssuesUrl:      https://github.com/yourusername/caelaris/issues
+    releaseNotesUrl:     https://github.com/yourusername/caelaris
+
+images:
+    productLogo:         "logo.png"
+    productIcon:         "icon.png"
+    productWelcome:      "welcome.png"
+
+style:
+   Sidebar: "widget"
+   Navigation: "widget"
+
+slideshow:               "show.qml"
+
+upload-logs:
+    enabled: true
+    url: https://termbin.com

@@ -1,0 +1,10 @@
+NAME="Caelaris Linux"
+PRETTY_NAME="Caelaris Linux"
+ID=caelaris
+ID_LIKE=arch
+BUILD_ID=rolling
+ANSI_COLOR="38;2;64;158;255"
+HOME_URL="https://github.com/yourusername/caelaris"
+SUPPORT_URL="https://github.com/yourusername/caelaris/issues"
+BUG_REPORT_URL="https://github.com/yourusername/caelaris/issues"
+LOGO=caelaris-logo

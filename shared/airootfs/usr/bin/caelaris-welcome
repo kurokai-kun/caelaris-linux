@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+"""
+Caelaris Welcome & First-Boot Setup Utility
+Provides an out-of-the-box assistant similar to CachyOS Welcome or Fedora Initial Setup.
+"""
+
+import sys
+import subprocess
+import os
+
+try:
+    import gi
+    gi.require_version("Gtk", "3.0")
+    from gi.repository import Gtk, GLib
+except ImportError:
+    print("GTK3 not available. Please install python-gobject and gtk3.")
+    sys.exit(1)
+
+
+class CaelarisWelcome(Gtk.Window):
+    def __init__(self):
+        super().__init__(title="Welcome to Caelaris Linux")
+        self.set_default_size(720, 520)
+        self.set_position(Gtk.WindowPosition.CENTER)
+        self.set_border_width(16)
+
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        self.add(main_box)
+
+        # Header
+        header_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        title_label = Gtk.Label()
+        title_label.set_markup("<span size='xx-large' weight='bold'>Welcome to Caelaris</span>")
+        subtitle_label = Gtk.Label(label="A high-performance Arch-based Linux distribution")
+        header_box.pack_start(title_label, False, False, 0)
+        header_box.pack_start(subtitle_label, False, False, 0)
+        main_box.pack_start(header_box, False, False, 0)
+
+        # Notebook (Tabs)
+        notebook = Gtk.Notebook()
+        main_box.pack_start(notebook, True, True, 0)
+
+        # Tab 1: System Info & Quick Actions
+        tab_general = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        tab_general.set_border_width(12)
+        
+        info_label = Gtk.Label()
+        info_label.set_markup("<b>Quick System Actions:</b>")
+        info_label.set_halign(Gtk.Align.START)
+        tab_general.pack_start(info_label, False, False, 0)
+
+        btn_update = Gtk.Button(label="?? Update System Repositories")
+        btn_update.connect("clicked", self.run_terminal_command, "sudo pacman -Syu")
+        tab_general.pack_start(btn_update, False, False, 0)
+
+        btn_codecs = Gtk.Button(label="?? Install Multimedia Codecs (Audio/Video)")
+        btn_codecs.connect("clicked", self.run_terminal_command, "sudo pacman -S --needed gst-plugins-good gst-plugins-bad gst-plugins-ugly ffmpeg")
+        tab_general.pack_start(btn_codecs, False, False, 0)
+
+        btn_flathub = Gtk.Button(label="?? Enable Flathub Software Repository")
+        btn_flathub.connect("clicked", self.run_terminal_command, "flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo")
+        tab_general.pack_start(btn_flathub, False, False, 0)
+
+        notebook.append_page(tab_general, Gtk.Label(label="General"))
+
+        # Tab 2: Hardware & Drivers
+        tab_hw = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        tab_hw.set_border_width(12)
+
+        hw_label = Gtk.Label()
+        hw_label.set_markup("<b>Hardware & Graphics Drivers:</b>")
+        hw_label.set_halign(Gtk.Align.START)
+        tab_hw.pack_start(hw_label, False, False, 0)
+
+        btn_nvidia = Gtk.Button(label="?? Install NVIDIA Proprietary Drivers")
+        btn_nvidia.connect("clicked", self.run_terminal_command, "sudo pacman -S --needed nvidia-dkms nvidia-utils lib32-nvidia-utils")
+        tab_hw.pack_start(btn_nvidia, False, False, 0)
+
+        btn_inxi = Gtk.Button(label="?? View Hardware Specification Report")
+        btn_inxi.connect("clicked", self.run_terminal_command, "inxi -Fxz")
+        tab_hw.pack_start(btn_inxi, False, False, 0)
+
+        notebook.append_page(tab_hw, Gtk.Label(label="Hardware"))
+
+        # Tab 3: Gaming Setup
+        tab_gaming = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        tab_gaming.set_border_width(12)
+
+        gaming_label = Gtk.Label()
+        gaming_label.set_markup("<b>One-Click Gaming Stack:</b>")
+        gaming_label.set_halign(Gtk.Align.START)
+        tab_gaming.pack_start(gaming_label, False, False, 0)
+
+        btn_steam = Gtk.Button(label="?? Install Steam & GameMode")
+        btn_steam.connect("clicked", self.run_terminal_command, "sudo pacman -S --needed steam gamemode lib32-gamemode")
+        tab_gaming.pack_start(btn_steam, False, False, 0)
+
+        btn_wine = Gtk.Button(label="?? Install Wine & Lutris")
+        btn_wine.connect("clicked", self.run_terminal_command, "sudo pacman -S --needed wine-staging lutris winetricks")
+        tab_gaming.pack_start(btn_wine, False, False, 0)
+
+        notebook.append_page(tab_gaming, Gtk.Label(label="Gaming"))
+
+        # Bottom Bar (Autostart toggle)
+        bottom_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        self.chk_autostart = Gtk.CheckButton(label="Show this application on startup")
+        self.chk_autostart.set_active(True)
+        bottom_box.pack_start(self.chk_autostart, False, False, 0)
+
+        btn_close = Gtk.Button(label="Close")
+        btn_close.connect("clicked", Gtk.main_quit)
+        bottom_box.pack_end(btn_close, False, False, 0)
+
+        main_box.pack_start(bottom_box, False, False, 0)
+
+    def run_terminal_command(self, widget, command):
+        # Launch command inside a terminal emulator
+        for term in ["konsole", "ptyxis", "gnome-terminal", "xterm"]:
+            if subprocess.call(["which", term], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0:
+                if term in ["konsole"]:
+                    subprocess.Popen([term, "-e", "bash", "-c", f"{command}; echo; read -p 'Press enter to exit...'"])
+                else:
+                    subprocess.Popen([term, "--", "bash", "-c", f"{command}; echo; read -p 'Press enter to exit...'"])
+                return
+        subprocess.Popen(["xterm", "-e", f"{command}; read"])
+
+
+def main():
+    win = CaelarisWelcome()
+    win.connect("destroy", Gtk.main_quit)
+    win.show_all()
+    Gtk.main()
+
+
+if __name__ == "__main__":
+    main()

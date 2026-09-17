@@ -1,0 +1,28 @@
+# ==========================================================
+# KDE Plasma Desktop & Core Applications
+# ==========================================================
+plasma-meta
+plasma-wayland-session
+plasma-nm
+plasma-pa
+powerdevil
+sddm
+sddm-kcm
+dolphin
+konsole
+ark
+kate
+spectacle
+gwenview
+kcalc
+kdegraphics-thumbnailers
+ffmpegthumbs
+plasma-systemmonitor
+breeze
+breeze-gtk
+breeze-icons
+xdg-desktop-portal-kde
+packagekit-qt6
+# Browser & Media
+firefox
+vlc

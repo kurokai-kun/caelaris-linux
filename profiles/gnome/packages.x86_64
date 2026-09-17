@@ -1,0 +1,22 @@
+# GNOME Desktop & Core Applications
+gnome-shell
+gnome-control-center
+gnome-session
+gnome-settings-daemon
+gdm
+nautilus
+ptyxis
+gnome-text-editor
+gnome-calculator
+gnome-disk-utility
+gnome-system-monitor
+gnome-tweaks
+gnome-browser-connector
+eog
+evince
+file-roller
+xdg-desktop-portal-gnome
+
+# Browser & Media
+firefox
+vlc
