@@ -9,7 +9,21 @@ if ! id -u liveuser >/dev/null 2>&1; then
     chmod 0440 /etc/sudoers.d/liveuser
 fi
 
-# 2. Copy skeleton files & desktop shortcuts
+# 2. Check kernel command-line for desktop preference
+DESKTOP_CHOICE="plasma"
+if grep -q "desktop=gnome" /proc/cmdline 2>/dev/null; then
+    DESKTOP_CHOICE="gnome"
+fi
+
+mkdir -p /etc/sddm.conf.d
+cat > /etc/sddm.conf.d/autologin.conf << EOF
+[Autologin]
+User=liveuser
+Session=${DESKTOP_CHOICE}
+Relogin=false
+EOF
+
+# 3. Copy skeleton files & desktop shortcuts
 if [ -d /etc/skel ]; then
     cp -rf /etc/skel/. /home/liveuser/
 fi
@@ -18,15 +32,19 @@ fi
 mkdir -p /home/liveuser/Desktop
 if [ -f /home/liveuser/Desktop/install-caelaris.desktop ]; then
     chmod +x /home/liveuser/Desktop/install-caelaris.desktop
+    # Mark as trusted in KDE Plasma / GNOME
+    if which gio >/dev/null 2>&1; then
+        gio set /home/liveuser/Desktop/install-caelaris.desktop metadata::trusted true || true
+    fi
 fi
 
 chown -R liveuser:users /home/liveuser
 
-# 3. Configure Flathub app store backend for Discover
+# 4. Configure Flathub app store backend for Discover
 if which flatpak >/dev/null 2>&1; then
     flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || true
 fi
 
-# 4. Clean up releng residue
+# 5. Clean up releng residue
 touch /root/.automated_script.sh
 chmod +x /root/.automated_script.sh

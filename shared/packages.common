@@ -158,3 +158,6 @@ python-gobject
 gtk3
 gtk4
 libadwaita
+calamares
+ckbcomp
+archinstall
