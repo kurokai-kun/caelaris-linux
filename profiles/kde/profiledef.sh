@@ -21,4 +21,5 @@ file_permissions=(
   ["/root"]="0:0:750"
   ["/usr/bin/caelaris-live-setup"]="0:0:755"
   ["/usr/bin/caelaris-welcome"]="0:0:755"
+  ["/usr/bin/caelaris-installer"]="0:0:755"
 )

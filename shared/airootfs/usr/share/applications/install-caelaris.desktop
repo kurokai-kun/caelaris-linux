@@ -2,10 +2,10 @@
 Type=Application
 Version=1.0
 Name=Install Caelaris Linux
-GenericName=Live System Installer
+GenericName=System Installer
 Comment=Install Caelaris Linux permanently to your disk
-Exec=sudo -E calamares
-Icon=calamares
+Exec=konsole --noclose -e /usr/bin/caelaris-installer
+Icon=system-software-install
 Terminal=false
 StartupNotify=true
 Categories=System;
