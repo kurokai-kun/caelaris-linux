@@ -116,3 +116,6 @@ python-gobject
 gtk3
 gtk4
 libadwaita
+syslinux
+memtest86+
+edk2-shell
