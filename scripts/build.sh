@@ -61,6 +61,26 @@ fi
 mkdir -p "${BUILD_PROFILE}/airootfs/etc"
 cp "${ROOT_DIR}/shared/branding/os-release" "${BUILD_PROFILE}/airootfs/etc/os-release"
 
+# 8. Configure Graphical Boot & Display Manager
+mkdir -p "${BUILD_PROFILE}/airootfs/etc/systemd/system/sysinit.target.wants"
+ln -sf /usr/lib/systemd/system/graphical.target "${BUILD_PROFILE}/airootfs/etc/systemd/system/default.target"
+ln -sf /etc/systemd/system/caelaris-live-setup.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/sysinit.target.wants/caelaris-live-setup.service"
+
+if [[ "$EDITION" == "kde" ]]; then
+    mkdir -p "${BUILD_PROFILE}/airootfs/etc/systemd/system/graphical.target.wants"
+    ln -sf /usr/lib/systemd/system/sddm.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/display-manager.service"
+    ln -sf /usr/lib/systemd/system/sddm.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/graphical.target.wants/sddm.service"
+fi
+
+if [[ "$EDITION" == "gnome" ]]; then
+    mkdir -p "${BUILD_PROFILE}/airootfs/etc/systemd/system/graphical.target.wants"
+    ln -sf /usr/lib/systemd/system/gdm.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/display-manager.service"
+    ln -sf /usr/lib/systemd/system/gdm.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/graphical.target.wants/gdm.service"
+fi
+
+# Remove releng console autologin on tty1 so SDDM/GDM takes the screen
+rm -rf "${BUILD_PROFILE}/airootfs/etc/systemd/system/getty@tty1.service.d"
+
 mkdir -p "$OUT_DIR"
 
 echo "Running mkarchiso validation and build..."

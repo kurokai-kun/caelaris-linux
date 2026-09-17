@@ -1,0 +1,20 @@
+#!/bin/bash
+set -e
+
+# Create liveuser if not present
+if ! id -u liveuser >/dev/null 2>&1; then
+    useradd -m -g users -G wheel,video,audio,optical,storage,input,power -s /bin/bash liveuser
+    passwd -d liveuser || true
+    echo "liveuser ALL=(ALL:ALL) NOPASSWD: ALL" > /etc/sudoers.d/liveuser
+    chmod 0440 /etc/sudoers.d/liveuser
+fi
+
+# Copy skel files to liveuser home
+if [ -d /etc/skel ]; then
+    cp -rf /etc/skel/. /home/liveuser/
+fi
+chown -R liveuser:users /home/liveuser
+
+# Silence releng automated script message
+touch /root/.automated_script.sh
+chmod +x /root/.automated_script.sh

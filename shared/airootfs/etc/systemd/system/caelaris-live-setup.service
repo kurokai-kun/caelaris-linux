@@ -1,0 +1,13 @@
+[Unit]
+Description=Caelaris Linux Live User Setup
+Before=display-manager.service sddm.service gdm.service
+DefaultDependencies=no
+After=systemd-sysusers.service systemd-vconsole-setup.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/caelaris-live-setup
+RemainAfterExit=yes
+
+[Install]
+WantedBy=sysinit.target multi-user.target graphical.target
