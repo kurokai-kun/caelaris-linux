@@ -17,22 +17,32 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container:
-      image: archlinux:latest
-      options: --privileged
 
     steps:
+      - name: Free Disk Space (Maximize Build Space)
+        run: |
+          echo "Freeing up runner disk space..."
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache
+          sudo rm -rf /usr/share/swift
+          df -h
+
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Build Environment
+      - name: Build Caelaris ISO in Arch Linux Container
         run: |
-          chmod +x scripts/*.sh
-          ./scripts/setup_build_env.sh
-
-      - name: Build Caelaris ISO (${{ inputs.edition || 'kde' }})
-        run: |
-          ./scripts/build.sh ${{ inputs.edition || 'kde' }}
+          docker run --privileged --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace \
+            archlinux:latest \
+            bash -c "
+              chmod +x scripts/*.sh &&
+              ./scripts/setup_build_env.sh &&
+              ./scripts/build.sh ${{ inputs.edition || 'kde' }}
+            "
 
       - name: Upload ISO Artifact
         uses: actions/upload-artifact@v4

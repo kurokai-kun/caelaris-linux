@@ -2,7 +2,7 @@
 # shellcheck disable=SC2034
 
 iso_name="caelaris-gnome"
-iso_label="CAELARIS_GNOME_$(date +%Y%m)"
+iso_label="CAEL_GNM_$(date +%y%m)"
 iso_publisher="Caelaris Project <https://github.com/kurokai-kun/caelaris-linux>"
 iso_application="Caelaris Linux Live/Rescue & Installer (GNOME Edition)"
 iso_version="$(date +%Y.%m.%d)"

@@ -2,7 +2,7 @@
 # shellcheck disable=SC2034
 
 iso_name="caelaris-kde"
-iso_label="CAELARIS_KDE_$(date +%Y%m)"
+iso_label="CAEL_KDE_$(date +%y%m)"
 iso_publisher="Caelaris Project <https://github.com/kurokai-kun/caelaris-linux>"
 iso_application="Caelaris Linux Live/Rescue & Installer (KDE Edition)"
 iso_version="$(date +%Y.%m.%d)"
