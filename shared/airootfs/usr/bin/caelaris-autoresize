@@ -32,3 +32,11 @@ if which spice-vdagent >/dev/null 2>&1; then
     spice-vdagent 2>/dev/null || true
 fi
 
+# 6. VMware userspace integration (open-vm-tools)
+if which vmware-user-suid-wrapper >/dev/null 2>&1; then
+    vmware-user-suid-wrapper 2>/dev/null || true
+elif which vmtoolsd >/dev/null 2>&1; then
+    vmtoolsd -n vmusr 2>/dev/null || true
+fi
+
+

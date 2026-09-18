@@ -173,12 +173,14 @@ class InstallWorker(QThread):
                 f.write("LANG=en_US.UTF-8\n")
 
             self.progress_changed.emit(82, f"Configuring user '{user}' and desktop sessions...")
-            self.run_cmd(f"arch-chroot /mnt useradd -m -c '{realname}' -g users -G wheel,video,audio,optical,storage,input,power -s /bin/bash '{user}'", check=False)
+            self.run_cmd(f"arch-chroot /mnt useradd -m -c '{realname}' -g users -G wheel,video,audio,optical,storage,input,power,gamemode -s /bin/bash '{user}'", check=False)
             self.run_cmd(f"echo '{user}:{password}' | arch-chroot /mnt chpasswd")
             self.run_cmd(f"echo 'root:{password}' | arch-chroot /mnt chpasswd")
             with open("/mnt/etc/sudoers.d/wheel", "w") as f:
                 f.write("%wheel ALL=(ALL:ALL) ALL\n")
             os.chmod("/mnt/etc/sudoers.d/wheel", 0o440)
+            if os.path.exists("/mnt/etc/sudoers.d/g_wheel"):
+                os.remove("/mnt/etc/sudoers.d/g_wheel")
 
             self.run_cmd("arch-chroot /mnt userdel -r liveuser 2>/dev/null || true", check=False)
             if os.path.exists("/mnt/etc/sudoers.d/liveuser"):
@@ -255,7 +257,7 @@ class InstallWorker(QThread):
 
             self.progress_changed.emit(94, "Regenerating initramfs & enabling services...")
             self.run_cmd("arch-chroot /mnt mkinitcpio -P", check=False)
-            self.run_cmd("arch-chroot /mnt systemctl enable NetworkManager sddm pipewire wireplumber vboxservice spice-vdagentd qemu-guest-agent caelaris-session-selector 2>/dev/null || true", check=False)
+            self.run_cmd("arch-chroot /mnt systemctl enable NetworkManager sddm pipewire wireplumber vboxservice vmtoolsd vmware-vmblock-fuse spice-vdagentd qemu-guest-agent ananicy-cpp caelaris-session-selector 2>/dev/null || true", check=False)
 
             if os.path.exists("/mnt/etc/systemd/system/caelaris-live-setup.service"):
                 os.remove("/mnt/etc/systemd/system/caelaris-live-setup.service")

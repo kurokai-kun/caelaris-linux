@@ -25,4 +25,6 @@ file_permissions=(
   ["/usr/bin/caelaris-installer-gui"]="0:0:755"
   ["/usr/bin/caelaris-autoresize"]="0:0:755"
   ["/usr/bin/caelaris-session-selector"]="0:0:755"
+  ["/usr/bin/yay"]="0:0:755"
+  ["/usr/bin/caelaris-install"]="0:0:755"
 )

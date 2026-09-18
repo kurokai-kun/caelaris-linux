@@ -1,0 +1,48 @@
+#!/bin/bash
+# caelaris-install: Universal package installation helper for Caelaris Linux
+# Searches and installs across Arch Linux Repositories, AUR (via yay), and Flatpak
+
+if [ -z "$1" ]; then
+    echo "Usage: caelaris-install <package_or_app_name>"
+    echo "Example: caelaris-install discord"
+    echo "         caelaris-install spotify"
+    echo "         caelaris-install visual-studio-code-bin"
+    exit 1
+fi
+
+APP="$1"
+echo "=========================================================="
+echo " 🚀 Caelaris Universal Package Installer: '$APP'"
+echo "=========================================================="
+
+# 1. Try official Arch repositories first (fastest, pre-compiled binary)
+if pacman -Si "$APP" >/dev/null 2>&1; then
+    echo "📦 Found '$APP' in official Arch Linux repositories."
+    sudo pacman -S --needed "$APP"
+    exit $?
+fi
+
+# 2. Try AUR (Arch User Repository) via yay
+if which yay >/dev/null 2>&1; then
+    echo "🔍 Searching AUR (Arch User Repository) for '$APP'..."
+    if yay -Si "$APP" >/dev/null 2>&1; then
+        echo "📦 Found '$APP' in AUR."
+        yay -S --needed "$APP"
+        exit $?
+    fi
+fi
+
+# 3. Try Flathub via flatpak
+if which flatpak >/dev/null 2>&1; then
+    echo "🔍 Searching Flathub for '$APP'..."
+    if flatpak search "$APP" 2>/dev/null | grep -q "$APP"; then
+        echo "📦 Found '$APP' on Flathub."
+        flatpak install flathub "$APP"
+        exit $?
+    fi
+fi
+
+echo "❌ Could not locate '$APP'. Performing broad AUR & repo search..."
+if which yay >/dev/null 2>&1; then
+    yay -Ss "$APP"
+fi
