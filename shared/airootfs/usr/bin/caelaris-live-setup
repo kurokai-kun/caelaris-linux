@@ -12,30 +12,30 @@ fi
 # Ensure display name is set to "Caelaris Linux" in GECOS
 chfn -f "Caelaris Linux" liveuser 2>/dev/null || true
 
-# 2. Configure AccountsService so Kickoff start menu, lock screen & user managers show "Caelaris Linux"
+# 2. Check kernel command-line for desktop preference (dual session support)
+DESKTOP_CHOICE="plasma"
+if grep -q "desktop=gnome" /proc/cmdline 2>/dev/null; then
+    DESKTOP_CHOICE="gnome"
+fi
+
+# Configure AccountsService so Kickoff, GDM/SDDM, lock screen & user managers show "Caelaris Linux"
 mkdir -p /var/lib/AccountsService/users
-cat > /var/lib/AccountsService/users/liveuser << 'EOF'
+cat > /var/lib/AccountsService/users/liveuser << EOF
 [User]
 Language=en_US.UTF-8
-XSession=plasma
+XSession=${DESKTOP_CHOICE}
 SystemAccount=false
 RealName=Caelaris Linux
 Icon=/usr/share/pixmaps/caelaris-logo.png
 EOF
 chmod 0644 /var/lib/AccountsService/users/liveuser
 
-# 3. Check kernel command-line for desktop preference (dual session support)
-DESKTOP_CHOICE="plasma"
-if grep -q "desktop=gnome" /proc/cmdline 2>/dev/null; then
-    DESKTOP_CHOICE="gnome"
-fi
-
 mkdir -p /etc/sddm.conf.d
 
-# Set modern SDDM theme and power commands
+# Set modern official Breeze SDDM theme (frosted glass with session dropdown)
 cat > /etc/sddm.conf.d/10-theme.conf << 'EOF'
 [Theme]
-Current=caelaris-modern
+Current=breeze
 CursorTheme=breeze_cursors
 
 [General]
@@ -81,6 +81,10 @@ chown -R liveuser:users /home/liveuser
 
 # 5. Start VirtualBox guest integration service if running in VM
 systemctl start vboxservice.service 2>/dev/null || true
+mkdir -p /home/liveuser/.config/autostart
+if [ -f /etc/xdg/autostart/vboxclient.desktop ]; then
+    cp -f /etc/xdg/autostart/vboxclient.desktop /home/liveuser/.config/autostart/
+fi
 
 # 6. Configure Flathub app store backend for Discover & Software
 if which flatpak >/dev/null 2>&1; then

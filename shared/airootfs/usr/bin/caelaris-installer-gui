@@ -189,7 +189,7 @@ class InstallWorker(QThread):
                 f.write(f"[User]\nLanguage=en_US.UTF-8\nXSession={desktop}\nSystemAccount=false\nRealName={realname}\nIcon=/usr/share/pixmaps/caelaris-logo.png\n")
 
             os.makedirs("/mnt/etc/sddm.conf.d", exist_ok=True)
-            sddm_cfg = f"[Theme]\nCurrent=caelaris-modern\nCursorTheme=breeze_cursors\n"
+            sddm_cfg = f"[Theme]\nCurrent=breeze\nCursorTheme=breeze_cursors\n"
             if autologin:
                 sddm_cfg += f"\n[Autologin]\nUser={user}\nSession={desktop}\nRelogin=false\n"
             with open("/mnt/etc/sddm.conf.d/10-caelaris.conf", "w") as f:
@@ -623,6 +623,7 @@ class CaelarisInstaller(QMainWindow):
 
     def finish_installation(self):
         if self.chk_reboot.isChecked():
+            subprocess.run(["eject", "/dev/sr0"], check=False)
             subprocess.run(["systemctl", "reboot"], check=False)
         self.close()
 

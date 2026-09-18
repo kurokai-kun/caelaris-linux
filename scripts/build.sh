@@ -66,24 +66,39 @@ cp -r "${ROOT_DIR}/installer/calamares/." "${BUILD_PROFILE}/airootfs/etc/calamar
 mkdir -p "${BUILD_PROFILE}/airootfs/etc"
 cp "${ROOT_DIR}/shared/branding/os-release" "${BUILD_PROFILE}/airootfs/etc/os-release"
 
-# 9. Brand and configure Dual-Desktop Bootloader Menus
+# 9. Brand and configure Dual-Desktop Bootloader Menus (KDE & GNOME Preview Options)
 echo "Configuring bootloader entries for Caelaris Linux (KDE & GNOME)..."
 
 # Brand existing entries
 find "${BUILD_PROFILE}/efiboot" "${BUILD_PROFILE}/grub" "${BUILD_PROFILE}/syslinux" -type f \( -name "*.conf" -o -name "*.cfg" \) -exec sed -i \
-    -e 's/Arch Linux install medium/Caelaris Linux (KDE Plasma)/g' \
+    -e 's/Arch Linux install medium/Caelaris Linux (KDE Plasma Preview)/g' \
     -e 's/Arch Linux/Caelaris Linux/g' \
     -e 's/archlinux/caelaris/g' {} + 2>/dev/null || true
 
-# Add GNOME bootloader entry in UEFI systemd-boot if template exists
+# Add GNOME bootloader entry in UEFI systemd-boot
 if [ -d "${BUILD_PROFILE}/efiboot/loader/entries" ]; then
     BASE_ENTRY=$(find "${BUILD_PROFILE}/efiboot/loader/entries" -name "*x86_64*.conf" | head -n 1 || true)
     if [ -n "$BASE_ENTRY" ] && [ -f "$BASE_ENTRY" ]; then
         GNOME_ENTRY="${BUILD_PROFILE}/efiboot/loader/entries/02-caelaris-gnome.conf"
         cp "$BASE_ENTRY" "$GNOME_ENTRY"
-        sed -i 's/title.*/title   Caelaris Linux (GNOME Desktop)/' "$GNOME_ENTRY"
+        sed -i 's/title.*/title   Caelaris Linux (GNOME Desktop Preview)/' "$GNOME_ENTRY"
         sed -i 's/options.*/& desktop=gnome/' "$GNOME_ENTRY"
     fi
+fi
+
+# Add GNOME bootloader entry in Syslinux (BIOS)
+if [ -f "${BUILD_PROFILE}/syslinux/archiso_sys-linux.cfg" ]; then
+    cat >> "${BUILD_PROFILE}/syslinux/archiso_sys-linux.cfg" << 'EOF'
+
+LABEL caelaris_gnome
+TEXT HELP
+Boot Caelaris Linux live preview with GNOME Desktop.
+ENDTEXT
+MENU LABEL Caelaris Linux (GNOME Desktop Preview)
+LINUX /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
+INITRD /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
+APPEND archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_SEARCH_UUID% desktop=gnome quiet splash
+EOF
 fi
 
 # 10. Configure Graphical Boot & Display Manager
