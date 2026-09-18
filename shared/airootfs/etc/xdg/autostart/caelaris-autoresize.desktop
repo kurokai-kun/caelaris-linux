@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Caelaris Auto-Resize
+Comment=Automatically configure virtual display resolution and scaling
+Exec=/usr/bin/caelaris-autoresize
+Terminal=false
+Categories=Utility;
+X-GNOME-Autostart-enabled=true
+X-KDE-autostart-after=panel

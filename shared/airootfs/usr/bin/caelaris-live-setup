@@ -76,6 +76,8 @@ fi
 chmod +x /usr/bin/caelaris-installer-gui 2>/dev/null || true
 chmod +x /usr/bin/caelaris-installer 2>/dev/null || true
 chmod +x /usr/bin/caelaris-welcome 2>/dev/null || true
+chmod +x /usr/bin/caelaris-autoresize 2>/dev/null || true
+chmod +x /usr/bin/caelaris-session-selector 2>/dev/null || true
 
 chown -R liveuser:users /home/liveuser
 

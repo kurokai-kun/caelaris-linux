@@ -1,0 +1,21 @@
+#!/bin/bash
+# caelaris-session-selector: Automatically switches default session between KDE and GNOME based on kernel cmdline
+
+DESKTOP_CHOICE="plasma"
+if grep -q "desktop=gnome" /proc/cmdline 2>/dev/null; then
+    DESKTOP_CHOICE="gnome"
+fi
+
+# 1. Update AccountsService for all regular users (UID >= 1000)
+if [ -d /var/lib/AccountsService/users ]; then
+    for ufile in /var/lib/AccountsService/users/*; do
+        if [ -f "$ufile" ]; then
+            sed -i "s/^XSession=.*/XSession=${DESKTOP_CHOICE}/" "$ufile" 2>/dev/null || true
+        fi
+    done
+fi
+
+# 2. Update SDDM configuration if present
+if [ -f /etc/sddm.conf.d/10-caelaris.conf ]; then
+    sed -i "s/^Session=.*/Session=${DESKTOP_CHOICE}/" /etc/sddm.conf.d/10-caelaris.conf 2>/dev/null || true
+fi

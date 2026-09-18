@@ -75,18 +75,23 @@ find "${BUILD_PROFILE}/efiboot" "${BUILD_PROFILE}/grub" "${BUILD_PROFILE}/syslin
     -e 's/Arch Linux/Caelaris Linux/g' \
     -e 's/archlinux/caelaris/g' {} + 2>/dev/null || true
 
+# Inject video=1920x1080 resolution into all default entries
+find "${BUILD_PROFILE}/efiboot" "${BUILD_PROFILE}/grub" "${BUILD_PROFILE}/syslinux" -type f \( -name "*.conf" -o -name "*.cfg" \) -exec sed -i \
+    -e 's/quiet splash/video=1920x1080 quiet splash/g' {} + 2>/dev/null || true
+
 # Add GNOME bootloader entry in UEFI systemd-boot
 if [ -d "${BUILD_PROFILE}/efiboot/loader/entries" ]; then
     BASE_ENTRY=$(find "${BUILD_PROFILE}/efiboot/loader/entries" -name "*x86_64*.conf" | head -n 1 || true)
     if [ -n "$BASE_ENTRY" ] && [ -f "$BASE_ENTRY" ]; then
+        sed -i 's/options.*/& desktop=plasma/' "$BASE_ENTRY"
         GNOME_ENTRY="${BUILD_PROFILE}/efiboot/loader/entries/02-caelaris-gnome.conf"
         cp "$BASE_ENTRY" "$GNOME_ENTRY"
         sed -i 's/title.*/title   Caelaris Linux (GNOME Desktop Preview)/' "$GNOME_ENTRY"
-        sed -i 's/options.*/& desktop=gnome/' "$GNOME_ENTRY"
+        sed -i 's/desktop=plasma/desktop=gnome/' "$GNOME_ENTRY"
     fi
 fi
 
-# Add GNOME bootloader entry in Syslinux (BIOS)
+# Add GNOME and Hard Disk bootloader entries in Syslinux (BIOS)
 if [ -f "${BUILD_PROFILE}/syslinux/archiso_sys-linux.cfg" ]; then
     cat >> "${BUILD_PROFILE}/syslinux/archiso_sys-linux.cfg" << 'EOF'
 
@@ -97,7 +102,32 @@ ENDTEXT
 MENU LABEL Caelaris Linux (GNOME Desktop Preview)
 LINUX /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
 INITRD /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-APPEND archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_SEARCH_UUID% desktop=gnome quiet splash
+APPEND archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_SEARCH_UUID% desktop=gnome video=1920x1080 quiet splash
+
+LABEL boot_hdd
+TEXT HELP
+Boot the installed operating system from the primary local hard drive.
+ENDTEXT
+MENU LABEL Boot Installed System (Hard Disk)
+COM32 whichsys.c32
+APPEND -iso- chain.c32 hd0
+EOF
+fi
+
+# Add GNOME and Hard Disk bootloader entries in GRUB if present
+if [ -f "${BUILD_PROFILE}/grub/grub.cfg" ]; then
+    cat >> "${BUILD_PROFILE}/grub/grub.cfg" << 'EOF'
+
+menuentry "Caelaris Linux (GNOME Desktop Preview)" --class caelaris --class gnome --class gnu-linux --class gnu --class os {
+    set gfxpayload=keep
+    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_SEARCH_UUID% desktop=gnome video=1920x1080 quiet splash
+    initrd /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
+}
+
+menuentry "Boot Installed System (Hard Disk)" --class hd --class disk {
+    set root=(hd0)
+    chainloader +1
+}
 EOF
 fi
 

@@ -1,0 +1,13 @@
+[Unit]
+Description=Caelaris Session Selector
+Before=display-manager.service sddm.service
+DefaultDependencies=no
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/caelaris-session-selector
+RemainAfterExit=yes
+
+[Install]
+WantedBy=graphical.target

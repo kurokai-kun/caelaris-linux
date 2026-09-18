@@ -22,4 +22,7 @@ file_permissions=(
   ["/usr/bin/caelaris-live-setup"]="0:0:755"
   ["/usr/bin/caelaris-welcome"]="0:0:755"
   ["/usr/bin/caelaris-installer"]="0:0:755"
+  ["/usr/bin/caelaris-installer-gui"]="0:0:755"
+  ["/usr/bin/caelaris-autoresize"]="0:0:755"
+  ["/usr/bin/caelaris-session-selector"]="0:0:755"
 )
