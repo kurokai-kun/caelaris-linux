@@ -81,8 +81,10 @@ chmod +x /usr/bin/caelaris-session-selector 2>/dev/null || true
 
 chown -R liveuser:users /home/liveuser
 
-# 5. Start VirtualBox guest integration service if running in VM
+# 5. Start VirtualBox & UTM / QEMU guest integration services
 systemctl start vboxservice.service 2>/dev/null || true
+systemctl start spice-vdagentd.service 2>/dev/null || true
+systemctl start qemu-guest-agent.service 2>/dev/null || true
 mkdir -p /home/liveuser/.config/autostart
 if [ -f /etc/xdg/autostart/vboxclient.desktop ]; then
     cp -f /etc/xdg/autostart/vboxclient.desktop /home/liveuser/.config/autostart/

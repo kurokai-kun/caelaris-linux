@@ -26,3 +26,9 @@ if which VBoxClient >/dev/null 2>&1; then
     VBoxClient --seamless 2>/dev/null || true
     VBoxClient --vmsvga 2>/dev/null || true
 fi
+
+# 5. SPICE / UTM / QEMU userspace integration
+if which spice-vdagent >/dev/null 2>&1; then
+    spice-vdagent 2>/dev/null || true
+fi
+

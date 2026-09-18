@@ -98,6 +98,8 @@ xorg-xinit
 wayland
 xorg-xwayland
 plymouth
+spice-vdagent
+qemu-guest-agent
 
 # ==========================================================
 # Fonts, Glyphs & Emojis (Fixes all '?' missing glyphs)

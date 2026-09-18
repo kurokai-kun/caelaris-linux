@@ -255,7 +255,7 @@ class InstallWorker(QThread):
 
             self.progress_changed.emit(94, "Regenerating initramfs & enabling services...")
             self.run_cmd("arch-chroot /mnt mkinitcpio -P", check=False)
-            self.run_cmd("arch-chroot /mnt systemctl enable NetworkManager sddm pipewire wireplumber vboxservice caelaris-session-selector 2>/dev/null || true", check=False)
+            self.run_cmd("arch-chroot /mnt systemctl enable NetworkManager sddm pipewire wireplumber vboxservice spice-vdagentd qemu-guest-agent caelaris-session-selector 2>/dev/null || true", check=False)
 
             if os.path.exists("/mnt/etc/systemd/system/caelaris-live-setup.service"):
                 os.remove("/mnt/etc/systemd/system/caelaris-live-setup.service")
