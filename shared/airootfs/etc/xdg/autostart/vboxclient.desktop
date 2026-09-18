@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=VirtualBox Guest Client
-Comment=VirtualBox Guest Integration (Auto-Resize and Clipboard)
-Exec=/usr/bin/VBoxClient-all
-OnlyShowIn=KDE;GNOME;XFCE;
-Terminal=false
-StartupNotify=false
