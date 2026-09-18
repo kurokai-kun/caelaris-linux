@@ -54,7 +54,6 @@ dconf
 # VM & Hardware Acceleration (VirtualBox, VMware, KVM)
 # ==========================================================
 virtualbox-guest-utils
-xf86-video-vmware
 
 # ==========================================================
 # Caelaris Graphical Installer & Partitioning Tools

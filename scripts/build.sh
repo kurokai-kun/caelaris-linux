@@ -46,6 +46,8 @@ cat "${PROFILE_SRC}/packages.x86_64" >> "${BUILD_PROFILE}/packages.x86_64"
 # 4. Sort and deduplicate packages
 sort -u "${BUILD_PROFILE}/packages.x86_64" -o "${BUILD_PROFILE}/packages.x86_64"
 sed -i '/^[[:space:]]*#/d; /^[[:space:]]*$/d' "${BUILD_PROFILE}/packages.x86_64"
+sed -i '/virtualbox-guest-utils-nox/d' "${BUILD_PROFILE}/packages.x86_64"
+sed -i '/xf86-video-vmware/d' "${BUILD_PROFILE}/packages.x86_64"
 
 # 5. Overlay shared pacman.conf
 cp "${ROOT_DIR}/shared/pacman.conf" "${BUILD_PROFILE}/pacman.conf"
