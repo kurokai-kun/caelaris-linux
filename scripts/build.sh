@@ -93,6 +93,19 @@ mkdir -p "${BUILD_PROFILE}/airootfs/etc/systemd/system/graphical.target.wants"
 ln -sf /usr/lib/systemd/system/sddm.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/display-manager.service"
 ln -sf /usr/lib/systemd/system/sddm.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/graphical.target.wants/sddm.service"
 
+# Enable VirtualBox Guest Service for seamless display scaling & acceleration
+mkdir -p "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants"
+ln -sf /usr/lib/systemd/system/vboxservice.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/vboxservice.service" 2>/dev/null || true
+
+# Generate PNG logo from SVG if rsvg-convert is available
+if which rsvg-convert >/dev/null 2>&1; then
+    rsvg-convert -w 256 -h 256 -o "${BUILD_PROFILE}/airootfs/usr/share/pixmaps/caelaris-logo.png" "${BUILD_PROFILE}/airootfs/usr/share/pixmaps/caelaris-logo.svg" 2>/dev/null || true
+fi
+
+# Ensure all scripts are executable
+chmod +x "${BUILD_PROFILE}/airootfs/usr/bin/"* 2>/dev/null || true
+chmod +x "${BUILD_PROFILE}/airootfs/etc/skel/Desktop/"*.desktop 2>/dev/null || true
+
 # Remove console autologin on tty1 so graphical display manager takes the screen
 rm -rf "${BUILD_PROFILE}/airootfs/etc/systemd/system/getty@tty1.service.d"
 

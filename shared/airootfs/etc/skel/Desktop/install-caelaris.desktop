@@ -4,8 +4,9 @@ Version=1.0
 Name=Install Caelaris Linux
 GenericName=System Installer
 Comment=Install Caelaris Linux permanently to your disk
-Exec=konsole --noclose -e /usr/bin/caelaris-installer
+Exec=sudo -E /usr/bin/caelaris-installer-gui
 Icon=system-software-install
 Terminal=false
 StartupNotify=true
 Categories=System;
+

@@ -1,21 +1,49 @@
 #!/bin/bash
 set -e
 
-# 1. Create liveuser if not present
+# 1. Create liveuser with "Caelaris Linux" Real Name if not present
 if ! id -u liveuser >/dev/null 2>&1; then
-    useradd -m -g users -G wheel,video,audio,optical,storage,input,power -s /bin/bash liveuser
+    useradd -m -c "Caelaris Linux" -g users -G wheel,video,audio,optical,storage,input,power -s /bin/bash liveuser
     passwd -d liveuser || true
     echo "liveuser ALL=(ALL:ALL) NOPASSWD: ALL" > /etc/sudoers.d/liveuser
     chmod 0440 /etc/sudoers.d/liveuser
 fi
 
-# 2. Check kernel command-line for desktop preference
+# Ensure display name is set to "Caelaris Linux" in GECOS
+chfn -f "Caelaris Linux" liveuser 2>/dev/null || true
+
+# 2. Configure AccountsService so Kickoff start menu, lock screen & user managers show "Caelaris Linux"
+mkdir -p /var/lib/AccountsService/users
+cat > /var/lib/AccountsService/users/liveuser << 'EOF'
+[User]
+Language=en_US.UTF-8
+XSession=plasma
+SystemAccount=false
+RealName=Caelaris Linux
+Icon=/usr/share/pixmaps/caelaris-logo.png
+EOF
+chmod 0644 /var/lib/AccountsService/users/liveuser
+
+# 3. Check kernel command-line for desktop preference (dual session support)
 DESKTOP_CHOICE="plasma"
 if grep -q "desktop=gnome" /proc/cmdline 2>/dev/null; then
     DESKTOP_CHOICE="gnome"
 fi
 
 mkdir -p /etc/sddm.conf.d
+
+# Set modern SDDM theme and power commands
+cat > /etc/sddm.conf.d/10-theme.conf << 'EOF'
+[Theme]
+Current=caelaris-modern
+CursorTheme=breeze_cursors
+
+[General]
+HaltCommand=/usr/bin/systemctl poweroff
+RebootCommand=/usr/bin/systemctl reboot
+EOF
+
+# Set Live Preview autologin session
 cat > /etc/sddm.conf.d/autologin.conf << EOF
 [Autologin]
 User=liveuser
@@ -23,9 +51,16 @@ Session=${DESKTOP_CHOICE}
 Relogin=false
 EOF
 
-# 3. Copy skeleton files & desktop shortcuts
+# 4. Copy skeleton files & desktop shortcuts
 if [ -d /etc/skel ]; then
     cp -rf /etc/skel/. /home/liveuser/
+fi
+
+# Set Caelaris icon as user face icon
+if [ -f /usr/share/pixmaps/caelaris-logo.png ]; then
+    cp -f /usr/share/pixmaps/caelaris-logo.png /home/liveuser/.face.icon 2>/dev/null || true
+elif [ -f /usr/share/pixmaps/caelaris-logo.svg ]; then
+    cp -f /usr/share/pixmaps/caelaris-logo.svg /home/liveuser/.face.icon 2>/dev/null || true
 fi
 
 # Ensure Desktop directory exists and shortcuts are executable
@@ -38,13 +73,21 @@ if [ -f /home/liveuser/Desktop/install-caelaris.desktop ]; then
     fi
 fi
 
+chmod +x /usr/bin/caelaris-installer-gui 2>/dev/null || true
+chmod +x /usr/bin/caelaris-installer 2>/dev/null || true
+chmod +x /usr/bin/caelaris-welcome 2>/dev/null || true
+
 chown -R liveuser:users /home/liveuser
 
-# 4. Configure Flathub app store backend for Discover
+# 5. Start VirtualBox guest integration service if running in VM
+systemctl start vboxservice.service 2>/dev/null || true
+
+# 6. Configure Flathub app store backend for Discover & Software
 if which flatpak >/dev/null 2>&1; then
     flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || true
 fi
 
-# 5. Clean up releng residue
+# 7. Clean up releng residue
 touch /root/.automated_script.sh
 chmod +x /root/.automated_script.sh
+

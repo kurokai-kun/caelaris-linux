@@ -22,6 +22,10 @@ breeze-gtk
 breeze-icons
 xdg-desktop-portal-kde
 discover
+layer-shell-qt
+qt6-declarative
+qt6-svg
+accountsservice
 
 # ==========================================================
 # GNOME Desktop & Core Applications (Dual Session Support)
@@ -29,6 +33,13 @@ discover
 gnome-shell
 gnome-control-center
 gnome-session
+gnome-settings-daemon
+gnome-keyring
+gnome-backgrounds
+gnome-themes-extra
+cantarell-fonts
+adwaita-icon-theme
+mutter
 nautilus
 ptyxis
 gnome-text-editor
@@ -36,7 +47,25 @@ gnome-calculator
 gnome-disk-utility
 gnome-system-monitor
 xdg-desktop-portal-gnome
+xdg-user-dirs-gtk
+dconf
 
+# ==========================================================
+# VM & Hardware Acceleration (VirtualBox, VMware, KVM)
+# ==========================================================
+virtualbox-guest-utils
+xf86-video-vmware
+
+# ==========================================================
+# Caelaris Graphical Installer & Partitioning Tools
+# ==========================================================
+python-pyqt6
+squashfs-tools
+parted
+gptfdisk
+
+# ==========================================================
 # Browser & Media
+# ==========================================================
 firefox
 vlc

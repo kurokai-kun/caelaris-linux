@@ -158,4 +158,7 @@ python-gobject
 gtk3
 gtk4
 libadwaita
+squashfs-tools
+parted
+gptfdisk
 archinstall

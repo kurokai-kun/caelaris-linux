@@ -1,0 +1,633 @@
+#!/usr/bin/env python3
+"""
+Caelaris Linux - Next-Generation Graphical System Installer
+Written for Caelaris Linux (Arch-based Distribution)
+Powered by PyQt6
+"""
+
+import sys
+import os
+import time
+import subprocess
+from pathlib import Path
+
+from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QStackedWidget, QLabel, QPushButton, QRadioButton,
+    QCheckBox, QLineEdit, QComboBox, QProgressBar, QTextEdit,
+    QFrame, QMessageBox
+)
+
+DARK_STYLE = """
+QMainWindow { background-color: #0b0f19; }
+QWidget { color: #f1f5f9; font-family: "Noto Sans", sans-serif; font-size: 13px; }
+QFrame#sidebar { background-color: #070a12; border-right: 1px solid #1e293b; }
+QLabel#sidebarTitle { color: #38bdf8; font-size: 18px; font-weight: bold; }
+QLabel#stepItemActive {
+    color: #38bdf8; font-weight: bold; font-size: 13px;
+    padding: 8px 12px; background-color: rgba(56, 189, 248, 0.12);
+    border-radius: 6px; border-left: 3px solid #38bdf8;
+}
+QLabel#stepItemInactive { color: #64748b; font-size: 13px; padding: 8px 12px; }
+QLabel#stepItemDone { color: #10b981; font-size: 13px; padding: 8px 12px; }
+QLabel#pageTitle { color: #f8fafc; font-size: 22px; font-weight: bold; }
+QLabel#pageSubtitle { color: #94a3b8; font-size: 13px; margin-bottom: 8px; }
+QFrame#card { background-color: #131b2e; border: 1px solid #1e293b; border-radius: 10px; padding: 14px; }
+QLineEdit, QComboBox {
+    background-color: #0f172a; border: 1px solid #334155;
+    border-radius: 6px; padding: 7px 10px; color: #f8fafc;
+}
+QLineEdit:focus, QComboBox:focus { border: 1px solid #38bdf8; }
+QPushButton {
+    background-color: #1e293b; color: #f8fafc; border: 1px solid #334155;
+    border-radius: 6px; padding: 8px 18px; font-weight: 600;
+}
+QPushButton:hover { background-color: #334155; }
+QPushButton#primaryBtn { background-color: #0284c7; border: 1px solid #38bdf8; }
+QPushButton#primaryBtn:hover { background-color: #0369a1; }
+QPushButton#successBtn { background-color: #059669; border: 1px solid #10b981; padding: 10px 22px; }
+QPushButton#successBtn:hover { background-color: #047857; }
+QProgressBar {
+    background-color: #0f172a; border: 1px solid #334155;
+    border-radius: 6px; text-align: center; color: #ffffff; height: 20px;
+}
+QProgressBar::chunk { background-color: #0284c7; border-radius: 5px; }
+QTextEdit#logView {
+    background-color: #020617; border: 1px solid #1e293b;
+    border-radius: 6px; color: #38bdf8; font-family: monospace; font-size: 11px;
+}
+"""
+
+class InstallWorker(QThread):
+    progress_changed = pyqtSignal(int, str)
+    log_received = pyqtSignal(str)
+    installation_finished = pyqtSignal(bool, str)
+
+    def __init__(self, config):
+        super().__init__()
+        self.config = config
+
+    def log(self, text):
+        self.log_received.emit(text)
+
+    def run_cmd(self, cmd, check=True):
+        self.log(f"[EXEC] {' '.join(cmd) if isinstance(cmd, list) else cmd}")
+        process = subprocess.Popen(
+            cmd, shell=isinstance(cmd, str),
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, bufsize=1
+        )
+        for line in iter(process.stdout.readline, ''):
+            clean = line.strip()
+            if clean:
+                self.log(clean)
+        process.stdout.close()
+        ret = process.wait()
+        if check and ret != 0:
+            raise RuntimeError(f"Command failed ({ret}): {cmd}")
+        return ret
+
+    def run(self):
+        try:
+            cfg = self.config
+            disk = cfg['disk']
+            fs_type = cfg['filesystem']
+            tz = cfg['timezone']
+            user = cfg['username']
+            realname = cfg['realname']
+            password = cfg['password']
+            hostname = cfg['hostname']
+            autologin = cfg['autologin']
+            desktop = cfg['desktop']
+
+            self.progress_changed.emit(5, f"Preparing target disk {disk}...")
+            self.run_cmd("umount -R /mnt 2>/dev/null || true", check=False)
+            self.run_cmd("swapoff -a 2>/dev/null || true", check=False)
+
+            self.progress_changed.emit(12, "Partitioning disk (GPT + EFI ESP + Root)...")
+            self.run_cmd(f"wipefs -a -f {disk}", check=False)
+            self.run_cmd(["sgdisk", "-Z", disk], check=False)
+            self.run_cmd(["sgdisk", "-n", "1:0:+512M", "-t", "1:ef00", "-c", "1:EFI-SP", disk])
+            self.run_cmd(["sgdisk", "-n", "2:0:0", "-t", "2:8300", "-c", "2:Caelaris-Root", disk])
+            self.run_cmd(["partprobe", disk], check=False)
+            time.sleep(2)
+
+            p_prefix = "p" if ("nvme" in disk or "mmcblk" in disk) else ""
+            p1 = f"{disk}{p_prefix}1"
+            p2 = f"{disk}{p_prefix}2"
+
+            self.progress_changed.emit(25, f"Formatting EFI partition ({p1})...")
+            self.run_cmd(["mkfs.fat", "-F32", "-n", "ESP", p1])
+
+            if fs_type == "btrfs":
+                self.progress_changed.emit(32, f"Formatting Btrfs with subvolumes ({p2})...")
+                self.run_cmd(["mkfs.btrfs", "-f", "-L", "caelaris", p2])
+                self.run_cmd(["mount", p2, "/mnt"])
+                for sv in ["@", "@home", "@snapshots", "@var_log", "@var_cache"]:
+                    self.run_cmd(["btrfs", "subvolume", "create", f"/mnt/{sv}"])
+                self.run_cmd(["umount", "/mnt"])
+
+                mount_opts = "noatime,compress=zstd:1,space_cache=v2"
+                self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@", p2, "/mnt"])
+                for d in ["home", ".snapshots", "var/log", "var/cache", "boot"]:
+                    os.makedirs(f"/mnt/{d}", exist_ok=True)
+
+                self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@home", p2, "/mnt/home"])
+                self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@snapshots", p2, "/mnt/.snapshots"])
+                self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@var_log", p2, "/mnt/var/log"])
+                self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@var_cache", p2, "/mnt/var/cache"])
+                self.run_cmd(["mount", p1, "/mnt/boot"])
+            else:
+                self.progress_changed.emit(32, f"Formatting Ext4 partition ({p2})...")
+                self.run_cmd(["mkfs.ext4", "-F", "-L", "caelaris", p2])
+                self.run_cmd(["mount", p2, "/mnt"])
+                os.makedirs("/mnt/boot", exist_ok=True)
+                self.run_cmd(["mount", p1, "/mnt/boot"])
+
+            self.progress_changed.emit(45, "Extracting Caelaris Linux system files (Offline Deploy)...")
+            sfs = None
+            for cand in ["/run/archiso/bootmnt/arch/x86_64/airootfs.sfs", "/run/archiso/airootfs.sfs"]:
+                if os.path.isfile(cand):
+                    sfs = cand
+                    break
+            if sfs:
+                self.log(f"Extracting image {sfs} to /mnt...")
+                self.run_cmd(f"unsquashfs -f -d /mnt {sfs}")
+            else:
+                self.log("Syncing system files to /mnt...")
+                self.run_cmd("rsync -aAXv --exclude={'/dev/*','/proc/*','/sys/*','/tmp/*','/run/*','/mnt/*','/lost+found'} / /mnt/", check=False)
+
+            self.progress_changed.emit(68, "Generating /etc/fstab...")
+            self.run_cmd("genfstab -U /mnt >> /mnt/etc/fstab")
+
+            self.progress_changed.emit(75, "Configuring Hostname, Timezone & Locale...")
+            with open("/mnt/etc/hostname", "w") as f:
+                f.write(f"{hostname}\n")
+            self.run_cmd(f"ln -sf /usr/share/zoneinfo/{tz} /mnt/etc/localtime", check=False)
+            self.run_cmd("arch-chroot /mnt hwclock --systohc", check=False)
+            with open("/mnt/etc/locale.gen", "w") as f:
+                f.write("en_US.UTF-8 UTF-8\n")
+            self.run_cmd("arch-chroot /mnt locale-gen", check=False)
+            with open("/mnt/etc/locale.conf", "w") as f:
+                f.write("LANG=en_US.UTF-8\n")
+
+            self.progress_changed.emit(82, f"Configuring user '{user}' and desktop sessions...")
+            self.run_cmd(f"arch-chroot /mnt useradd -m -c '{realname}' -g users -G wheel,video,audio,optical,storage,input,power -s /bin/bash '{user}'", check=False)
+            self.run_cmd(f"echo '{user}:{password}' | arch-chroot /mnt chpasswd")
+            self.run_cmd(f"echo 'root:{password}' | arch-chroot /mnt chpasswd")
+            with open("/mnt/etc/sudoers.d/wheel", "w") as f:
+                f.write("%wheel ALL=(ALL:ALL) ALL\n")
+            os.chmod("/mnt/etc/sudoers.d/wheel", 0o440)
+
+            self.run_cmd("arch-chroot /mnt userdel -r liveuser 2>/dev/null || true", check=False)
+            if os.path.exists("/mnt/etc/sudoers.d/liveuser"):
+                os.remove("/mnt/etc/sudoers.d/liveuser")
+
+            os.makedirs("/mnt/var/lib/AccountsService/users", exist_ok=True)
+            with open(f"/mnt/var/lib/AccountsService/users/{user}", "w") as f:
+                f.write(f"[User]\nLanguage=en_US.UTF-8\nXSession={desktop}\nSystemAccount=false\nRealName={realname}\nIcon=/usr/share/pixmaps/caelaris-logo.png\n")
+
+            os.makedirs("/mnt/etc/sddm.conf.d", exist_ok=True)
+            sddm_cfg = f"[Theme]\nCurrent=caelaris-modern\nCursorTheme=breeze_cursors\n"
+            if autologin:
+                sddm_cfg += f"\n[Autologin]\nUser={user}\nSession={desktop}\nRelogin=false\n"
+            with open("/mnt/etc/sddm.conf.d/10-caelaris.conf", "w") as f:
+                f.write(sddm_cfg)
+
+            self.progress_changed.emit(88, "Installing Bootloader (systemd-boot)...")
+            self.run_cmd("arch-chroot /mnt bootctl install", check=False)
+            root_uuid = subprocess.check_output(f"blkid -s UUID -o value {p2}", shell=True, text=True).strip()
+
+            os.makedirs("/mnt/boot/loader/entries", exist_ok=True)
+            with open("/mnt/boot/loader/loader.conf", "w") as f:
+                f.write("default caelaris.conf\ntimeout 3\n")
+            subvol_arg = "rootflags=subvol=@" if fs_type == "btrfs" else ""
+            with open("/mnt/boot/loader/entries/caelaris.conf", "w") as f:
+                f.write(f"title   Caelaris Linux\nlinux   /vmlinuz-linux\ninitrd  /initramfs-linux.img\noptions root=UUID={root_uuid} {subvol_arg} rw quiet splash\n")
+
+            self.progress_changed.emit(94, "Regenerating initramfs & enabling services...")
+            self.run_cmd("arch-chroot /mnt mkinitcpio -P", check=False)
+            self.run_cmd("arch-chroot /mnt systemctl enable NetworkManager sddm pipewire wireplumber vboxservice 2>/dev/null || true", check=False)
+
+            if os.path.exists("/mnt/etc/systemd/system/caelaris-live-setup.service"):
+                os.remove("/mnt/etc/systemd/system/caelaris-live-setup.service")
+            if os.path.exists("/mnt/usr/bin/caelaris-live-setup"):
+                os.remove("/mnt/usr/bin/caelaris-live-setup")
+
+            self.progress_changed.emit(100, "Installation complete!")
+            self.installation_finished.emit(True, "Caelaris Linux installed successfully!")
+
+        except Exception as e:
+            self.log(f"[ERROR] {str(e)}")
+            self.installation_finished.emit(False, str(e))
+
+class CaelarisInstaller(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Caelaris Linux Installer")
+        self.resize(960, 620)
+        self.setStyleSheet(DARK_STYLE)
+
+        self.current_step = 0
+        self.step_names = [
+            "Welcome", "Location", "Keyboard", "Partitions",
+            "User Account", "Desktop", "Third-Party Apps",
+            "Summary", "Installing", "Finished"
+        ]
+        self.init_ui()
+
+    def init_ui(self):
+        central = QWidget()
+        self.setCentralWidget(central)
+        main_layout = QHBoxLayout(central)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+
+        # Left Sidebar
+        sidebar = QFrame()
+        sidebar.setObjectName("sidebar")
+        sidebar.setFixedWidth(220)
+        side_layout = QVBoxLayout(sidebar)
+        side_layout.setContentsMargins(18, 20, 18, 20)
+        side_layout.setSpacing(4)
+
+        logo = QLabel("✨ Caelaris Linux")
+        logo.setObjectName("sidebarTitle")
+        side_layout.addWidget(logo)
+        desc = QLabel("System Installer")
+        desc.setStyleSheet("color: #64748b; font-size: 11px; margin-bottom: 12px;")
+        side_layout.addWidget(desc)
+
+        self.step_labels = []
+        for i, name in enumerate(self.step_names):
+            lbl = QLabel(f"{i+1}. {name}")
+            lbl.setObjectName("stepItemInactive")
+            self.step_labels.append(lbl)
+            side_layout.addWidget(lbl)
+
+        side_layout.addStretch()
+        main_layout.addWidget(sidebar)
+
+        # Content Area
+        content = QWidget()
+        c_layout = QVBoxLayout(content)
+        c_layout.setContentsMargins(32, 24, 32, 20)
+        c_layout.setSpacing(14)
+
+        self.stack = QStackedWidget()
+        self.create_pages()
+        c_layout.addWidget(self.stack)
+
+        # Nav Buttons
+        btn_bar = QHBoxLayout()
+        self.btn_back = QPushButton("◀ Back")
+        self.btn_back.clicked.connect(self.prev_page)
+        btn_bar.addWidget(self.btn_back)
+        btn_bar.addStretch()
+        self.btn_next = QPushButton("Next ▶")
+        self.btn_next.setObjectName("primaryBtn")
+        self.btn_next.clicked.connect(self.next_page)
+        btn_bar.addWidget(self.btn_next)
+
+        c_layout.addLayout(btn_bar)
+        main_layout.addWidget(content)
+        self.update_step_ui()
+
+    def create_pages(self):
+        # 1. Welcome
+        p1 = QWidget()
+        l1 = QVBoxLayout(p1)
+        l1.addWidget(QLabel("Welcome to Caelaris Linux", objectName="pageTitle"))
+        l1.addWidget(QLabel("Next-generation Arch-based desktop distribution.", objectName="pageSubtitle"))
+        c1 = QFrame(objectName="card")
+        cl1 = QVBoxLayout(c1)
+        cl1.addWidget(QLabel("<b>Live Preview Active:</b> You can explore the system freely before installing."))
+        cl1.addWidget(QLabel("✔ 64-bit modern x86_64 system ready"))
+        cl1.addWidget(QLabel("✔ Dual session ready: KDE Plasma 6 & GNOME"))
+        cl1.addWidget(QLabel("✔ PipeWire modern audio stack loaded"))
+        l1.addWidget(c1)
+        l1.addStretch()
+        self.stack.addWidget(p1)
+
+        # 2. Location
+        p2 = QWidget()
+        l2 = QVBoxLayout(p2)
+        l2.addWidget(QLabel("Region & Timezone", objectName="pageTitle"))
+        l2.addWidget(QLabel("Select your timezone for accurate clock synchronization.", objectName="pageSubtitle"))
+        c2 = QFrame(objectName="card")
+        cl2 = QVBoxLayout(c2)
+        cl2.addWidget(QLabel("Region:"))
+        self.cb_region = QComboBox()
+        self.cb_region.addItems(["America", "Europe", "Asia", "Australia", "Africa", "Pacific"])
+        self.cb_region.currentTextChanged.connect(self.populate_cities)
+        cl2.addWidget(self.cb_region)
+        cl2.addWidget(QLabel("City / Timezone:"))
+        self.cb_city = QComboBox()
+        cl2.addWidget(self.cb_city)
+        self.populate_cities(self.cb_region.currentText())
+        l2.addWidget(c2)
+        l2.addStretch()
+        self.stack.addWidget(p2)
+
+        # 3. Keyboard
+        p3 = QWidget()
+        l3 = QVBoxLayout(p3)
+        l3.addWidget(QLabel("Keyboard Layout", objectName="pageTitle"))
+        l3.addWidget(QLabel("Choose your preferred keyboard mapping.", objectName="pageSubtitle"))
+        c3 = QFrame(objectName="card")
+        cl3 = QVBoxLayout(c3)
+        self.cb_kb = QComboBox()
+        self.cb_kb.addItems(["English (US)", "English (UK)", "German", "French", "Spanish", "Italian", "Japanese"])
+        cl3.addWidget(self.cb_kb)
+        cl3.addWidget(QLabel("Test Keyboard:"))
+        self.kb_test = QLineEdit()
+        self.kb_test.setPlaceholderText("Type keys here to test layout...")
+        cl3.addWidget(self.kb_test)
+        l3.addWidget(c3)
+        l3.addStretch()
+        self.stack.addWidget(p3)
+
+        # 4. Partitions
+        p4 = QWidget()
+        l4 = QVBoxLayout(p4)
+        l4.addWidget(QLabel("Target Storage Drive", objectName="pageTitle"))
+        l4.addWidget(QLabel("Select disk drive and filesystem for installation.", objectName="pageSubtitle"))
+        c4 = QFrame(objectName="card")
+        cl4 = QVBoxLayout(c4)
+        cl4.addWidget(QLabel("Target Disk:"))
+        self.cb_disks = QComboBox()
+        self.populate_disks()
+        cl4.addWidget(self.cb_disks)
+        cl4.addWidget(QLabel("Filesystem:"))
+        self.rb_btrfs = QRadioButton("Btrfs (Recommended: Subvolumes @, @home, zstd compression)")
+        self.rb_btrfs.setChecked(True)
+        self.rb_ext4 = QRadioButton("Ext4 (Classic standard Linux)")
+        cl4.addWidget(self.rb_btrfs)
+        cl4.addWidget(self.rb_ext4)
+        self.chk_zram = QCheckBox("Enable ZRAM swap (Low-latency RAM compression - Fedora/CachyOS default)")
+        self.chk_zram.setChecked(True)
+        cl4.addWidget(self.chk_zram)
+        l4.addWidget(c4)
+        l4.addStretch()
+        self.stack.addWidget(p4)
+
+        # 5. User Account
+        p5 = QWidget()
+        l5 = QVBoxLayout(p5)
+        l5.addWidget(QLabel("User Account", objectName="pageTitle"))
+        l5.addWidget(QLabel("Configure your credentials and system name.", objectName="pageSubtitle"))
+        c5 = QFrame(objectName="card")
+        cl5 = QVBoxLayout(c5)
+        cl5.addWidget(QLabel("Full Name (Display Name):"))
+        self.txt_realname = QLineEdit()
+        self.txt_realname.setText("Caelaris User")
+        cl5.addWidget(self.txt_realname)
+        cl5.addWidget(QLabel("Username:"))
+        self.txt_username = QLineEdit()
+        self.txt_username.setText("user")
+        cl5.addWidget(self.txt_username)
+        cl5.addWidget(QLabel("Hostname:"))
+        self.txt_hostname = QLineEdit()
+        self.txt_hostname.setText("caelaris-pc")
+        cl5.addWidget(self.txt_hostname)
+        cl5.addWidget(QLabel("Password:"))
+        self.txt_pass1 = QLineEdit()
+        self.txt_pass1.setEchoMode(QLineEdit.EchoMode.Password)
+        self.txt_pass1.setText("caelaris")
+        cl5.addWidget(self.txt_pass1)
+        cl5.addWidget(QLabel("Confirm Password:"))
+        self.txt_pass2 = QLineEdit()
+        self.txt_pass2.setEchoMode(QLineEdit.EchoMode.Password)
+        self.txt_pass2.setText("caelaris")
+        cl5.addWidget(self.txt_pass2)
+        self.chk_autologin = QCheckBox("Log in automatically without asking for password on boot")
+        cl5.addWidget(self.chk_autologin)
+        l5.addWidget(c5)
+        l5.addStretch()
+        self.stack.addWidget(p5)
+
+        # 6. Desktop
+        p6 = QWidget()
+        l6 = QVBoxLayout(p6)
+        l6.addWidget(QLabel("Default Desktop", objectName="pageTitle"))
+        l6.addWidget(QLabel("Select your primary desktop. Both KDE Plasma and GNOME are installed!", objectName="pageSubtitle"))
+        c6 = QFrame(objectName="card")
+        cl6 = QVBoxLayout(c6)
+        self.rb_kde = QRadioButton("KDE Plasma 6 (Recommended) - Modern, fast, and customizable")
+        self.rb_kde.setChecked(True)
+        self.rb_gnome = QRadioButton("GNOME Desktop - Clean, elegant, distraction-free environment")
+        cl6.addWidget(self.rb_kde)
+        cl6.addSpacing(10)
+        cl6.addWidget(self.rb_gnome)
+        cl6.addSpacing(10)
+        cl6.addWidget(QLabel("<small style='color: #64748b;'>Note: You can switch between KDE and GNOME anytime on the login screen.</small>"))
+        l6.addWidget(c6)
+        l6.addStretch()
+        self.stack.addWidget(p6)
+
+        # 7. Software / Third-party toggle
+        p7 = QWidget()
+        l7 = QVBoxLayout(p7)
+        l7.addWidget(QLabel("Third-Party Software & Extras", objectName="pageTitle"))
+        l7.addWidget(QLabel("Choose optional components to bundle.", objectName="pageSubtitle"))
+        c7 = QFrame(objectName="card")
+        cl7 = QVBoxLayout(c7)
+        self.chk_codecs = QCheckBox("Install Proprietary Media Codecs (FFmpeg, H.264/AAC)")
+        self.chk_codecs.setChecked(True)
+        cl7.addWidget(self.chk_codecs)
+        self.chk_flathub = QCheckBox("Enable Flathub App Store backend in Discover / Software")
+        self.chk_flathub.setChecked(True)
+        cl7.addWidget(self.chk_flathub)
+        self.chk_drivers = QCheckBox("Install Additional Hardware Drivers (NVIDIA, Broadcom Wi-Fi)")
+        self.chk_drivers.setChecked(True)
+        cl7.addWidget(self.chk_drivers)
+        l7.addWidget(c7)
+        l7.addStretch()
+        self.stack.addWidget(p7)
+
+        # 8. Summary
+        p8 = QWidget()
+        l8 = QVBoxLayout(p8)
+        l8.addWidget(QLabel("Ready to Install", objectName="pageTitle"))
+        l8.addWidget(QLabel("Review your selections before changes are written to disk.", objectName="pageSubtitle"))
+        self.summary_text = QLabel(objectName="card")
+        self.summary_text.setStyleSheet("line-height: 1.5; padding: 14px;")
+        l8.addWidget(self.summary_text)
+        l8.addStretch()
+        self.stack.addWidget(p8)
+
+        # 9. Installing
+        p9 = QWidget()
+        l9 = QVBoxLayout(p9)
+        l9.addWidget(QLabel("Installing Caelaris Linux", objectName="pageTitle"))
+        self.ins_status = QLabel("Preparing...")
+        self.ins_status.setStyleSheet("color: #38bdf8; font-size: 14px; font-weight: bold;")
+        l9.addWidget(self.ins_status)
+        self.progress_bar = QProgressBar()
+        l9.addWidget(self.progress_bar)
+        self.log_view = QTextEdit(objectName="logView")
+        self.log_view.setReadOnly(True)
+        self.log_view.setFixedHeight(220)
+        l9.addWidget(self.log_view)
+        self.stack.addWidget(p9)
+
+        # 10. Finished
+        p10 = QWidget()
+        l10 = QVBoxLayout(p10)
+        l10.addWidget(QLabel("Installation Complete! 🎉", objectName="pageTitle"))
+        l10.addWidget(QLabel("Caelaris Linux has been installed successfully.", objectName="pageSubtitle"))
+        c10 = QFrame(objectName="card")
+        cl10 = QVBoxLayout(c10)
+        cl10.addWidget(QLabel("Restart your computer to boot into your new Caelaris Linux system."))
+        self.chk_reboot = QCheckBox("Restart computer now")
+        self.chk_reboot.setChecked(True)
+        cl10.addWidget(self.chk_reboot)
+        l10.addWidget(c10)
+        l10.addStretch()
+        btn_done = QPushButton("Done", objectName="successBtn")
+        btn_done.clicked.connect(self.finish_installation)
+        l10.addWidget(btn_done)
+        self.stack.addWidget(p10)
+
+    def populate_cities(self, region):
+        cities = {
+            "America": ["New_York", "Chicago", "Los_Angeles", "Toronto", "Sao_Paulo", "Mexico_City"],
+            "Europe": ["London", "Paris", "Berlin", "Rome", "Madrid", "Amsterdam"],
+            "Asia": ["Tokyo", "Kolkata", "Singapore", "Seoul", "Dubai", "Shanghai"],
+            "Australia": ["Sydney", "Melbourne", "Perth"],
+            "Africa": ["Cairo", "Johannesburg", "Nairobi"],
+            "Pacific": ["Auckland", "Honolulu"]
+        }
+        self.cb_city.clear()
+        self.cb_city.addItems(cities.get(region, ["UTC"]))
+
+    def populate_disks(self):
+        self.cb_disks.clear()
+        found = False
+        try:
+            out = subprocess.check_output(["lsblk", "-d", "-n", "-o", "NAME,SIZE,MODEL,TYPE"], text=True)
+            for line in out.strip().split("\n"):
+                parts = line.split()
+                if len(parts) >= 2 and parts[-1] == "disk":
+                    name, size = parts[0], parts[1]
+                    if not name.startswith("loop") and not name.startswith("zram"):
+                        self.cb_disks.addItem(f"/dev/{name} ({size})", f"/dev/{name}")
+                        found = True
+        except Exception:
+            pass
+        if not found:
+            self.cb_disks.addItem("/dev/sda (20.0G - Virtual Disk)", "/dev/sda")
+
+    def update_step_ui(self):
+        for i, lbl in enumerate(self.step_labels):
+            if i < self.current_step:
+                lbl.setObjectName("stepItemDone")
+                lbl.setText(f"✔ {self.step_names[i]}")
+            elif i == self.current_step:
+                lbl.setObjectName("stepItemActive")
+                lbl.setText(f"{i+1}. {self.step_names[i]}")
+            else:
+                lbl.setObjectName("stepItemInactive")
+                lbl.setText(f"{i+1}. {self.step_names[i]}")
+            lbl.style().unpolish(lbl)
+            lbl.style().polish(lbl)
+
+        self.btn_back.setEnabled(self.current_step > 0)
+        if self.current_step == 7:
+            self.btn_next.setText("Install Now 🚀")
+            self.btn_next.setObjectName("successBtn")
+        elif self.current_step >= 8:
+            self.btn_back.setVisible(False)
+            self.btn_next.setVisible(False)
+        else:
+            self.btn_next.setText("Next ▶")
+            self.btn_next.setObjectName("primaryBtn")
+        self.btn_next.style().unpolish(self.btn_next)
+        self.btn_next.style().polish(self.btn_next)
+
+    def next_page(self):
+        if self.current_step == 4:
+            if not self.txt_username.text().strip():
+                QMessageBox.warning(self, "Input Error", "Please enter a valid username.")
+                return
+            if self.txt_pass1.text() != self.txt_pass2.text():
+                QMessageBox.warning(self, "Password Error", "Passwords do not match.")
+                return
+        if self.current_step == 6:
+            self.update_summary()
+        if self.current_step == 7:
+            confirm = QMessageBox.question(
+                self, "Confirm Installation",
+                f"Are you sure you want to write Caelaris Linux to {self.cb_disks.currentData()}?\nExisting data will be erased.",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            )
+            if confirm != QMessageBox.StandardButton.Yes:
+                return
+            self.start_installation()
+            return
+        if self.current_step < len(self.step_names) - 1:
+            self.current_step += 1
+            self.stack.setCurrentIndex(self.current_step)
+            self.update_step_ui()
+
+    def prev_page(self):
+        if self.current_step > 0:
+            self.current_step -= 1
+            self.stack.setCurrentIndex(self.current_step)
+            self.update_step_ui()
+
+    def update_summary(self):
+        fs = "Btrfs" if self.rb_btrfs.isChecked() else "Ext4"
+        tz = f"{self.cb_region.currentText()}/{self.cb_city.currentText()}"
+        dt = "KDE Plasma 6" if self.rb_kde.isChecked() else "GNOME Desktop"
+        self.summary_text.setText(
+            f"<b>Target Disk:</b> {self.cb_disks.currentText()}<br>"
+            f"<b>Filesystem:</b> {fs}<br>"
+            f"<b>Timezone:</b> {tz}<br>"
+            f"<b>User:</b> {self.txt_realname.text()} ({self.txt_username.text()})<br>"
+            f"<b>Default Desktop:</b> {dt}<br>"
+            f"<b>Third-Party Apps:</b> Codecs, Flathub, Extra Drivers enabled"
+        )
+
+    def start_installation(self):
+        self.current_step = 8
+        self.stack.setCurrentIndex(self.current_step)
+        self.update_step_ui()
+
+        config = {
+            'disk': self.cb_disks.currentData(),
+            'filesystem': "btrfs" if self.rb_btrfs.isChecked() else "ext4",
+            'timezone': f"{self.cb_region.currentText()}/{self.cb_city.currentText()}",
+            'username': self.txt_username.text().strip(),
+            'realname': self.txt_realname.text().strip(),
+            'password': self.txt_pass1.text(),
+            'hostname': self.txt_hostname.text().strip(),
+            'autologin': self.chk_autologin.isChecked(),
+            'desktop': "plasma" if self.rb_kde.isChecked() else "gnome"
+        }
+
+        self.worker = InstallWorker(config)
+        self.worker.progress_changed.connect(lambda p, m: (self.progress_bar.setValue(p), self.ins_status.setText(m)))
+        self.worker.log_received.connect(lambda t: (self.log_view.append(t), self.log_view.verticalScrollBar().setValue(self.log_view.verticalScrollBar().maximum())))
+        self.worker.installation_finished.connect(self.on_finish)
+        self.worker.start()
+
+    def on_finish(self, success, message):
+        if success:
+            self.current_step = 9
+            self.stack.setCurrentIndex(self.current_step)
+            self.update_step_ui()
+        else:
+            QMessageBox.critical(self, "Installation Failed", message)
+
+    def finish_installation(self):
+        if self.chk_reboot.isChecked():
+            subprocess.run(["systemctl", "reboot"], check=False)
+        self.close()
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    installer = CaelarisInstaller()
+    installer.show()
+    sys.exit(app.exec())

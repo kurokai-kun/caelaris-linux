@@ -1,0 +1,42 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="50%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+    <linearGradient id="starGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#c084fc"/>
+    </linearGradient>
+    <linearGradient id="orbitGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#818cf8" stop-opacity="0.2"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Outer Rounded Badge -->
+  <rect width="256" height="256" rx="64" fill="url(#bgGrad)"/>
+  
+  <!-- Inner Glow Ring -->
+  <circle cx="128" cy="128" r="96" fill="none" stroke="url(#orbitGrad)" stroke-width="4" stroke-dasharray="8 6"/>
+  
+  <!-- Stylized Caelaris Celestial 'C' Arch -->
+  <path d="M 175 75 A 72 72 0 1 0 175 181" fill="none" stroke="url(#starGrad)" stroke-width="16" stroke-linecap="round" filter="url(#glow)"/>
+  
+  <!-- Center Star Flare -->
+  <path d="M 128 68 Q 128 128 68 128 Q 128 128 128 188 Q 128 128 188 128 Q 128 128 128 68 Z" fill="url(#starGrad)" filter="url(#glow)"/>
+  
+  <!-- Bright Star Center Core -->
+  <circle cx="128" cy="128" r="10" fill="#ffffff"/>
+  <circle cx="175" cy="75" r="7" fill="#38bdf8"/>
+  <circle cx="175" cy="181" r="7" fill="#c084fc"/>
+</svg>

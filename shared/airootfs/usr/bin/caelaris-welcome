@@ -56,7 +56,7 @@ class CaelarisWelcome(Gtk.Window):
         desc_label.set_halign(Gtk.Align.START)
         tab_general.pack_start(desc_label, False, False, 0)
 
-        btn_install = Gtk.Button(label="==> Launch Caelaris Guided Installer (Calamares) <==")
+        btn_install = Gtk.Button(label="==> Launch Caelaris Graphical Installer <==")
         btn_install.connect("clicked", self.launch_installer)
         tab_general.pack_start(btn_install, False, False, 0)
 
@@ -125,15 +125,13 @@ class CaelarisWelcome(Gtk.Window):
         main_box.pack_start(bottom_box, False, False, 0)
 
     def launch_installer(self, widget):
-        # First check calamares
+        if os.path.exists("/usr/bin/caelaris-installer-gui"):
+            subprocess.Popen(["sudo", "-E", "/usr/bin/caelaris-installer-gui"])
+            return
         if subprocess.call(["which", "calamares"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0:
             subprocess.Popen(["sudo", "-E", "calamares"])
             return
-        # If calamares is not installed, offer archinstall
-        if subprocess.call(["which", "archinstall"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0:
-            self.run_terminal_command(widget, "sudo archinstall")
-            return
-        self.run_terminal_command(widget, "echo 'Neither calamares nor archinstall is available.'")
+        self.run_terminal_command(widget, "sudo archinstall")
 
     def run_terminal_command(self, widget, command):
         script_file = tempfile.NamedTemporaryFile(mode="w", suffix=".sh", delete=False)

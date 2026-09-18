@@ -1,32 +1,14 @@
 #!/usr/bin/env bash
-# Caelaris Linux Guided System Installer Wrapper
-clear
-cat << "EOF"
-  ==============================================================
-                    Caelaris Linux Installer                    
-  ==============================================================
-  Welcome to the Caelaris Linux guided installation wizard.
-  This tool will guide you through:
-    1. Region, Language & Keyboard Selection
-    2. Disk Partitioning (Btrfs / Ext4)
-    3. User Account & Password Configuration
-    4. Desktop Selection (KDE Plasma or GNOME)
-    5. Third-Party Software & Driver Installation
-  ==============================================================
+# Caelaris Linux System Installer Launcher
+set -e
 
-EOF
-
-echo "Launching installer..."
-sleep 1
-sudo archinstall
-ret=$?
-
-if [ $ret -eq 0 ]; then
-    echo
-    echo "Installation completed successfully! You can now reboot into Caelaris Linux."
-else
-    echo
-    echo "Installation exited or cancelled."
+# If in a graphical session, launch the PyQt6 Graphical Installer
+if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
+    if [ -x /usr/bin/caelaris-installer-gui ]; then
+        exec sudo /usr/bin/caelaris-installer-gui "$@"
+    fi
 fi
-echo "Press Enter to exit..."
-read
+
+# Fallback for text console / TTY
+echo "Launching Caelaris Installer..."
+exec sudo archinstall "$@"
