@@ -1,0 +1,59 @@
+#!/bin/bash
+# caelaris-switch-desktop: Instantly switches between KDE Plasma and GNOME desktop in live preview
+
+TARGET="$1"
+
+# Determine target if not specified
+if [ -z "$TARGET" ]; then
+    CURRENT=$(grep -oP '(?<=Session=).*' /etc/sddm.conf.d/autologin.conf 2>/dev/null || echo "plasma")
+    if [ "$CURRENT" = "plasma" ]; then
+        TARGET="gnome"
+    else
+        TARGET="plasma"
+    fi
+fi
+
+if [ "$TARGET" != "plasma" ] && [ "$TARGET" != "gnome" ]; then
+    echo "Usage: sudo caelaris-switch-desktop [plasma|gnome]"
+    exit 1
+fi
+
+TARGET_NAME="KDE Plasma 6"
+if [ "$TARGET" = "gnome" ]; then
+    TARGET_NAME="GNOME Desktop"
+fi
+
+# If run graphically, show prompt
+if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
+    if which zenity >/dev/null 2>&1; then
+        zenity --question --title="Switch Desktop Environment" \
+            --text="Switch to ${TARGET_NAME} now? The display manager will reload in 2 seconds." \
+            --ok-label="Switch Now" --cancel-label="Cancel" 2>/dev/null || exit 0
+    elif which kdialog >/dev/null 2>&1; then
+        kdialog --yesno "Switch to ${TARGET_NAME} now? The display manager will reload in 2 seconds." --title "Switch Desktop Environment" 2>/dev/null || exit 0
+    fi
+fi
+
+# Update SDDM autologin configuration
+mkdir -p /etc/sddm.conf.d
+cat > /etc/sddm.conf.d/autologin.conf << EOF
+[Autologin]
+User=liveuser
+Session=${TARGET}
+Relogin=false
+EOF
+
+# Update AccountsService
+mkdir -p /var/lib/AccountsService/users
+cat > /var/lib/AccountsService/users/liveuser << EOF
+[User]
+Language=en_US.UTF-8
+Session=${TARGET}
+XSession=${TARGET}
+SystemAccount=false
+RealName=Caelaris Linux
+Icon=/usr/share/pixmaps/caelaris-logo.png
+EOF
+
+# Restart SDDM to load new desktop
+systemctl restart sddm

@@ -97,7 +97,6 @@ xorg-server
 xorg-xinit
 wayland
 xorg-xwayland
-plymouth
 
 # AMD Vulkan & Video Acceleration
 vulkan-radeon
@@ -116,7 +115,6 @@ nvidia-utils
 lib32-nvidia-utils
 nvidia-prime
 egl-wayland
-opencl-nvidia
 
 # Virtualization Guest Drivers (VMware, VirtualBox, UTM/QEMU)
 open-vm-tools
@@ -140,7 +138,6 @@ fuse2
 # Fonts, Glyphs & Emojis (Fixes all '?' missing glyphs)
 # ==========================================================
 noto-fonts
-noto-fonts-cjk
 noto-fonts-emoji
 ttf-dejavu
 ttf-liberation

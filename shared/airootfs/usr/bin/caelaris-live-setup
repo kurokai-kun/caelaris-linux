@@ -1,5 +1,6 @@
 #!/bin/bash
-set -e
+# caelaris-live-setup: System initialization for live session
+set +e
 
 # 1. Create liveuser with "Caelaris Linux" Real Name if not present
 if ! id -u liveuser >/dev/null 2>&1; then
@@ -23,6 +24,7 @@ mkdir -p /var/lib/AccountsService/users
 cat > /var/lib/AccountsService/users/liveuser << EOF
 [User]
 Language=en_US.UTF-8
+Session=${DESKTOP_CHOICE}
 XSession=${DESKTOP_CHOICE}
 SystemAccount=false
 RealName=Caelaris Linux
@@ -63,22 +65,18 @@ elif [ -f /usr/share/pixmaps/caelaris-logo.svg ]; then
     cp -f /usr/share/pixmaps/caelaris-logo.svg /home/liveuser/.face.icon 2>/dev/null || true
 fi
 
-# Ensure Desktop directory exists and shortcuts are executable
+# Ensure Desktop directory exists and shortcuts are executable & trusted
 mkdir -p /home/liveuser/Desktop
-if [ -f /home/liveuser/Desktop/install-caelaris.desktop ]; then
-    chmod +x /home/liveuser/Desktop/install-caelaris.desktop
-    # Mark as trusted in KDE Plasma / GNOME
-    if which gio >/dev/null 2>&1; then
-        gio set /home/liveuser/Desktop/install-caelaris.desktop metadata::trusted true || true
+for dfile in /home/liveuser/Desktop/*.desktop; do
+    if [ -f "$dfile" ]; then
+        chmod +x "$dfile" 2>/dev/null || true
+        if which gio >/dev/null 2>&1; then
+            gio set "$dfile" metadata::trusted true 2>/dev/null || true
+        fi
     fi
-fi
+done
 
-chmod +x /usr/bin/caelaris-installer-gui 2>/dev/null || true
-chmod +x /usr/bin/caelaris-installer 2>/dev/null || true
-chmod +x /usr/bin/caelaris-welcome 2>/dev/null || true
-chmod +x /usr/bin/caelaris-autoresize 2>/dev/null || true
-chmod +x /usr/bin/caelaris-session-selector 2>/dev/null || true
-chmod +x /usr/bin/caelaris-install 2>/dev/null || true
+chmod +x /usr/bin/caelaris-* 2>/dev/null || true
 chmod +x /usr/bin/yay 2>/dev/null || true
 
 chown -R liveuser:users /home/liveuser
@@ -97,10 +95,10 @@ fi
 
 # 6. Configure Flathub app store backend for Discover & Software
 if which flatpak >/dev/null 2>&1; then
-    flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || true
+    flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo 2>/dev/null || true
 fi
 
 # 7. Clean up releng residue
 touch /root/.automated_script.sh
 chmod +x /root/.automated_script.sh
-
+exit 0

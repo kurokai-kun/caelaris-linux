@@ -1,0 +1,8 @@
+#!/bin/bash
+# caelaris-post-install-reboot: Safely unmounts/ejects live medium and reboots into installed OS
+
+# Eject CD/DVD/ISO virtual drive if present
+eject -s /dev/sr0 2>/dev/null || eject /dev/cdrom 2>/dev/null || true
+
+# Reboot into the newly installed operating system
+systemctl reboot

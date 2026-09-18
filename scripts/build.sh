@@ -69,44 +69,90 @@ cp "${ROOT_DIR}/shared/branding/os-release" "${BUILD_PROFILE}/airootfs/etc/os-re
 # 9. Brand and configure Dual-Desktop Bootloader Menus (KDE & GNOME Preview Options)
 echo "Configuring bootloader entries for Caelaris Linux (KDE & GNOME)..."
 
-# Brand existing entries
+# Brand global text
 find "${BUILD_PROFILE}/efiboot" "${BUILD_PROFILE}/grub" "${BUILD_PROFILE}/syslinux" -type f \( -name "*.conf" -o -name "*.cfg" \) -exec sed -i \
-    -e 's/Arch Linux install medium/Caelaris Linux (KDE Plasma Preview)/g' \
     -e 's/Arch Linux/Caelaris Linux/g' \
     -e 's/archlinux/caelaris/g' {} + 2>/dev/null || true
 
-# Inject video=1920x1080 resolution into all default entries
+# Strip any splash references
 find "${BUILD_PROFILE}/efiboot" "${BUILD_PROFILE}/grub" "${BUILD_PROFILE}/syslinux" -type f \( -name "*.conf" -o -name "*.cfg" \) -exec sed -i \
-    -e 's/quiet splash/video=1920x1080 quiet splash/g' {} + 2>/dev/null || true
+    -e 's/splash//g' {} + 2>/dev/null || true
 
-# Add GNOME bootloader entry in UEFI systemd-boot
-if [ -d "${BUILD_PROFILE}/efiboot/loader/entries" ]; then
-    BASE_ENTRY=$(find "${BUILD_PROFILE}/efiboot/loader/entries" -name "*x86_64*.conf" | head -n 1 || true)
-    if [ -n "$BASE_ENTRY" ] && [ -f "$BASE_ENTRY" ]; then
-        sed -i 's/options.*/& desktop=plasma/' "$BASE_ENTRY"
-        GNOME_ENTRY="${BUILD_PROFILE}/efiboot/loader/entries/02-caelaris-gnome.conf"
-        cp "$BASE_ENTRY" "$GNOME_ENTRY"
-        sed -i 's/title.*/title   Caelaris Linux (GNOME Desktop Preview)/' "$GNOME_ENTRY"
-        sed -i 's/desktop=plasma/desktop=gnome/' "$GNOME_ENTRY"
-    fi
+# A. UEFI systemd-boot configuration
+if [ -d "${BUILD_PROFILE}/efiboot/loader" ]; then
+    mkdir -p "${BUILD_PROFILE}/efiboot/loader/entries"
+    rm -rf "${BUILD_PROFILE}/efiboot/loader/entries/"* 2>/dev/null || true
+
+    cat > "${BUILD_PROFILE}/efiboot/loader/loader.conf" << 'EOF'
+timeout 30
+default 01-caelaris-plasma.conf
+beep 0
+EOF
+
+    cat > "${BUILD_PROFILE}/efiboot/loader/entries/01-caelaris-plasma.conf" << 'EOF'
+title   Caelaris Linux (KDE Plasma 6 - Default)
+linux   /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
+initrd  /%INSTALL_DIR%/boot/intel-ucode.img
+initrd  /%INSTALL_DIR%/boot/amd-ucode.img
+initrd  /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
+options archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_SEARCH_UUID% desktop=plasma video=1920x1080 quiet
+EOF
+
+    cat > "${BUILD_PROFILE}/efiboot/loader/entries/02-caelaris-gnome.conf" << 'EOF'
+title   Caelaris Linux (GNOME Desktop)
+linux   /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
+initrd  /%INSTALL_DIR%/boot/intel-ucode.img
+initrd  /%INSTALL_DIR%/boot/amd-ucode.img
+initrd  /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
+options archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_SEARCH_UUID% desktop=gnome video=1920x1080 quiet
+EOF
+
+    cat > "${BUILD_PROFILE}/efiboot/loader/entries/03-caelaris-ram.conf" << 'EOF'
+title   Caelaris Linux (Copy to RAM)
+linux   /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
+initrd  /%INSTALL_DIR%/boot/intel-ucode.img
+initrd  /%INSTALL_DIR%/boot/amd-ucode.img
+initrd  /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
+options archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_SEARCH_UUID% copytoram=y desktop=plasma video=1920x1080 quiet
+EOF
 fi
 
-# Add GNOME and Hard Disk bootloader entries in Syslinux (BIOS)
-if [ -f "${BUILD_PROFILE}/syslinux/archiso_sys-linux.cfg" ]; then
-    cat >> "${BUILD_PROFILE}/syslinux/archiso_sys-linux.cfg" << 'EOF'
+# B. BIOS Syslinux configuration
+if [ -d "${BUILD_PROFILE}/syslinux" ]; then
+    sed -i 's/TIMEOUT .*/TIMEOUT 300/' "${BUILD_PROFILE}/syslinux/archiso_head.cfg" 2>/dev/null || true
+    sed -i 's/DEFAULT .*/DEFAULT caelaris_plasma/' "${BUILD_PROFILE}/syslinux/archiso.cfg" 2>/dev/null || true
+
+    cat > "${BUILD_PROFILE}/syslinux/archiso_sys-linux.cfg" << 'EOF'
+LABEL caelaris_plasma
+TEXT HELP
+Boot Caelaris Linux live preview with KDE Plasma 6 Desktop.
+ENDTEXT
+MENU LABEL Caelaris Linux (KDE Plasma 6 - Default)
+LINUX /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
+INITRD /%INSTALL_DIR%/boot/intel-ucode.img,/%INSTALL_DIR%/boot/amd-ucode.img,/%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
+APPEND archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_SEARCH_UUID% desktop=plasma video=1920x1080 quiet
 
 LABEL caelaris_gnome
 TEXT HELP
 Boot Caelaris Linux live preview with GNOME Desktop.
 ENDTEXT
-MENU LABEL Caelaris Linux (GNOME Desktop Preview)
+MENU LABEL Caelaris Linux (GNOME Desktop)
 LINUX /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
-INITRD /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-APPEND archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_SEARCH_UUID% desktop=gnome video=1920x1080 quiet splash
+INITRD /%INSTALL_DIR%/boot/intel-ucode.img,/%INSTALL_DIR%/boot/amd-ucode.img,/%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
+APPEND archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_SEARCH_UUID% desktop=gnome video=1920x1080 quiet
+
+LABEL caelaris_ram
+TEXT HELP
+Boot Caelaris Linux and copy full environment into RAM.
+ENDTEXT
+MENU LABEL Caelaris Linux (Copy to RAM)
+LINUX /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
+INITRD /%INSTALL_DIR%/boot/intel-ucode.img,/%INSTALL_DIR%/boot/amd-ucode.img,/%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
+APPEND archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_SEARCH_UUID% copytoram=y desktop=plasma video=1920x1080 quiet
 
 LABEL boot_hdd
 TEXT HELP
-Boot the installed operating system from the primary local hard drive.
+Boot installed operating system from the primary local hard drive.
 ENDTEXT
 MENU LABEL Boot Installed System (Hard Disk)
 COM32 whichsys.c32
@@ -114,14 +160,28 @@ APPEND -iso- chain.c32 hd0
 EOF
 fi
 
-# Add GNOME and Hard Disk bootloader entries in GRUB if present
+# C. GRUB configuration
 if [ -f "${BUILD_PROFILE}/grub/grub.cfg" ]; then
-    cat >> "${BUILD_PROFILE}/grub/grub.cfg" << 'EOF'
+    cat > "${BUILD_PROFILE}/grub/grub.cfg" << 'EOF'
+set timeout=30
+set default="0"
 
-menuentry "Caelaris Linux (GNOME Desktop Preview)" --class caelaris --class gnome --class gnu-linux --class gnu --class os {
+menuentry "Caelaris Linux (KDE Plasma 6 - Default)" --class caelaris --class kde --class gnu-linux --class gnu --class os {
     set gfxpayload=keep
-    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_SEARCH_UUID% desktop=gnome video=1920x1080 quiet splash
-    initrd /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
+    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_SEARCH_UUID% desktop=plasma video=1920x1080 quiet
+    initrd /%INSTALL_DIR%/boot/intel-ucode.img /%INSTALL_DIR%/boot/amd-ucode.img /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
+}
+
+menuentry "Caelaris Linux (GNOME Desktop)" --class caelaris --class gnome --class gnu-linux --class gnu --class os {
+    set gfxpayload=keep
+    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_SEARCH_UUID% desktop=gnome video=1920x1080 quiet
+    initrd /%INSTALL_DIR%/boot/intel-ucode.img /%INSTALL_DIR%/boot/amd-ucode.img /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
+}
+
+menuentry "Caelaris Linux (Copy to RAM)" --class caelaris --class gnu-linux --class gnu --class os {
+    set gfxpayload=keep
+    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisosearchuuid=%ARCHISO_SEARCH_UUID% copytoram=y desktop=plasma video=1920x1080 quiet
+    initrd /%INSTALL_DIR%/boot/intel-ucode.img /%INSTALL_DIR%/boot/amd-ucode.img /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
 }
 
 menuentry "Boot Installed System (Hard Disk)" --class hd --class disk {

@@ -12,7 +12,7 @@ bootmodes=('bios.syslinux' 'uefi.systemd-boot')
 arch="x86_64"
 pacman_conf="pacman.conf"
 airootfs_image_type="squashfs"
-airootfs_image_tool_options=('-comp' 'zstd')
+airootfs_image_tool_options=('-comp' 'zstd' '-Xcompression-level' '19')
 file_permissions=(
   ["/etc/shadow"]="0:0:400"
   ["/etc/gshadow"]="0:0:400"
@@ -25,6 +25,8 @@ file_permissions=(
   ["/usr/bin/caelaris-installer-gui"]="0:0:755"
   ["/usr/bin/caelaris-autoresize"]="0:0:755"
   ["/usr/bin/caelaris-session-selector"]="0:0:755"
+  ["/usr/bin/caelaris-switch-desktop"]="0:0:755"
+  ["/usr/bin/caelaris-post-install-reboot"]="0:0:755"
   ["/usr/bin/yay"]="0:0:755"
   ["/usr/bin/caelaris-install"]="0:0:755"
 )
