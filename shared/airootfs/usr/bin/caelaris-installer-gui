@@ -137,27 +137,33 @@ class InstallWorker(QThread):
                 self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@snapshots", p2, "/mnt/.snapshots"])
                 self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@var_log", p2, "/mnt/var/log"])
                 self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@var_cache", p2, "/mnt/var/cache"])
-                os.makedirs("/mnt/boot/efi", exist_ok=True)
-                self.run_cmd(["mount", p1, "/mnt/boot/efi"])
+                # NOTE: ESP is mounted AFTER unsquashfs extraction at step 55 to avoid overwrite
             else:
                 self.progress_changed.emit(32, f"Formatting Ext4 partition ({p2})...")
                 self.run_cmd(["mkfs.ext4", "-F", "-L", "caelaris", p2])
                 self.run_cmd(["mount", p2, "/mnt"])
-                os.makedirs("/mnt/boot/efi", exist_ok=True)
-                self.run_cmd(["mount", p1, "/mnt/boot/efi"])
+                # NOTE: ESP is mounted AFTER unsquashfs extraction at step 55 to avoid overwrite
 
-            self.progress_changed.emit(45, "Extracting Caelaris Linux system files (Offline Deploy)...")
+
+            self.progress_changed.emit(45, "Extracting Caelaris Linux system files...")
             sfs = None
             for cand in ["/run/archiso/bootmnt/arch/x86_64/airootfs.sfs", "/run/archiso/airootfs.sfs"]:
                 if os.path.isfile(cand):
                     sfs = cand
                     break
             if sfs:
-                self.log(f"Extracting image {sfs} to /mnt...")
+                self.log(f"Extracting SquashFS image {sfs} to /mnt...")
                 self.run_cmd(f"unsquashfs -f -d /mnt {sfs}")
             else:
-                self.log("Syncing system files to /mnt...")
+                self.log("Syncing system files to /mnt via rsync...")
                 self.run_cmd("rsync -aAXv --exclude={'/dev/*','/proc/*','/sys/*','/tmp/*','/run/*','/mnt/*','/lost+found'} / /mnt/", check=False)
+
+            # Mount the EFI partition AFTER extraction (unsquashfs would wipe it otherwise)
+            self.progress_changed.emit(55, "Mounting EFI System Partition...")
+            os.makedirs("/mnt/boot/efi", exist_ok=True)
+            self.run_cmd(["umount", "/mnt/boot/efi"], check=False)
+            self.run_cmd(["mount", p1, "/mnt/boot/efi"])
+
 
             self.progress_changed.emit(68, "Generating /etc/fstab...")
             self.run_cmd("genfstab -U /mnt >> /mnt/etc/fstab")
@@ -198,49 +204,121 @@ class InstallWorker(QThread):
             with open("/mnt/etc/sddm.conf.d/10-caelaris.conf", "w") as f:
                 f.write(sddm_cfg)
 
-            self.progress_changed.emit(88, "Configuring Bootloader (GRUB & UEFI Support)...")
+            self.progress_changed.emit(88, "Configuring Bootloader (GRUB + UEFI/BIOS support)...")
             is_efi = os.path.exists("/sys/firmware/efi")
             subvol_arg = "rootflags=subvol=@" if fs_type == "btrfs" else ""
 
-            # Configure standard GRUB
+            # ── Write /etc/default/grub ──────────────────────────────────────
             os.makedirs("/mnt/etc/default", exist_ok=True)
             with open("/mnt/etc/default/grub", "w") as f:
                 f.write(
                     'GRUB_DEFAULT=0\n'
-                    'GRUB_TIMEOUT=3\n'
+                    'GRUB_TIMEOUT=5\n'
+                    'GRUB_TIMEOUT_STYLE=menu\n'
                     'GRUB_DISTRIBUTOR="Caelaris Linux"\n'
                     f'GRUB_CMDLINE_LINUX_DEFAULT="{subvol_arg} video=1920x1080 quiet"\n'
                     'GRUB_CMDLINE_LINUX=""\n'
-                    'GRUB_GFXMODE=1920x1080,auto\n'
-                    'GRUB_GFXPAYLOAD_LINUX=keep\n'
+                    'GRUB_TERMINAL_INPUT=console\n'
+                    'GRUB_TERMINAL_OUTPUT=console\n'
                     'GRUB_DISABLE_OS_PROBER=false\n'
                 )
 
-            # Remove any stale custom menu entries
-            if os.path.exists("/mnt/etc/grub.d/15_caelaris_gnome"):
-                os.remove("/mnt/etc/grub.d/15_caelaris_gnome")
+            # Remove any stale custom menu entries from old installs
+            for stale in ["/mnt/etc/grub.d/15_caelaris_gnome"]:
+                if os.path.exists(stale):
+                    os.remove(stale)
+
+            # ── Set up bind mounts required for a functional chroot ──────────
+            self.log("Preparing chroot bind mounts...")
+            for target in ["/mnt/dev", "/mnt/proc", "/mnt/sys", "/mnt/run"]:
+                os.makedirs(target, exist_ok=True)
+            self.run_cmd("mount --bind /dev /mnt/dev", check=False)
+            self.run_cmd("mount --bind /dev/pts /mnt/dev/pts", check=False)
+            self.run_cmd("mount --bind /proc /mnt/proc", check=False)
+            self.run_cmd("mount --bind /sys /mnt/sys", check=False)
+            self.run_cmd("mount --bind /run /mnt/run", check=False)
+            # Mount EFI varfs so efibootmgr can write NVRAM (no-op on BIOS)
+            self.run_cmd("mount --bind /sys/firmware/efi/efivars /mnt/sys/firmware/efi/efivars 2>/dev/null || true", check=False)
+
+            # ── Step 1: Regenerate initramfs inside the installed system ──────
+            self.progress_changed.emit(90, "Regenerating initramfs...")
+            os.makedirs("/mnt/boot", exist_ok=True)
+            self.run_cmd("chroot /mnt mkinitcpio -P", check=False)
+
+            # ── Step 2: Install GRUB bootloader ──────────────────────────────
+            self.progress_changed.emit(92, "Installing GRUB bootloader...")
+            os.makedirs("/mnt/boot/grub", exist_ok=True)
 
             if is_efi:
-                self.log("Detected UEFI system. Installing GRUB EFI with fallback support...")
-                os.makedirs("/mnt/boot/efi", exist_ok=True)
-                self.run_cmd("arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Caelaris --removable --recheck", check=False)
+                self.log("UEFI detected — installing GRUB EFI with removable fallback...")
+                # --no-nvram = skip EFI NVRAM BootOrder write (needed for VMware/VirtualBox)
+                # --removable = install to EFI/BOOT/BOOTX64.EFI (universal fallback path)
+                self.run_cmd(
+                    "chroot /mnt grub-install "
+                    "--target=x86_64-efi "
+                    "--efi-directory=/boot/efi "
+                    "--bootloader-id=Caelaris "
+                    "--removable "
+                    "--no-nvram "
+                    "--recheck",
+                    check=False
+                )
+                # Also attempt NVRAM write (works on real hardware, harmless failure on VMs)
+                self.run_cmd(
+                    "chroot /mnt grub-install "
+                    "--target=x86_64-efi "
+                    "--efi-directory=/boot/efi "
+                    "--bootloader-id=Caelaris "
+                    "--recheck 2>/dev/null || true",
+                    check=False
+                )
             else:
-                self.log(f"Detected BIOS system. Installing GRUB MBR on {disk}...")
-                self.run_cmd(f"arch-chroot /mnt grub-install --target=i386-pc --recheck {disk}", check=False)
+                self.log(f"BIOS detected — installing GRUB MBR on {disk}...")
+                self.run_cmd(f"chroot /mnt grub-install --target=i386-pc --recheck {disk}", check=False)
 
-            self.progress_changed.emit(92, "Regenerating initramfs & GRUB menu...")
-            self.run_cmd("arch-chroot /mnt mkinitcpio -P", check=False)
-            self.run_cmd("arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg", check=False)
+            # ── Step 3: Generate grub.cfg ─────────────────────────────────────
+            self.progress_changed.emit(94, "Generating GRUB configuration...")
+            self.run_cmd("chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg", check=False)
 
-            self.run_cmd("arch-chroot /mnt pacman-key --init 2>/dev/null || true", check=False)
-            self.run_cmd("arch-chroot /mnt pacman-key --populate archlinux 2>/dev/null || true", check=False)
+            # ── Step 4: Enable pacman keys for online use ─────────────────────
+            self.run_cmd("chroot /mnt pacman-key --init 2>/dev/null || true", check=False)
+            self.run_cmd("chroot /mnt pacman-key --populate archlinux 2>/dev/null || true", check=False)
 
-            self.run_cmd("arch-chroot /mnt systemctl enable NetworkManager sddm pipewire wireplumber vboxservice vmtoolsd vmware-vmblock-fuse spice-vdagentd qemu-guest-agent ananicy-cpp 2>/dev/null || true", check=False)
+            # ── Step 5: Enable system services ───────────────────────────────
+            self.progress_changed.emit(96, "Enabling system services...")
+            self.run_cmd(
+                "chroot /mnt systemctl enable NetworkManager sddm pipewire wireplumber "
+                "vboxservice vmtoolsd vmware-vmblock-fuse spice-vdagentd qemu-guest-agent "
+                "ananicy-cpp 2>/dev/null || true",
+                check=False
+            )
 
-            if os.path.exists("/mnt/etc/systemd/system/caelaris-live-setup.service"):
-                os.remove("/mnt/etc/systemd/system/caelaris-live-setup.service")
-            if os.path.exists("/mnt/usr/bin/caelaris-live-setup"):
-                os.remove("/mnt/usr/bin/caelaris-live-setup")
+            # ── Step 6: Clean up live-environment artifacts ───────────────────
+            self.progress_changed.emit(98, "Cleaning up live-system artifacts...")
+            for live_artifact in [
+                "/mnt/etc/systemd/system/caelaris-live-setup.service",
+                "/mnt/etc/systemd/system/graphical.target.wants/caelaris-live-setup.service",
+                "/mnt/usr/bin/caelaris-live-setup",
+                "/mnt/etc/sddm.conf.d/autologin.conf",
+                "/mnt/etc/sudoers.d/liveuser",
+                "/mnt/etc/sudoers.d/g_wheel",
+            ]:
+                if os.path.exists(live_artifact):
+                    os.remove(live_artifact)
+
+            # Remove live desktop shortcuts except none (clean installed desktop)
+            import glob
+            for shortcut in glob.glob("/mnt/etc/skel/Desktop/switch-to-*.desktop"):
+                os.remove(shortcut)
+
+            # ── Step 7: Tear down bind mounts ────────────────────────────────
+            self.log("Tearing down chroot bind mounts...")
+            self.run_cmd("umount /mnt/sys/firmware/efi/efivars 2>/dev/null || true", check=False)
+            self.run_cmd("umount /mnt/run", check=False)
+            self.run_cmd("umount /mnt/sys", check=False)
+            self.run_cmd("umount /mnt/proc", check=False)
+            self.run_cmd("umount /mnt/dev/pts", check=False)
+            self.run_cmd("umount /mnt/dev", check=False)
 
             self.progress_changed.emit(100, "Installation complete!")
             self.installation_finished.emit(True, "Caelaris Linux installed successfully!")
