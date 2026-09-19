@@ -137,13 +137,14 @@ class InstallWorker(QThread):
                 self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@snapshots", p2, "/mnt/.snapshots"])
                 self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@var_log", p2, "/mnt/var/log"])
                 self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@var_cache", p2, "/mnt/var/cache"])
-                self.run_cmd(["mount", p1, "/mnt/boot"])
+                os.makedirs("/mnt/boot/efi", exist_ok=True)
+                self.run_cmd(["mount", p1, "/mnt/boot/efi"])
             else:
                 self.progress_changed.emit(32, f"Formatting Ext4 partition ({p2})...")
                 self.run_cmd(["mkfs.ext4", "-F", "-L", "caelaris", p2])
                 self.run_cmd(["mount", p2, "/mnt"])
-                os.makedirs("/mnt/boot", exist_ok=True)
-                self.run_cmd(["mount", p1, "/mnt/boot"])
+                os.makedirs("/mnt/boot/efi", exist_ok=True)
+                self.run_cmd(["mount", p1, "/mnt/boot/efi"])
 
             self.progress_changed.emit(45, "Extracting Caelaris Linux system files (Offline Deploy)...")
             sfs = None
@@ -188,76 +189,53 @@ class InstallWorker(QThread):
 
             os.makedirs("/mnt/var/lib/AccountsService/users", exist_ok=True)
             with open(f"/mnt/var/lib/AccountsService/users/{user}", "w") as f:
-                f.write(f"[User]\nLanguage=en_US.UTF-8\nXSession={desktop}\nSystemAccount=false\nRealName={realname}\nIcon=/usr/share/pixmaps/caelaris-logo.png\n")
+                f.write(f"[User]\nLanguage=en_US.UTF-8\nSession=plasma\nXSession=plasma\nSystemAccount=false\nRealName={realname}\nIcon=/usr/share/pixmaps/caelaris-logo.png\n")
 
             os.makedirs("/mnt/etc/sddm.conf.d", exist_ok=True)
             sddm_cfg = f"[Theme]\nCurrent=breeze\nCursorTheme=breeze_cursors\n"
             if autologin:
-                sddm_cfg += f"\n[Autologin]\nUser={user}\nSession={desktop}\nRelogin=false\n"
+                sddm_cfg += f"\n[Autologin]\nUser={user}\nSession=plasma\nRelogin=false\n"
             with open("/mnt/etc/sddm.conf.d/10-caelaris.conf", "w") as f:
                 f.write(sddm_cfg)
 
-            self.progress_changed.emit(88, "Configuring Bootloader (BIOS & UEFI Dual Support)...")
+            self.progress_changed.emit(88, "Configuring Bootloader (GRUB & UEFI Support)...")
             is_efi = os.path.exists("/sys/firmware/efi")
-            root_uuid = subprocess.check_output(f"blkid -s UUID -o value {p2}", shell=True, text=True).strip()
             subvol_arg = "rootflags=subvol=@" if fs_type == "btrfs" else ""
 
-            # Configure GRUB for maximum compatibility (BIOS + UEFI)
+            # Configure standard GRUB
             os.makedirs("/mnt/etc/default", exist_ok=True)
             with open("/mnt/etc/default/grub", "w") as f:
                 f.write(
                     'GRUB_DEFAULT=0\n'
-                    'GRUB_TIMEOUT=5\n'
-                    'GRUB_TIMEOUT_STYLE=menu\n'
+                    'GRUB_TIMEOUT=3\n'
                     'GRUB_DISTRIBUTOR="Caelaris Linux"\n'
-                    f'GRUB_CMDLINE_LINUX_DEFAULT="{subvol_arg} video=1920x1080 quiet splash"\n'
+                    f'GRUB_CMDLINE_LINUX_DEFAULT="{subvol_arg} video=1920x1080 quiet"\n'
                     'GRUB_CMDLINE_LINUX=""\n'
                     'GRUB_GFXMODE=1920x1080,auto\n'
                     'GRUB_GFXPAYLOAD_LINUX=keep\n'
                     'GRUB_DISABLE_OS_PROBER=false\n'
                 )
 
-            # Custom menu entry for GNOME session in GRUB
-            os.makedirs("/mnt/etc/grub.d", exist_ok=True)
-            with open("/mnt/etc/grub.d/15_caelaris_gnome", "w") as f:
-                f.write(
-                    '#!/bin/sh\n'
-                    'exec tail -n +3 $0\n'
-                    'menuentry "Caelaris Linux (GNOME Desktop Session)" --class caelaris --class gnome --class gnu-linux --class gnu --class os {\n'
-                    '    load_video\n'
-                    '    set gfxpayload=keep\n'
-                    '    insmod gzio\n'
-                    '    insmod part_gpt\n'
-                    '    insmod btrfs\n'
-                    '    insmod ext2\n'
-                    f'   search --no-floppy --fs-uuid --set=root {root_uuid}\n'
-                    f'   linux /vmlinuz-linux root=UUID={root_uuid} {subvol_arg} desktop=gnome video=1920x1080 quiet splash\n'
-                    '    initrd /initramfs-linux.img\n'
-                    '}\n'
-                )
-            os.chmod("/mnt/etc/grub.d/15_caelaris_gnome", 0o755)
+            # Remove any stale custom menu entries
+            if os.path.exists("/mnt/etc/grub.d/15_caelaris_gnome"):
+                os.remove("/mnt/etc/grub.d/15_caelaris_gnome")
 
             if is_efi:
-                self.log("Detected UEFI system. Installing GRUB EFI & systemd-boot...")
-                self.run_cmd("arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=caelaris --recheck", check=False)
-                # Also configure systemd-boot
-                self.run_cmd("arch-chroot /mnt bootctl install", check=False)
-                os.makedirs("/mnt/boot/loader/entries", exist_ok=True)
-                with open("/mnt/boot/loader/loader.conf", "w") as f:
-                    f.write("default 01-caelaris-plasma.conf\ntimeout 5\n")
-                with open("/mnt/boot/loader/entries/01-caelaris-plasma.conf", "w") as f:
-                    f.write(f"title   Caelaris Linux (KDE Plasma Session)\nlinux   /vmlinuz-linux\ninitrd  /initramfs-linux.img\noptions root=UUID={root_uuid} {subvol_arg} desktop=plasma video=1920x1080 rw quiet splash\n")
-                with open("/mnt/boot/loader/entries/02-caelaris-gnome.conf", "w") as f:
-                    f.write(f"title   Caelaris Linux (GNOME Desktop Session)\nlinux   /vmlinuz-linux\ninitrd  /initramfs-linux.img\noptions root=UUID={root_uuid} {subvol_arg} desktop=gnome video=1920x1080 rw quiet splash\n")
+                self.log("Detected UEFI system. Installing GRUB EFI with fallback support...")
+                os.makedirs("/mnt/boot/efi", exist_ok=True)
+                self.run_cmd("arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Caelaris --removable --recheck", check=False)
             else:
                 self.log(f"Detected BIOS system. Installing GRUB MBR on {disk}...")
                 self.run_cmd(f"arch-chroot /mnt grub-install --target=i386-pc --recheck {disk}", check=False)
 
+            self.progress_changed.emit(92, "Regenerating initramfs & GRUB menu...")
+            self.run_cmd("arch-chroot /mnt mkinitcpio -P", check=False)
             self.run_cmd("arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg", check=False)
 
-            self.progress_changed.emit(94, "Regenerating initramfs & enabling services...")
-            self.run_cmd("arch-chroot /mnt mkinitcpio -P", check=False)
-            self.run_cmd("arch-chroot /mnt systemctl enable NetworkManager sddm pipewire wireplumber vboxservice vmtoolsd vmware-vmblock-fuse spice-vdagentd qemu-guest-agent ananicy-cpp caelaris-session-selector 2>/dev/null || true", check=False)
+            self.run_cmd("arch-chroot /mnt pacman-key --init 2>/dev/null || true", check=False)
+            self.run_cmd("arch-chroot /mnt pacman-key --populate archlinux 2>/dev/null || true", check=False)
+
+            self.run_cmd("arch-chroot /mnt systemctl enable NetworkManager sddm pipewire wireplumber vboxservice vmtoolsd vmware-vmblock-fuse spice-vdagentd qemu-guest-agent ananicy-cpp 2>/dev/null || true", check=False)
 
             if os.path.exists("/mnt/etc/systemd/system/caelaris-live-setup.service"):
                 os.remove("/mnt/etc/systemd/system/caelaris-live-setup.service")
@@ -529,12 +507,11 @@ class CaelarisInstaller(QMainWindow):
         c10 = QFrame(objectName="card")
         cl10 = QVBoxLayout(c10)
         cl10.addWidget(QLabel("<b>Dual Desktops Ready:</b> Both KDE Plasma 6 and GNOME Desktop are installed."))
-        cl10.addWidget(QLabel("You can select your preferred desktop on the boot menu or at the login screen."))
+        cl10.addWidget(QLabel("The default session boots into KDE Plasma. You can switch between KDE and GNOME at the login screen."))
         cl10.addSpacing(10)
-        cl10.addWidget(QLabel("<b>VirtualBox Users:</b>"))
-        cl10.addWidget(QLabel("To boot directly into your new installation, unmount the live ISO via:<br>"
-                              "<code style='color: #38bdf8;'>Devices ➜ Optical Drives ➜ Remove disk from virtual drive</code><br>"
-                              "<i>(Or select 'Boot Installed System' on the bootloader screen)</i>"))
+        cl10.addWidget(QLabel("<b>Virtual Machine Users:</b>"))
+        cl10.addWidget(QLabel("To boot directly into your new installation, disconnect or unmount the live ISO in VM settings,<br>"
+                              "or configure your VM boot order to prioritize the hard disk."))
         cl10.addSpacing(10)
         self.chk_reboot = QCheckBox("Restart computer now")
         self.chk_reboot.setChecked(True)
