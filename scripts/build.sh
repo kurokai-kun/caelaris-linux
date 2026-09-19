@@ -83,71 +83,35 @@ if [ -d "${BUILD_PROFILE}/efiboot/loader" ]; then
     rm -rf "${BUILD_PROFILE}/efiboot/loader/entries/"* 2>/dev/null || true
 
     cat > "${BUILD_PROFILE}/efiboot/loader/loader.conf" << 'EOF'
-timeout 30
-default 01-caelaris-plasma.conf
+timeout 3
+default 01-caelaris.conf
 beep 0
 EOF
 
-    cat > "${BUILD_PROFILE}/efiboot/loader/entries/01-caelaris-plasma.conf" << 'EOF'
-title   Caelaris Linux (KDE Plasma 6 - Default)
+    cat > "${BUILD_PROFILE}/efiboot/loader/entries/01-caelaris.conf" << 'EOF'
+title   Caelaris Linux
 linux   /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
 initrd  /%INSTALL_DIR%/boot/intel-ucode.img
 initrd  /%INSTALL_DIR%/boot/amd-ucode.img
 initrd  /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
 options archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma video=1920x1080 quiet
 EOF
-
-    cat > "${BUILD_PROFILE}/efiboot/loader/entries/02-caelaris-gnome.conf" << 'EOF'
-title   Caelaris Linux (GNOME Desktop)
-linux   /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
-initrd  /%INSTALL_DIR%/boot/intel-ucode.img
-initrd  /%INSTALL_DIR%/boot/amd-ucode.img
-initrd  /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-options archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=gnome video=1920x1080 quiet
-EOF
-
-    cat > "${BUILD_PROFILE}/efiboot/loader/entries/03-caelaris-ram.conf" << 'EOF'
-title   Caelaris Linux (Copy to RAM)
-linux   /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
-initrd  /%INSTALL_DIR%/boot/intel-ucode.img
-initrd  /%INSTALL_DIR%/boot/amd-ucode.img
-initrd  /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-options archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% copytoram=y desktop=plasma video=1920x1080 quiet
-EOF
 fi
 
 # B. BIOS Syslinux configuration
 if [ -d "${BUILD_PROFILE}/syslinux" ]; then
-    sed -i 's/TIMEOUT .*/TIMEOUT 300/' "${BUILD_PROFILE}/syslinux/archiso_head.cfg" 2>/dev/null || true
-    sed -i 's/DEFAULT .*/DEFAULT caelaris_plasma/' "${BUILD_PROFILE}/syslinux/archiso.cfg" 2>/dev/null || true
+    sed -i 's/TIMEOUT .*/TIMEOUT 30/' "${BUILD_PROFILE}/syslinux/archiso_head.cfg" 2>/dev/null || true
+    sed -i 's/DEFAULT .*/DEFAULT caelaris/' "${BUILD_PROFILE}/syslinux/archiso.cfg" 2>/dev/null || true
 
     cat > "${BUILD_PROFILE}/syslinux/archiso_sys-linux.cfg" << 'EOF'
-LABEL caelaris_plasma
+LABEL caelaris
 TEXT HELP
-Boot Caelaris Linux live preview with KDE Plasma 6 Desktop.
+Boot Caelaris Linux live preview with KDE Plasma 6.
 ENDTEXT
-MENU LABEL Caelaris Linux (KDE Plasma 6 - Default)
+MENU LABEL Caelaris Linux
 LINUX /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
 INITRD /%INSTALL_DIR%/boot/intel-ucode.img,/%INSTALL_DIR%/boot/amd-ucode.img,/%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
 APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma video=1920x1080 quiet
-
-LABEL caelaris_gnome
-TEXT HELP
-Boot Caelaris Linux live preview with GNOME Desktop.
-ENDTEXT
-MENU LABEL Caelaris Linux (GNOME Desktop)
-LINUX /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
-INITRD /%INSTALL_DIR%/boot/intel-ucode.img,/%INSTALL_DIR%/boot/amd-ucode.img,/%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=gnome video=1920x1080 quiet
-
-LABEL caelaris_ram
-TEXT HELP
-Boot Caelaris Linux and copy full environment into RAM.
-ENDTEXT
-MENU LABEL Caelaris Linux (Copy to RAM)
-LINUX /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
-INITRD /%INSTALL_DIR%/boot/intel-ucode.img,/%INSTALL_DIR%/boot/amd-ucode.img,/%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% copytoram=y desktop=plasma video=1920x1080 quiet
 
 LABEL boot_hdd
 TEXT HELP
@@ -162,24 +126,12 @@ fi
 # C. GRUB configuration
 if [ -f "${BUILD_PROFILE}/grub/grub.cfg" ]; then
     cat > "${BUILD_PROFILE}/grub/grub.cfg" << 'EOF'
-set timeout=30
+set timeout=3
 set default="0"
 
-menuentry "Caelaris Linux (KDE Plasma 6 - Default)" --class caelaris --class kde --class gnu-linux --class gnu --class os {
+menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --class gnu --class os {
     set gfxpayload=keep
     linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma video=1920x1080 quiet
-    initrd /%INSTALL_DIR%/boot/intel-ucode.img /%INSTALL_DIR%/boot/amd-ucode.img /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-}
-
-menuentry "Caelaris Linux (GNOME Desktop)" --class caelaris --class gnome --class gnu-linux --class gnu --class os {
-    set gfxpayload=keep
-    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=gnome video=1920x1080 quiet
-    initrd /%INSTALL_DIR%/boot/intel-ucode.img /%INSTALL_DIR%/boot/amd-ucode.img /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-}
-
-menuentry "Caelaris Linux (Copy to RAM)" --class caelaris --class gnu-linux --class gnu --class os {
-    set gfxpayload=keep
-    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% copytoram=y desktop=plasma video=1920x1080 quiet
     initrd /%INSTALL_DIR%/boot/intel-ucode.img /%INSTALL_DIR%/boot/amd-ucode.img /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
 }
 

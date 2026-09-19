@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Caelaris Linux - Product Requirement Document (PRD)</title>
+<style>
+  @page {
+    size: A4;
+    margin: 18mm 16mm 20mm 16mm;
+    @bottom-right {
+      content: "Page " counter(page) " of " counter(pages);
+      font-size: 8pt;
+      color: #718096;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color: #1a202c;
+    background-color: #ffffff;
+    line-height: 1.55;
+    font-size: 10pt;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Cover Page */
+  .cover-page {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    page-break-after: always;
+    padding: 40px 20px;
+    box-sizing: border-box;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  .cover-badge {
+    display: inline-block;
+    background: #ebf8ff;
+    color: #2b6cb0;
+    font-weight: 700;
+    font-size: 11pt;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    margin-bottom: 24px;
+    width: fit-content;
+    border: 1px solid #bee3f8;
+  }
+
+  .cover-title {
+    font-size: 34pt;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.15;
+    margin: 0 0 12px 0;
+    letter-spacing: -0.5px;
+  }
+
+  .cover-subtitle {
+    font-size: 15pt;
+    font-weight: 400;
+    color: #475569;
+    margin: 0 0 35px 0;
+    line-height: 1.4;
+  }
+
+  .cover-meta-table {
+    margin-top: 40px;
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 520px;
+  }
+
+  .cover-meta-table td {
+    padding: 8px 12px;
+    font-size: 9.5pt;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .cover-meta-table td:first-child {
+    font-weight: 600;
+    color: #64748b;
+    width: 150px;
+  }
+
+  .cover-meta-table td:last-child {
+    color: #0f172a;
+    font-weight: 500;
+  }
+
+  /* Section Headings */
+  h1 {
+    font-size: 18pt;
+    font-weight: 700;
+    color: #0f172a;
+    border-bottom: 2px solid #0284c7;
+    padding-bottom: 6px;
+    margin-top: 32px;
+    margin-bottom: 14px;
+    page-break-after: avoid;
+  }
+
+  h2 {
+    font-size: 13pt;
+    font-weight: 600;
+    color: #1e293b;
+    margin-top: 22px;
+    margin-bottom: 10px;
+    page-break-after: avoid;
+  }
+
+  h3 {
+    font-size: 11pt;
+    font-weight: 600;
+    color: #334155;
+    margin-top: 14px;
+    margin-bottom: 6px;
+    page-break-after: avoid;
+  }
+
+  p {
+    margin: 0 0 10px 0;
+    color: #334155;
+  }
+
+  ul, ol {
+    margin: 0 0 12px 0;
+    padding-left: 20px;
+    color: #334155;
+  }
+
+  li {
+    margin-bottom: 5px;
+  }
+
+  /* Tables */
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0 18px 0;
+    font-size: 9pt;
+    page-break-inside: avoid;
+  }
+
+  table.data-table th {
+    background-color: #f8fafc;
+    color: #1e293b;
+    font-weight: 600;
+    text-align: left;
+    padding: 9px 12px;
+    border: 1px solid #cbd5e1;
+  }
+
+  table.data-table td {
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    color: #334155;
+    vertical-align: top;
+  }
+
+  table.data-table tr:nth-child(even) td {
+    background-color: #f8fafc;
+  }
+
+  /* Callout Boxes */
+  .callout {
+    background-color: #f0f9ff;
+    border-left: 4px solid #0284c7;
+    padding: 12px 16px;
+    border-radius: 0 6px 6px 0;
+    margin: 14px 0;
+    font-size: 9.5pt;
+    page-break-inside: avoid;
+  }
+
+  .callout strong {
+    color: #0369a1;
+  }
+
+  .callout-warning {
+    background-color: #fffbeb;
+    border-left-color: #f59e0b;
+  }
+  .callout-warning strong {
+    color: #b45309;
+  }
+
+  .callout-success {
+    background-color: #f0fdf4;
+    border-left-color: #22c55e;
+  }
+  .callout-success strong {
+    color: #15803d;
+  }
+
+  /* Code Blocks */
+  code {
+    font-family: 'Cascadia Code', Consolas, Monaco, monospace;
+    font-size: 8.5pt;
+    background-color: #f1f5f9;
+    padding: 2px 5px;
+    border-radius: 4px;
+    color: #0f172a;
+  }
+
+  pre {
+    background-color: #0f172a;
+    color: #f8fafc;
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-family: 'Cascadia Code', Consolas, Monaco, monospace;
+    font-size: 8.5pt;
+    overflow-x: auto;
+    margin: 12px 0;
+    page-break-inside: avoid;
+  }
+
+  .badge {
+    display: inline-block;
+    font-size: 7.5pt;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+  .badge-blue { background: #e0f2fe; color: #0369a1; }
+  .badge-green { background: #dcfce7; color: #15803d; }
+  .badge-purple { background: #f3e8ff; color: #6b21a8; }
+  .badge-amber { background: #fef3c7; color: #92400e; }
+
+  .page-break {
+    page-break-before: always;
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER PAGE -->
+<div class="cover-page">
+  <div class="cover-badge">Product Requirement Document</div>
+  <h1 class="cover-title">Caelaris Linux</h1>
+  <div class="cover-subtitle">Next-Generation High-Performance Arch-Based Linux Distribution with Dual Desktop Sessions, Universal Virtualization, and CachyOS-Grade Gaming Stack</div>
+
+  <table class="cover-meta-table">
+    <tr>
+      <td>Product Name</td>
+      <td><strong>Caelaris Linux</strong> (x86_64)</td>
+    </tr>
+    <tr>
+      <td>Version / Target</td>
+      <td>v1.0-Rolling (Kernel 6.x)</td>
+    </tr>
+    <tr>
+      <td>Distribution Base</td>
+      <td>Arch Linux Rolling Baseline</td>
+    </tr>
+    <tr>
+      <td>Document Author</td>
+      <td>Caelaris Core Architecture Team</td>
+    </tr>
+    <tr>
+      <td>Target ISO Size</td>
+      <td><strong>3.5 GB – 3.9 GB</strong> (Zstandard Level 19)</td>
+    </tr>
+    <tr>
+      <td>Primary Desktops</td>
+      <td>KDE Plasma 6 (Wayland) & GNOME 4x (Wayland)</td>
+    </tr>
+    <tr>
+      <td>Date Generated</td>
+      <td>September 2026</td>
+    </tr>
+    <tr>
+      <td>Status</td>
+      <td><strong>Approved for Release / Production</strong></td>
+    </tr>
+  </table>
+</div>
+
+<!-- SECTION 1: EXECUTIVE SUMMARY & VISION -->
+<h1>1. Executive Summary & Product Vision</h1>
+
+<h2>1.1 Vision Statement</h2>
+<p>
+  <strong>Caelaris Linux</strong> is engineered to eliminate the traditional tradeoff between bleeding-edge software access and day-one usability. While Arch Linux offers unparalleled customization and up-to-date packages, its manual setup and configuration barrier prevent mainstream adoption. Existing turnkey distributions often introduce unwanted bloat, unoptimized kernels, or rigid desktop lock-in.
+</p>
+<p>
+  Caelaris solves this by providing an ultra-responsive, modern, and gaming-optimized computing platform. It features out-of-the-box dual graphical sessions (KDE Plasma 6 and GNOME), instant session hot-switching, deep virtualization guest acceleration (VMware, VirtualBox, UTM/QEMU), complete GPU driver stacks (AMD, Intel, NVIDIA), and CachyOS-grade performance tuning without bloat.
+</p>
+
+<h2>1.2 Value Proposition</h2>
+<ul>
+  <li><strong>Instant Gratification:</strong> Zero-setup live preview with full 1080p dynamic auto-resizing, pre-configured live user, and full sudo privilege.</li>
+  <li><strong>Freedom of Desktop Choice:</strong> Boot into either KDE Plasma 6 or GNOME from the bootloader, switch seamlessly in 2 seconds via a desktop shortcut, and install both to disk via the Calamares installer.</li>
+  <li><strong>CachyOS-Grade Gaming Performance:</strong> Pre-tuned kernel sysctl parameters (huge map counts, low swappiness, BBR congestion, CAKE packet scheduling), PipeWire low-latency audio, GameMode, MangoHud, Steam, and VKD3D.</li>
+  <li><strong>Universal Hardware & Hypervisor Integration:</strong> Automated hardware driver detection for physical PCs (AMD, Intel, NVIDIA with proprietary utils and DKMS) alongside guest integration suites (VMware <code>open-vm-tools</code>, VirtualBox guest services, UTM/SPICE agents).</li>
+  <li><strong>Compact Footprint:</strong> Highly optimized SquashFS packaging with Zstandard level 19 compression, keeping the full-featured dual-desktop ISO strictly between <strong>3.5 GB and 3.9 GB</strong>.</li>
+</ul>
+
+<!-- SECTION 2: TARGET PERSONAS & SUCCESS METRICS -->
+<h1>2. Target Personas & Success Metrics</h1>
+
+<h2>2.1 Target User Personas</h2>
+<table class="data-table">
+  <thead>
+    <tr>
+      <th style="width: 25%;">User Persona</th>
+      <th style="width: 35%;">Key Needs & Pain Points</th>
+      <th style="width: 40%;">How Caelaris Addresses It</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>The Linux Gamer</strong></td>
+      <td>Needs maximum FPS, smooth frame times, no shader compilation stutter, working Steam/Proton/Wine, and easy performance monitoring.</td>
+      <td>Pre-configured <code>vm.max_map_count=2147483642</code>, Steam, MangoHud, GameMode, 32-bit Vulkan drivers, and low-latency audio stack out-of-the-box.</td>
+    </tr>
+    <tr>
+      <td><strong>The Power User / Dev</strong></td>
+      <td>Demands latest packages, fast compilation, AUR software access, modern CLI tooling, and responsive terminal environments.</td>
+      <td>Integrated <code>yay</code> AUR helper, <code>caelaris-install</code> CLI utility, modern Zsh/Bash with auto-completions, Fastfetch, btop, and Git.</td>
+    </tr>
+    <tr>
+      <td><strong>Virtualization & Evaluation Tester</strong></td>
+      <td>Evaluates Linux inside VMware Workstation, VirtualBox, or UTM (macOS Apple Silicon/Intel) and hates manual resolution fixes or clipboard breakage.</td>
+      <td>Pre-activated <code>open-vm-tools</code>, <code>vboxservice</code>, <code>spice-vdagent</code>, and <code>caelaris-autoresize</code> ensuring immediate 1920x1080 resolution and two-way clipboard sync.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>2.2 Key Performance Indicators (KPIs) & Success Criteria</h2>
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>Metric</th>
+      <th>Target SLA</th>
+      <th>Implementation Strategy</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>ISO Image File Size</strong></td>
+      <td><strong>3.5 GB &ndash; 3.9 GB</strong></td>
+      <td>Zstandard level 19 compression (`-Xcompression-level 19`), elimination of redundant offline rescue utilities (clonezilla, partclone, darkhttpd).</td>
+    </tr>
+    <tr>
+      <td><strong>Cold Boot to Desktop (Live)</strong></td>
+      <td><strong>&lt; 5 seconds</strong> (NVMe SSD)</td>
+      <td>Elimination of Plymouth graphical locks, pre-created `liveuser` via systemd-sysusers, parallelized asynchronous systemd services.</td>
+    </tr>
+    <tr>
+      <td><strong>Display Auto-Resize Latency</strong></td>
+      <td><strong>&lt; 1 second</strong></td>
+      <td>Dedicated userspace agent (`caelaris-autoresize`) detecting VMware and VirtualBox monitor geometry changes.</td>
+    </tr>
+    <tr>
+      <td><strong>Installer Completion Rate</strong></td>
+      <td><strong>&gt; 99% Success</strong></td>
+      <td>Automated Calamares partitioning, non-blocking post-install cleanup module, and virtual CD ejection script (`caelaris-post-install-reboot`).</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="page-break"></div>
+
+<!-- SECTION 3: SYSTEM ARCHITECTURE & COMPONENTS -->
+<h1>3. System Architecture & Technical Specifications</h1>
+
+<h2>3.1 Architecture Overview</h2>
+<p>
+  Caelaris Linux utilizes a modular build architecture layered on top of the official Arch Linux `mkarchiso` foundation. All core operating system packages, performance configurations, desktop profiles, and installer logic are separated into isolated layers:
+</p>
+
+<pre>
+caelaris-linux/
+├── shared/
+│   ├── packages.common             # Unified base, gaming, media & hardware stack
+│   ├── pacman.conf                 # Multi-mirror package repos + Multilib enabled
+│   ├── branding/                   # Distro identity, os-release, logos
+│   └── airootfs/                   # Overlay root filesystem
+│       ├── etc/sysctl.d/           # CachyOS-grade gaming & network performance
+│       ├── etc/sysusers.d/         # Native systemd liveuser provisioning
+│       ├── etc/sudoers.d/          # Wheel and liveuser non-interactive sudo
+│       └── usr/bin/                # Caelaris utilities (switch-desktop, autoresize, etc.)
+├── profiles/
+│   └── kde/                        # Primary ISO profile (KDE Plasma 6 + GNOME dual session)
+│       ├── packages.x86_64         # Desktop-specific environment packages
+│       └── profiledef.sh           # Zstd-19 compression & file permissions
+├── installer/
+│   └── calamares/                  # Customized graphical installer configuration
+│       ├── settings.conf           # Linear wizard pipeline
+│       └── modules/                # Partitioning, packagechooser, cleanup, reboot
+└── scripts/
+    ├── build.sh                    # Automated build orchestrator
+    └── setup_build_env.sh          # Build host dependency bootstrapper
+</pre>
+
+<h2>3.2 Core Subsystem Specifications</h2>
+
+<table class="data-table">
+  <thead>
+    <tr>
+      <th style="width: 20%;">Subsystem</th>
+      <th style="width: 40%;">Included Components</th>
+      <th style="width: 40%;">Key Capabilities</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Base Kernel & System</strong></td>
+      <td>Linux Kernel 6.x, Linux-Firmware, SOF Audio Firmware, AMD/Intel Microcode, Btrfs-progs, e2fsprogs, exFAT, NTFS-3G.</td>
+      <td>Hardware auto-detection, universal filesystem support, CPU microcode security patching on boot.</td>
+    </tr>
+    <tr>
+      <td><strong>Graphics & Display</strong></td>
+      <td>Mesa (Gallium), Vulkan-Radeon, Vulkan-Intel, Intel-Media-Driver, NVIDIA-Utils, lib32-NVIDIA-Utils, Wayland, XWayland, xf86-video-vmware.</td>
+      <td>Native Wayland compositing, zero-tear gaming, Vulkan compute, hardware video decode acceleration (VA-API / VDPAU).</td>
+    </tr>
+    <tr>
+      <td><strong>Virtualization Support</strong></td>
+      <td><code>open-vm-tools</code>, <code>gtkmm3</code>, <code>vboxservice</code>, <code>spice-vdagent</code>, <code>qemu-guest-agent</code>.</td>
+      <td>Seamless mouse integration, dynamic resolution matching host window, shared folders, host-guest clipboard.</td>
+    </tr>
+    <tr>
+      <td><strong>Gaming Ecosystem</strong></td>
+      <td>Steam, GameMode, MangoHud (64 & 32-bit), VKD3D (DirectX 12 to Vulkan), Gamescope micro-compositor, Fuse2.</td>
+      <td>Full Proton / Steam Play capability, per-game process scheduling, in-game FPS and hardware telemetry overlay.</td>
+    </tr>
+    <tr>
+      <td><strong>Audio Architecture</strong></td>
+      <td>PipeWire, WirePlumber, PipeWire-Pulse, PipeWire-ALSA, PipeWire-JACK.</td>
+      <td>Ultra-low latency audio graph, professional JACK routing, seamless Bluetooth audio switching.</td>
+    </tr>
+    <tr>
+      <td><strong>Application Management</strong></td>
+      <td>Pacman, <code>yay</code> (native AUR helper), Flathub App Store backend, <code>caelaris-install</code> CLI.</td>
+      <td>Access to over 100,000+ Linux packages via official Arch repositories, Flathub sandbox, and Arch User Repository.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="page-break"></div>
+
+<!-- SECTION 4: FUNCTIONAL REQUIREMENTS -->
+<h1>4. Detailed Functional Requirements</h1>
+
+<h2>4.1 Dual Desktop Environments & Live Session Switcher</h2>
+<div class="callout callout-success">
+  <strong>Requirement FR-1:</strong> The distribution must support both KDE Plasma 6 and GNOME sessions within a single unified ISO, both in live preview and post-installation.
+</div>
+<ul>
+  <li><strong>Bootloader Menu Selection:</strong> Both systemd-boot (UEFI) and Syslinux (BIOS) bootloader menus present distinct options:
+    <ul>
+      <li><code>Caelaris Linux (KDE Plasma 6 - Default)</code>: Loads Plasma 6 on Wayland via SDDM.</li>
+      <li><code>Caelaris Linux (GNOME Desktop)</code>: Loads GNOME Shell on Wayland via SDDM.</li>
+      <li><code>Caelaris Linux (Copy to RAM)</code>: Loads the entire system into RAM for portable high-speed usage.</li>
+    </ul>
+  </li>
+  <li><strong>1-Click Desktop Switcher (<code>caelaris-switch-desktop</code>):</strong> Users can switch between KDE and GNOME during live preview without rebooting. Launching the desktop shortcut reconfigures SDDM autologin and restarts the display manager in 2 seconds.</li>
+  <li><strong>Post-Install Dual Session:</strong> The installed SDDM greeter presents an interactive session dropdown, allowing users to choose between Plasma Wayland and GNOME Wayland at every login.</li>
+</ul>
+
+<h2>4.2 Gaming & Performance Optimization Stack</h2>
+<div class="callout">
+  <strong>Requirement FR-2:</strong> Out-of-the-box kernel and runtime tuning matching CachyOS performance benchmarks for gaming workloads.
+</div>
+<ul>
+  <li><strong>Sysctl Tuning (<code>/etc/sysctl.d/99-caelaris-gaming.conf</code>):</strong>
+    <ul>
+      <li><code>vm.max_map_count = 2147483642</code>: Essential for memory-mapped games (Star Citizen, Hogwarts Legacy, DayZ) and complex Wine/Proton titles.</li>
+      <li><code>vm.swappiness = 10</code>: Prevents aggressive disk swapping, keeping gaming assets in physical RAM.</li>
+      <li><code>net.core.default_qdisc = cake</code>: Enables Common Applications Kept Enhanced queue discipline to eliminate bufferbloat during online gaming.</li>
+      <li><code>net.ipv4.tcp_congestion_control = bbr</code>: Low-latency Google BBR TCP congestion control for smooth multiplayer network packet streaming.</li>
+    </ul>
+  </li>
+  <li><strong>ZRAM Compressed Swap:</strong> Managed by <code>zram-generator</code> with Zstandard compression algorithm, dynamically expanding available memory by up to 2x without disk thrashing.</li>
+</ul>
+
+<h2>4.3 Calamares Graphical Installer Experience</h2>
+<div class="callout">
+  <strong>Requirement FR-3:</strong> Foolproof, accessible installation wizard capable of dual-booting, automated EFI partitioning, and seamless handoff to the installed OS.
+</div>
+<ul>
+  <li><strong>Partitioning:</strong> Supports Automated Guided Partitioning (Btrfs with subvolumes or Ext4) alongside Manual Partitioning for advanced dual-boot setups with Windows.</li>
+  <li><strong>Automated Cleanup:</strong> Removes live environment artifacts (temporary sudoers files, liveuser accounts, autologin configs) from the target disk while preserving user settings.</li>
+  <li><strong>Automatic Media Ejection:</strong> Upon installation completion, <code>caelaris-post-install-reboot</code> issues SCSI ejection commands to virtual and physical optical drives (<code>/dev/sr0</code>) before initiating system reboot, ensuring the machine boots directly into the newly installed operating system.</li>
+</ul>
+
+<h2>4.4 Universal Virtualization Acceleration</h2>
+<div class="callout callout-warning">
+  <strong>Requirement FR-4:</strong> Flawless first-boot experience on hypervisors (VMware Workstation, Oracle VirtualBox, UTM / QEMU on Apple Silicon/Intel).
+</div>
+<ul>
+  <li><strong>VMware Workstation Integration:</strong> Bundles <code>open-vm-tools</code> and <code>xf86-video-vmware</code>. Includes one-click Windows registry fix file (<code>fix_vmware_path.reg</code>) to resolve host engine path discrepancies.</li>
+  <li><strong>Resolution Auto-Detection:</strong> <code>caelaris-autoresize</code> actively listens to hypervisor geometry changes and applies 1080p mode via <code>kscreen-doctor</code> / <code>xrandr</code>.</li>
+  <li><strong>Two-Way Clipboard & Drag-and-Drop:</strong> Pre-enabled userspace agents for VirtualBox (<code>VBoxClient</code>) and UTM/QEMU (<code>spice-vdagent</code>).</li>
+</ul>
+
+<div class="page-break"></div>
+
+<!-- SECTION 5: NON-FUNCTIONAL REQUIREMENTS & RELEASE MATRIX -->
+<h1>5. Non-Functional Requirements & Quality Standards</h1>
+
+<h2>5.1 Reliability & Stability</h2>
+<ul>
+  <li><strong>No Display Hangs:</strong> Complete removal of Plymouth splash daemon ensures that virtual DRM controllers (<code>vmwgfx</code>, <code>vboxvideo</code>) are never locked, preventing SDDM initialization freezes.</li>
+  <li><strong>Robust User Provisioning:</strong> <code>liveuser</code> is provisioned via native <code>systemd-sysusers</code> at early boot, eliminating race conditions where autologin triggers before the user exists.</li>
+  <li><strong>Graceful Network Handling:</strong> Boot scripts contain zero blocking synchronous network queries; the system boots to the desktop in under 5 seconds regardless of network availability.</li>
+</ul>
+
+<h2>5.2 Security & System Permissions</h2>
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>Component</th>
+      <th>Permission / Configuration</th>
+      <th>Security Rationale</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Live User Sudo</strong></td>
+      <td><code>liveuser ALL=(ALL:ALL) NOPASSWD: ALL</code> (Mode 0440)</td>
+      <td>Allows testing hardware tools and partitioners without password barriers in live preview.</td>
+    </tr>
+    <tr>
+      <td><strong>Installed System Sudo</strong></td>
+      <td><code>%wheel ALL=(ALL:ALL) ALL</code> (Mode 0440)</td>
+      <td>Standard secure Linux multi-user privilege model; requires user password authentication.</td>
+    </tr>
+    <tr>
+      <td><strong>Shadow File Access</strong></td>
+      <td><code>/etc/shadow</code> & <code>/etc/gshadow</code> (Mode 0400)</td>
+      <td>Restricts read/write access strictly to the root user.</td>
+    </tr>
+    <tr>
+      <td><strong>Desktop Shortcuts</strong></td>
+      <td><code>metadata::trusted true</code> (Mode 0755)</td>
+      <td>Prevents security untrusted dialogs when launching installer or switchers in KDE/GNOME.</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- SECTION 6: RELEASE ROADMAP -->
+<h1>6. Project Roadmap & Milestone Delivery</h1>
+
+<table class="data-table">
+  <thead>
+    <tr>
+      <th style="width: 15%;">Milestone</th>
+      <th style="width: 30%;">Deliverables</th>
+      <th style="width: 40%;">Status & Validation</th>
+      <th style="width: 15%;">Target</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Phase 1: Foundation</strong></td>
+      <td>Archiso base, KDE Plasma 6 profile, pacman mirrors, base package definitions.</td>
+      <td><span class="badge badge-green">Completed</span> Tested in QEMU & VirtualBox.</td>
+      <td>Q3 2026</td>
+    </tr>
+    <tr>
+      <td><strong>Phase 2: Dual DE & Installer</strong></td>
+      <td>Calamares wizard, GNOME 4x integration, 1-click desktop switcher, 30s bootloader timeouts.</td>
+      <td><span class="badge badge-green">Completed</span> Verified live preview & dual install.</td>
+      <td>Q3 2026</td>
+    </tr>
+    <tr>
+      <td><strong>Phase 3: Gaming & Hardware</strong></td>
+      <td>NVIDIA/AMD/Intel driver stack, VMware tools, sysctl gaming tweaks, yay AUR helper, Zstd-19 size optimization.</td>
+      <td><span class="badge badge-green">Completed</span> Built & validated under 3.9 GB threshold.</td>
+      <td>Q3 2026</td>
+    </tr>
+    <tr>
+      <td><strong>Phase 4: Custom Kernel & Polish</strong></td>
+      <td>Custom Zen / CachyOS BORE scheduler kernel, bespoke Caelaris dark theme, and automated release mirror network.</td>
+      <td><span class="badge badge-blue">Roadmap</span> In active design and planning.</td>
+      <td>Q4 2026</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout callout-success" style="margin-top: 30px;">
+  <strong>Conclusion:</strong> Caelaris Linux establishes a modern, uncompromising standard for Arch-based Linux distributions, delivering gaming excellence, hypervisor agility, and desktop versatility in a polished, production-grade ISO.
+</div>
+
+</body>
+</html>

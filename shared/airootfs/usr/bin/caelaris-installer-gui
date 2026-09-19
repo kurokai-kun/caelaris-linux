@@ -679,14 +679,7 @@ class CaelarisInstaller(QMainWindow):
 
     def finish_installation(self):
         if self.chk_reboot.isChecked():
-            subprocess.run(["eject", "-i", "0", "/dev/sr0"], check=False)
-            subprocess.run(["eject", "/dev/sr0"], check=False)
-            try:
-                with open("/sys/block/sr0/device/delete", "w") as f:
-                    f.write("1\n")
-            except Exception:
-                pass
-            subprocess.run(["systemctl", "reboot"], check=False)
+            subprocess.Popen(["systemctl", "--no-block", "reboot"])
         self.close()
 
 if __name__ == "__main__":
