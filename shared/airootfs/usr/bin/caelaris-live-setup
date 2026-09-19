@@ -2,13 +2,13 @@
 # caelaris-live-setup: System initialization for live session
 set +e
 
-# 1. Create liveuser with "Caelaris Linux" Real Name if not present
+# 1. Create liveuser if not already created by systemd-sysusers
 if ! id -u liveuser >/dev/null 2>&1; then
     useradd -m -c "Caelaris Linux" -g users -G wheel,video,audio,optical,storage,input,power -s /bin/bash liveuser
-    passwd -d liveuser || true
-    echo "liveuser ALL=(ALL:ALL) NOPASSWD: ALL" > /etc/sudoers.d/liveuser
-    chmod 0440 /etc/sudoers.d/liveuser
 fi
+passwd -d liveuser 2>/dev/null || true
+echo "liveuser ALL=(ALL:ALL) NOPASSWD: ALL" > /etc/sudoers.d/liveuser
+chmod 0440 /etc/sudoers.d/liveuser
 
 # Ensure display name is set to "Caelaris Linux" in GECOS
 chfn -f "Caelaris Linux" liveuser 2>/dev/null || true
@@ -19,38 +19,49 @@ if grep -q "desktop=gnome" /proc/cmdline 2>/dev/null; then
     DESKTOP_CHOICE="gnome"
 fi
 
-# Configure AccountsService so Kickoff, GDM/SDDM, lock screen & user managers show "Caelaris Linux"
+# Detect exact session name available
+SESSION_NAME=""
+if [ "$DESKTOP_CHOICE" = "gnome" ]; then
+    SESSION_NAME="gnome"
+else
+    if [ -f /usr/share/wayland-sessions/plasma.desktop ]; then
+        SESSION_NAME="plasma"
+    elif [ -f /usr/share/wayland-sessions/plasmawayland.desktop ]; then
+        SESSION_NAME="plasmawayland"
+    elif [ -f /usr/share/xsessions/plasmax11.desktop ]; then
+        SESSION_NAME="plasmax11"
+    else
+        SESSION_NAME="plasma"
+    fi
+fi
+
+# Configure AccountsService
 mkdir -p /var/lib/AccountsService/users
 cat > /var/lib/AccountsService/users/liveuser << EOF
 [User]
 Language=en_US.UTF-8
-Session=${DESKTOP_CHOICE}
-XSession=${DESKTOP_CHOICE}
+Session=${SESSION_NAME}
+XSession=${SESSION_NAME}
 SystemAccount=false
 RealName=Caelaris Linux
 Icon=/usr/share/pixmaps/caelaris-logo.png
 EOF
 chmod 0644 /var/lib/AccountsService/users/liveuser
 
+# 3. Configure SDDM autologin
 mkdir -p /etc/sddm.conf.d
 
-# Set modern official Breeze SDDM theme (frosted glass with session dropdown)
-cat > /etc/sddm.conf.d/10-theme.conf << 'EOF'
-[Theme]
-Current=breeze
-CursorTheme=breeze_cursors
-
-[General]
-HaltCommand=/usr/bin/systemctl poweroff
-RebootCommand=/usr/bin/systemctl reboot
-EOF
-
-# Set Live Preview autologin session
 cat > /etc/sddm.conf.d/autologin.conf << EOF
 [Autologin]
 User=liveuser
-Session=${DESKTOP_CHOICE}
+Session=${SESSION_NAME}
 Relogin=false
+EOF
+
+cat > /etc/sddm.conf.d/10-general.conf << 'EOF'
+[General]
+HaltCommand=/usr/bin/systemctl poweroff
+RebootCommand=/usr/bin/systemctl reboot
 EOF
 
 # 4. Copy skeleton files & desktop shortcuts
@@ -79,26 +90,26 @@ done
 chmod +x /usr/bin/caelaris-* 2>/dev/null || true
 chmod +x /usr/bin/yay 2>/dev/null || true
 
-chown -R liveuser:users /home/liveuser
-
-# 5. Start VirtualBox, VMware & UTM / QEMU guest integration services
-systemctl start vboxservice.service 2>/dev/null || true
-systemctl start vmtoolsd.service 2>/dev/null || true
-systemctl start vmware-vmblock-fuse.service 2>/dev/null || true
-systemctl start spice-vdagentd.service 2>/dev/null || true
-systemctl start qemu-guest-agent.service 2>/dev/null || true
-systemctl start ananicy-cpp.service 2>/dev/null || true
+# Autostart vboxclient in userspace if present
 mkdir -p /home/liveuser/.config/autostart
 if [ -f /etc/xdg/autostart/vboxclient.desktop ]; then
-    cp -f /etc/xdg/autostart/vboxclient.desktop /home/liveuser/.config/autostart/
+    cp -f /etc/xdg/autostart/vboxclient.desktop /home/liveuser/.config/autostart/ 2>/dev/null || true
 fi
 
-# 6. Configure Flathub app store backend for Discover & Software
-if which flatpak >/dev/null 2>&1; then
-    flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo 2>/dev/null || true
-fi
+# Autostart caelaris-autoresize
+cat > /home/liveuser/.config/autostart/caelaris-autoresize.desktop << 'EOF'
+[Desktop Entry]
+Type=Application
+Exec=/usr/bin/caelaris-autoresize
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+Name=Caelaris Auto-Resize
+EOF
 
-# 7. Clean up releng residue
+chown -R liveuser:users /home/liveuser
+
+# 5. Clean up releng residue
 touch /root/.automated_script.sh
 chmod +x /root/.automated_script.sh
 exit 0

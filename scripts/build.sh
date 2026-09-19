@@ -47,7 +47,6 @@ cat "${PROFILE_SRC}/packages.x86_64" >> "${BUILD_PROFILE}/packages.x86_64"
 sort -u "${BUILD_PROFILE}/packages.x86_64" -o "${BUILD_PROFILE}/packages.x86_64"
 sed -i '/^[[:space:]]*#/d; /^[[:space:]]*$/d' "${BUILD_PROFILE}/packages.x86_64"
 sed -i '/virtualbox-guest-utils-nox/d' "${BUILD_PROFILE}/packages.x86_64"
-sed -i '/xf86-video-vmware/d' "${BUILD_PROFILE}/packages.x86_64"
 
 # 5. Overlay shared pacman.conf
 cp "${ROOT_DIR}/shared/pacman.conf" "${BUILD_PROFILE}/pacman.conf"
@@ -192,13 +191,14 @@ EOF
 fi
 
 # 10. Configure Graphical Boot & Display Manager
-mkdir -p "${BUILD_PROFILE}/airootfs/etc/systemd/system/sysinit.target.wants"
-ln -sf /usr/lib/systemd/system/graphical.target "${BUILD_PROFILE}/airootfs/etc/systemd/system/default.target"
-ln -sf /etc/systemd/system/caelaris-live-setup.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/sysinit.target.wants/caelaris-live-setup.service"
-
 mkdir -p "${BUILD_PROFILE}/airootfs/etc/systemd/system/graphical.target.wants"
+ln -sf /usr/lib/systemd/system/graphical.target "${BUILD_PROFILE}/airootfs/etc/systemd/system/default.target"
+ln -sf /etc/systemd/system/caelaris-live-setup.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/graphical.target.wants/caelaris-live-setup.service"
 ln -sf /usr/lib/systemd/system/sddm.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/display-manager.service"
 ln -sf /usr/lib/systemd/system/sddm.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/graphical.target.wants/sddm.service"
+
+# Mask benign systemd-loop@ service on CD-ROM to silence loopback block device log
+ln -sf /dev/null "${BUILD_PROFILE}/airootfs/etc/systemd/system/systemd-loop@.service" 2>/dev/null || true
 
 # Enable VirtualBox, VMware & UTM / QEMU Guest Services for display scaling & acceleration
 mkdir -p "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants"
@@ -206,7 +206,6 @@ ln -sf /usr/lib/systemd/system/vboxservice.service "${BUILD_PROFILE}/airootfs/et
 ln -sf /usr/lib/systemd/system/vmtoolsd.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/vmtoolsd.service" 2>/dev/null || true
 ln -sf /usr/lib/systemd/system/vmware-vmblock-fuse.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/vmware-vmblock-fuse.service" 2>/dev/null || true
 ln -sf /usr/lib/systemd/system/spice-vdagentd.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/spice-vdagentd.service" 2>/dev/null || true
-ln -sf /usr/lib/systemd/system/ananicy-cpp.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/ananicy-cpp.service" 2>/dev/null || true
 
 # Generate PNG logo from SVG if rsvg-convert is available
 if which rsvg-convert >/dev/null 2>&1; then
