@@ -10,15 +10,14 @@ strings:
     versionedName:       Caelaris Linux 2026.09
     shortVersionedName:  Caelaris 2026.09
     bootloaderEntryName: Caelaris Linux
-    productUrl:          https://github.com/kurokai-kun/caelaris-linux
-    supportUrl:          https://github.com/kurokai-kun/caelaris-linux/issues
-    knownIssuesUrl:      https://github.com/kurokai-kun/caelaris-linux/issues
-    releaseNotesUrl:     https://github.com/kurokai-kun/caelaris-linux
+    productUrl:          https://github.com/caelaris-linux/caelaris
+    supportUrl:          https://github.com/caelaris-linux/caelaris/issues
+    knownIssuesUrl:      https://github.com/caelaris-linux/caelaris/issues
+    releaseNotesUrl:     https://github.com/caelaris-linux/caelaris
 
 style:
    Sidebar: "widget"
    Navigation: "widget"
 
 upload-logs:
-    enabled: true
-    url: https://termbin.com
+    enabled: false

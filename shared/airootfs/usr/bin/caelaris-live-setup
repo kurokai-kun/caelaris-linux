@@ -107,9 +107,41 @@ X-GNOME-Autostart-enabled=true
 Name=Caelaris Auto-Resize
 EOF
 
+# 5. Clean up desktop application menus so GNOME and KDE each have a pristine app drawer
+for kapp in org.kde.dolphin dolphin org.kde.konsole konsole org.kde.kate kate \
+             org.kde.kwrite kwrite org.kde.ark ark org.kde.spectacle spectacle \
+             org.kde.gwenview gwenview org.kde.kcalc kcalc \
+             org.kde.plasma-systemmonitor plasma-systemmonitor \
+             systemsettings kinfocenter org.kde.discover org.kde.drkonqi; do
+    df="/usr/share/applications/${kapp}.desktop"
+    if [ -f "$df" ]; then
+        sed -i '/^NotShowIn=/d; /^OnlyShowIn=/d' "$df" 2>/dev/null || true
+        echo "NotShowIn=GNOME;" >> "$df" 2>/dev/null || true
+    fi
+done
+
+for gapp in org.gnome.Nautilus nautilus org.gnome.Ptyxis ptyxis \
+             org.gnome.TextEditor gnome-text-editor org.gnome.Calculator gnome-calculator \
+             org.gnome.SystemMonitor gnome-system-monitor org.gnome.DiskUtility gnome-disk-utility \
+             gnome-control-center org.gnome.Settings; do
+    df="/usr/share/applications/${gapp}.desktop"
+    if [ -f "$df" ]; then
+        sed -i '/^NotShowIn=/d; /^OnlyShowIn=/d' "$df" 2>/dev/null || true
+        echo "NotShowIn=KDE;" >> "$df" 2>/dev/null || true
+    fi
+done
+
+for util in avahi-discover bssh bvnc qv4l2 qvidcap lstopo cmake-gui \
+            electron electron31 electron32 electron33; do
+    df="/usr/share/applications/${util}.desktop"
+    if [ -f "$df" ]; then
+        grep -q "NoDisplay=true" "$df" 2>/dev/null || echo "NoDisplay=true" >> "$df" 2>/dev/null || true
+    fi
+done
+
 chown -R liveuser:users /home/liveuser
 
-# 5. Clean up releng residue
+# 6. Clean up releng residue
 touch /root/.automated_script.sh
 chmod +x /root/.automated_script.sh
 exit 0

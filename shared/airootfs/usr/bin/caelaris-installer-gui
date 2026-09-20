@@ -81,6 +81,9 @@ class InstallWorker(QThread):
         for line in iter(process.stdout.readline, ''):
             clean = line.strip()
             if clean:
+                # Suppress harmless legacy storage/network controller missing firmware warnings from mkinitcpio
+                if "Possibly missing firmware" in clean or "missing firmware for module" in clean:
+                    continue
                 self.log(clean)
         process.stdout.close()
         ret = process.wait()
@@ -309,8 +312,31 @@ class InstallWorker(QThread):
                 if os.path.exists(stale):
                     os.remove(stale)
 
-            # ── Step 1: Regenerate initramfs inside the installed system ──────
-            self.progress_changed.emit(90, "Generating initramfs with mkinitcpio...")
+            # ── Step 1: Ensure firmware stubs exist & regenerate initramfs ──────
+            self.progress_changed.emit(90, "Configuring firmware and generating initramfs with mkinitcpio...")
+            fw_dir = "/mnt/usr/lib/firmware"
+            os.makedirs(fw_dir, exist_ok=True)
+            for fw in [
+                "aic94xx-seq.fw", "wd719x-wds.bin", "wd719x-risc.bin",
+                "ast_dp501_fw.bin", "qla1280.bin", "ql2100_fw.bin", "ql2200_fw.bin",
+                "ql2300_fw.bin", "ql2322_fw.bin", "ql2400_fw.bin", "ql2500_fw.bin",
+                "bfa/bfa_fw.bin", "bfa/bfa_fw_3.0.0.0.bin", "bfa/cna_2322.bin",
+                "qed/qed_init_values_zipped-8.70.16.0.bin", "qed/qed_init_values_zipped-8.42.2.0.bin",
+                "qed/qed_init_values_zipped-8.37.7.0.bin", "qed/qed_init_values_zipped-8.33.12.0.bin",
+                "qed/qed_init_values_zipped-8.33.1.0.bin", "qed/qed_init_values_zipped-8.20.0.0.bin",
+                "qed/qed_init_values_zipped-8.10.10.0.bin", "qed/qed_init_values_zipped-8.10.9.0.bin",
+                "qed/qed_init_values_zipped-8.10.7.0.bin", "qed/qed_init_values_zipped-8.10.5.0.bin",
+                "qed/qed_init_values_zipped-8.7.3.0.bin", "qed/qed_init_values_zipped-8.4.2.0.bin",
+                "liquidio/lio_23xx_vfs.bin", "liquidio/lio_23xx_nic.bin", "liquidio/lio_410nv_nic.bin"
+            ]:
+                dest = os.path.join(fw_dir, fw)
+                os.makedirs(os.path.dirname(dest), exist_ok=True)
+                if not os.path.exists(dest):
+                    try:
+                        open(dest, "a").close()
+                    except OSError:
+                        pass
+
             self.run_cmd("arch-chroot /mnt mkinitcpio -P", check=False)
 
             # ── Step 2: Install GRUB bootloader ──────────────────────────────
@@ -448,6 +474,68 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
                     os.remove(shortcut)
                 except OSError:
                     pass
+
+            # Clean up GNOME & KDE desktop application menus so each environment has a clean, dedicated app drawer
+            self.log("Polishing GNOME & KDE application drawers for a clean experience...")
+            kde_exclusive_apps = [
+                "org.kde.dolphin", "dolphin", "org.kde.konsole", "konsole",
+                "org.kde.kate", "kate", "org.kde.kwrite", "kwrite",
+                "org.kde.ark", "ark", "org.kde.spectacle", "spectacle",
+                "org.kde.gwenview", "gwenview", "org.kde.kcalc", "kcalc",
+                "org.kde.plasma-systemmonitor", "plasma-systemmonitor",
+                "systemsettings", "kinfocenter", "org.kde.discover",
+                "org.kde.drkonqi", "org.kde.plasma.vault"
+            ]
+            gnome_exclusive_apps = [
+                "org.gnome.Nautilus", "nautilus", "org.gnome.Ptyxis", "ptyxis",
+                "org.gnome.TextEditor", "gnome-text-editor",
+                "org.gnome.Calculator", "gnome-calculator",
+                "org.gnome.SystemMonitor", "gnome-system-monitor",
+                "org.gnome.DiskUtility", "gnome-disk-utility",
+                "gnome-control-center", "org.gnome.Settings"
+            ]
+            utility_clutter = [
+                "avahi-discover", "bssh", "bvnc", "qv4l2", "qvidcap",
+                "lstopo", "cmake-gui", "electron", "electron31", "electron32", "electron33"
+            ]
+
+            for kapp in kde_exclusive_apps:
+                df = f"/mnt/usr/share/applications/{kapp}.desktop"
+                if os.path.isfile(df):
+                    try:
+                        with open(df, "r") as f:
+                            c = f.read()
+                        lines = [l for l in c.splitlines() if not l.startswith("NotShowIn=") and not l.startswith("OnlyShowIn=")]
+                        lines.append("NotShowIn=GNOME;")
+                        with open(df, "w") as f:
+                            f.write("\n".join(lines) + "\n")
+                    except Exception:
+                        pass
+
+            for gapp in gnome_exclusive_apps:
+                df = f"/mnt/usr/share/applications/{gapp}.desktop"
+                if os.path.isfile(df):
+                    try:
+                        with open(df, "r") as f:
+                            c = f.read()
+                        lines = [l for l in c.splitlines() if not l.startswith("NotShowIn=") and not l.startswith("OnlyShowIn=")]
+                        lines.append("NotShowIn=KDE;")
+                        with open(df, "w") as f:
+                            f.write("\n".join(lines) + "\n")
+                    except Exception:
+                        pass
+
+            for util in utility_clutter:
+                df = f"/mnt/usr/share/applications/{util}.desktop"
+                if os.path.isfile(df):
+                    try:
+                        with open(df, "r") as f:
+                            c = f.read()
+                        if "NoDisplay=true" not in c:
+                            with open(df, "a") as f:
+                                f.write("\nNoDisplay=true\n")
+                    except Exception:
+                        pass
 
             # Ensure proper ownership of user home directory
             self.run_cmd(f"arch-chroot /mnt chown -R {user}:users /home/{user}", check=False)
