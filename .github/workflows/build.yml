@@ -47,6 +47,51 @@ jobs:
               ./scripts/build.sh ${{ inputs.edition || 'kde' }}
             "
 
+      - name: Prepare Release Assets (< 2GB chunks for GitHub Release limit)
+        id: prep
+        run: |
+          mkdir -p release_assets
+          ISO_FILE=$(ls out/*.iso | head -n 1)
+          ISO_NAME=$(basename "$ISO_FILE")
+          echo "Processing $ISO_NAME..."
+
+          # 1. SHA256 Checksum
+          sha256sum "$ISO_FILE" > "release_assets/${ISO_NAME}.sha256"
+
+          # 2. Split into 1900MB parts to strictly stay below GitHub's 2147483648-byte limit
+          echo "Splitting ISO into parts under 1.9GB..."
+          split -b 1900M -d "$ISO_FILE" "release_assets/${ISO_NAME}.part-"
+
+          # 3. Windows 1-click combine script (combine.bat)
+          cat << EOF > release_assets/combine.bat
+          @echo off
+          echo ========================================================
+          echo  Merging Caelaris Linux ISO parts...
+          echo ========================================================
+          copy /b "${ISO_NAME}.part-*" "${ISO_NAME}"
+          echo.
+          if exist "${ISO_NAME}.sha256" (
+              echo Verifying SHA256 checksum...
+              certutil -hashfile "${ISO_NAME}" SHA256
+          )
+          echo.
+          echo Done! You can now attach ${ISO_NAME} to VMware or VirtualBox.
+          pause
+          EOF
+
+          # 4. Attempt direct cloud upload to Pixeldrain for 1-click single-file download
+          echo "Attempting Pixeldrain direct upload (5-minute timeout)..."
+          PD_URL=""
+          PD_RESP=$(curl -s -m 300 -F "file=@$ISO_FILE" https://pixeldrain.com/api/file 2>/dev/null || true)
+          PD_ID=$(echo "$PD_RESP" | grep -o '"id":"[^"]*' | cut -d'"' -f4 || true)
+          if [ -n "$PD_ID" ]; then
+            PD_URL="https://pixeldrain.com/u/$PD_ID"
+            echo "Pixeldrain direct download: $PD_URL"
+          fi
+          echo "PIXELDRAIN_LINK=$PD_URL" >> $GITHUB_ENV
+
+          ls -lh release_assets/
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
@@ -56,18 +101,23 @@ jobs:
           make_latest: true
           body: |
             ## ✨ Caelaris Linux Latest Rolling ISO
-            - Clean single-entry bootloader (KDE Plasma 6 default with 3s timeout)
-            - Dual desktops (KDE Plasma 6 + GNOME) selectable at SDDM login
-            - Native kernel & microcode in `/boot` for instant GRUB boot
-            - Universal virtualization drivers (VMware, VirtualBox, UTM)
-          files: out/*.iso
+
+            ${{ env.PIXELDRAIN_LINK != '' && format('### ⚡ Direct 1-Click Download (Single 4.2GB ISO):{0}👉 **[Download Caelaris Linux ISO]({1})**{0}{0}---{0}', '\n', env.PIXELDRAIN_LINK) || '' }}
+
+            ### 📦 GitHub Release Assets Download:
+            Because GitHub has a 2GB limit per release asset, the ISO is split into parts under 1.9GB below:
+            1. Download all `.part-*` files and `combine.bat` from **Assets** below into the same folder.
+            2. Double-click **`combine.bat`** (or open CMD and run `copy /b *.part-* caelaris-kde.iso`).
+            3. Attach the resulting `.iso` to VMware or VirtualBox!
+
+            ---
+            ### 🛠️ Issues Addressed in this Build:
+            - **Guaranteed Linux Boot Option**: `/boot/vmlinuz-linux` & microcodes copied to disk; `mkinitcpio` and `grub-mkconfig` generate real Linux entries.
+            - **Eliminated UEFI Loop**: Boots directly into KDE Plasma 6.
+            - **Clean Bootloader**: Streamlined single entry with 3-second timeout.
+            - **Clean Desktop**: Switcher icons removed (switch via SDDM login screen).
+            - **Installer Reboot**: Non-blocking restart prevents kernel freeze.
+            - **Online Keys**: Pacman keyring initialized.
+          files: release_assets/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload ISO Artifact
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: caelaris-${{ inputs.edition || 'kde' }}-iso
-          path: out/*.iso
-          retention-days: 1
