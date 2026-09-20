@@ -45,20 +45,30 @@ class CaelarisWelcome(Gtk.Window):
         tab_general = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         tab_general.set_border_width(14)
         
+        is_live = os.path.exists("/run/archiso")
+
         info_label = Gtk.Label()
-        info_label.set_markup("<b>Live Preview & System Installation:</b>")
+        if is_live:
+            info_label.set_markup("<b>Live Preview & System Installation:</b>")
+        else:
+            info_label.set_markup("<b>Welcome to Caelaris Linux:</b>")
         info_label.set_halign(Gtk.Align.START)
         tab_general.pack_start(info_label, False, False, 0)
 
         desc_label = Gtk.Label()
-        desc_label.set_text("You are currently running in the Caelaris Live Preview session. Explore the desktop, check your hardware, and test applications before installing.")
+        if is_live:
+            desc_label.set_text("You are currently running in the Caelaris Live Preview session. Explore the desktop, check your hardware, and test applications before installing.")
+        else:
+            desc_label.set_text("Welcome to your newly installed Caelaris Linux system! Get started by updating repositories, configuring software, and optimizing your hardware.")
         desc_label.set_line_wrap(True)
         desc_label.set_halign(Gtk.Align.START)
         tab_general.pack_start(desc_label, False, False, 0)
 
-        btn_install = Gtk.Button(label="==> Launch Caelaris Graphical Installer <==")
-        btn_install.connect("clicked", self.launch_installer)
-        tab_general.pack_start(btn_install, False, False, 0)
+        if is_live:
+            btn_install = Gtk.Button(label="==> Launch Caelaris Graphical Installer <==")
+            btn_install.connect("clicked", self.launch_installer)
+            tab_general.pack_start(btn_install, False, False, 0)
+
 
         btn_update = Gtk.Button(label="Update Package Repositories (pacman -Syu)")
         btn_update.connect("clicked", self.run_terminal_command, "sudo pacman -Syu")
@@ -161,6 +171,21 @@ read
 
 
 def main():
+    # If running on installed system, only show welcome once
+    is_live = os.path.exists("/run/archiso")
+    flag_file = os.path.expanduser("~/.config/caelaris-welcome-shown")
+    if not is_live and os.path.exists(flag_file):
+        sys.exit(0)
+
+    # Mark as shown so it appears only once
+    if not is_live:
+        try:
+            os.makedirs(os.path.dirname(flag_file), exist_ok=True)
+            with open(flag_file, "w") as f:
+                f.write("shown=true\n")
+        except Exception:
+            pass
+
     win = CaelarisWelcome()
     win.connect("destroy", Gtk.main_quit)
     win.show_all()
@@ -169,3 +194,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

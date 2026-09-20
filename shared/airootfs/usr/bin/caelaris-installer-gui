@@ -189,13 +189,23 @@ class InstallWorker(QThread):
             if os.path.exists("/mnt/etc/sudoers.d/g_wheel"):
                 os.remove("/mnt/etc/sudoers.d/g_wheel")
 
-            self.run_cmd("arch-chroot /mnt userdel -r liveuser 2>/dev/null || true", check=False)
-            if os.path.exists("/mnt/etc/sudoers.d/liveuser"):
-                os.remove("/mnt/etc/sudoers.d/liveuser")
+            # Fully purge liveuser and sysusers config so only the created user profile remains
+            self.run_cmd("arch-chroot /mnt userdel -r -f liveuser 2>/dev/null || true", check=False)
+            for stale_live in [
+                "/mnt/etc/sysusers.d/caelaris-liveuser.conf",
+                "/mnt/var/lib/AccountsService/users/liveuser",
+                "/mnt/etc/sudoers.d/liveuser",
+                "/mnt/home/liveuser"
+            ]:
+                if os.path.isdir(stale_live):
+                    shutil.rmtree(stale_live, ignore_errors=True)
+                elif os.path.exists(stale_live):
+                    os.remove(stale_live)
 
             os.makedirs("/mnt/var/lib/AccountsService/users", exist_ok=True)
             with open(f"/mnt/var/lib/AccountsService/users/{user}", "w") as f:
                 f.write(f"[User]\nLanguage=en_US.UTF-8\nSession=plasma\nXSession=plasma\nSystemAccount=false\nRealName={realname}\nIcon=/usr/share/pixmaps/caelaris-logo.png\n")
+
 
             os.makedirs("/mnt/etc/sddm.conf.d", exist_ok=True)
             sddm_cfg = f"[Theme]\nCurrent=breeze\nCursorTheme=breeze_cursors\n"
@@ -284,10 +294,10 @@ class InstallWorker(QThread):
             with open("/mnt/etc/default/grub", "w") as f:
                 f.write(
                     'GRUB_DEFAULT=0\n'
-                    'GRUB_TIMEOUT=3\n'
+                    'GRUB_TIMEOUT=2\n'
                     'GRUB_TIMEOUT_STYLE=menu\n'
-                    'GRUB_DISTRIBUTOR="Caelaris Linux"\n'
-                    f'GRUB_CMDLINE_LINUX_DEFAULT="{subvol_arg} video=1920x1080 quiet"\n'
+                    'GRUB_DISTRIBUTOR="Caelaris"\n'
+                    f'GRUB_CMDLINE_LINUX_DEFAULT="{subvol_arg} quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 video=1920x1080"\n'
                     'GRUB_CMDLINE_LINUX=""\n'
                     'GRUB_GFXMODE=1920x1080,auto\n'
                     'GRUB_GFXPAYLOAD_LINUX=keep\n'
@@ -323,18 +333,33 @@ class InstallWorker(QThread):
             self.progress_changed.emit(94, "Generating GRUB menu configuration...")
             self.run_cmd("arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg", check=False)
 
-            # ── Step 3b: Verify and guarantee Linux boot entry in grub.cfg ───
+            # ── Clean up menu titles: Show ONLY "Caelaris Linux" ────────────
             grub_cfg_file = "/mnt/boot/grub/grub.cfg"
+            if os.path.isfile(grub_cfg_file):
+                with open(grub_cfg_file, "r") as f:
+                    cfg_text = f.read()
+
+                cfg_text = cfg_text.replace("Caelaris Linux, with Linux linux", "Caelaris Linux")
+                cfg_text = cfg_text.replace("Caelaris Linux linux", "Caelaris Linux")
+                cfg_text = cfg_text.replace("Caelaris linux", "Caelaris Linux")
+                cfg_text = cfg_text.replace("with Linux linux", "Caelaris Linux")
+                cfg_text = cfg_text.replace("Caelaris Linux, with Linux linux (fallback initramfs)", "Caelaris Linux (Recovery Mode)")
+                cfg_text = cfg_text.replace("Caelaris Linux (fallback initramfs)", "Caelaris Linux (Recovery Mode)")
+
+                with open(grub_cfg_file, "w") as f:
+                    f.write(cfg_text)
+
+            # ── Step 3b: Verify and guarantee Linux boot entry in grub.cfg ───
             has_linux = False
             if os.path.isfile(grub_cfg_file):
                 with open(grub_cfg_file, "r") as f:
                     cfg_text = f.read()
                 if "vmlinuz" in cfg_text:
                     has_linux = True
-                    self.log("[SUCCESS] Verified Linux boot entry present in grub.cfg!")
+                    self.log("[SUCCESS] Verified clean Caelaris Linux boot entry present in grub.cfg!")
 
             if not has_linux:
-                self.log("[WARNING] No Linux entry detected in grub.cfg! Generating bulletproof Caelaris Linux entry...")
+                self.log("[WARNING] Generating bulletproof Caelaris Linux entry...")
                 root_uuid = subprocess.check_output(f"blkid -s UUID -o value {p2}", shell=True, text=True).strip()
                 subvol_flag = "rootflags=subvol=@ " if fs_type == "btrfs" else ""
                 k_path = "/@/boot/vmlinuz-linux" if fs_type == "btrfs" else "/boot/vmlinuz-linux"
@@ -354,7 +379,7 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
     insmod part_msdos
     insmod {fs_type}
     search --no-floppy --fs-uuid --set=root {root_uuid}
-    linux {k_path} root=UUID={root_uuid} rw {subvol_flag}desktop=plasma video=1920x1080 quiet
+    linux {k_path} root=UUID={root_uuid} rw {subvol_flag}quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 video=1920x1080
     initrd {ucode_str}{initrd_path}
 }}
 """
@@ -370,17 +395,28 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
             self.run_cmd("arch-chroot /mnt pacman-key --init 2>/dev/null || true", check=False)
             self.run_cmd("arch-chroot /mnt pacman-key --populate archlinux 2>/dev/null || true", check=False)
 
-            # ── Step 5: Enable system services ───────────────────────────────
-            self.progress_changed.emit(96, "Enabling system services...")
+            # ── Step 5: Install & Enable All Hardware & Virtualization Drivers ───
+            self.progress_changed.emit(96, "Installing and enabling hardware drivers & guest tools...")
             self.run_cmd(
                 "arch-chroot /mnt systemctl enable NetworkManager sddm pipewire wireplumber "
                 "vboxservice vmtoolsd vmware-vmblock-fuse spice-vdagentd qemu-guest-agent "
-                "ananicy-cpp 2>/dev/null || true",
+                "systemd-timesyncd ananicy-cpp 2>/dev/null || true",
                 check=False
             )
 
-            # ── Step 6: Clean up live-environment artifacts ───────────────────
-            self.progress_changed.emit(98, "Cleaning up live-system artifacts...")
+            # Enable NVIDIA modesetting if NVIDIA hardware is present
+            try:
+                pci_output = subprocess.check_output("lspci", shell=True, text=True)
+                if "nvidia" in pci_output.lower():
+                    os.makedirs("/mnt/etc/modprobe.d", exist_ok=True)
+                    with open("/mnt/etc/modprobe.d/nvidia.conf", "w") as f:
+                        f.write("options nvidia-drm modeset=1\n")
+                    self.log("Configured NVIDIA DRM modesetting for installed system.")
+            except Exception:
+                pass
+
+            # ── Step 6: Clean up live-environment artifacts & installer shortcuts ─
+            self.progress_changed.emit(98, "Cleaning up live-system artifacts & removing installer from desktop...")
             for live_artifact in [
                 "/mnt/etc/systemd/system/caelaris-live-setup.service",
                 "/mnt/etc/systemd/system/graphical.target.wants/caelaris-live-setup.service",
@@ -388,14 +424,33 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
                 "/mnt/etc/sddm.conf.d/autologin.conf",
                 "/mnt/etc/sudoers.d/liveuser",
                 "/mnt/etc/sudoers.d/g_wheel",
+                "/mnt/etc/sysusers.d/caelaris-liveuser.conf",
+                "/mnt/var/lib/AccountsService/users/liveuser",
+                # Remove installer desktop shortcuts so installer completely disappears from desktop
+                f"/mnt/home/{user}/Desktop/install-caelaris.desktop",
+                "/mnt/etc/skel/Desktop/install-caelaris.desktop",
+                "/mnt/usr/share/applications/install-caelaris.desktop",
+                "/mnt/usr/share/applications/caelaris-installer.desktop",
+                "/mnt/usr/share/applications/caelaris-installer-gui.desktop"
             ]:
-                if os.path.exists(live_artifact):
-                    os.remove(live_artifact)
+                if os.path.isdir(live_artifact):
+                    shutil.rmtree(live_artifact, ignore_errors=True)
+                elif os.path.exists(live_artifact):
+                    try:
+                        os.remove(live_artifact)
+                    except OSError:
+                        pass
 
-            # Remove live desktop shortcuts except none (clean installed desktop)
+            # Remove any stray switch-to-*.desktop
             import glob
-            for shortcut in glob.glob("/mnt/etc/skel/Desktop/switch-to-*.desktop"):
-                os.remove(shortcut)
+            for shortcut in glob.glob(f"/mnt/home/{user}/Desktop/switch-to-*.desktop") + glob.glob("/mnt/etc/skel/Desktop/switch-to-*.desktop"):
+                try:
+                    os.remove(shortcut)
+                except OSError:
+                    pass
+
+            # Ensure proper ownership of user home directory
+            self.run_cmd(f"arch-chroot /mnt chown -R {user}:users /home/{user}", check=False)
 
             self.progress_changed.emit(100, "Installation complete!")
             self.installation_finished.emit(True, "Caelaris Linux installed successfully!")
