@@ -14,6 +14,9 @@ on:
           - kde
           - gnome
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -49,4 +52,20 @@ jobs:
         with:
           name: caelaris-${{ inputs.edition || 'kde' }}-iso
           path: out/*.iso
-          retention-days: 7
+          retention-days: 1
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main'
+        with:
+          tag_name: latest
+          name: Caelaris Linux Latest Rolling ISO
+          body: |
+            ## ✨ Caelaris Linux Rolling ISO
+            - Clean single-entry bootloader (KDE Plasma 6 default)
+            - Dual desktops (KDE Plasma 6 + GNOME) selectable at SDDM login
+            - Native kernel & microcode in `/boot` for instant GRUB boot
+            - Universal virtualization drivers (VMware, VirtualBox, UTM)
+          files: out/*.iso
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
