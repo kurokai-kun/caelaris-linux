@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Caelaris Linux - System Architecture & Technical Design</title>
+<style>
+  @page {
+    size: A4;
+    margin: 18mm 16mm 20mm 16mm;
+    @bottom-right {
+      content: "Page " counter(page) " of " counter(pages);
+      font-size: 8pt;
+      color: #718096;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color: #1e293b;
+    background-color: #ffffff;
+    line-height: 1.55;
+    font-size: 9.5pt;
+    margin: 0;
+    padding: 0;
+  }
+
+  .cover-page {
+    min-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    page-break-after: always;
+    padding: 40px 20px;
+    box-sizing: border-box;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  .cover-badge {
+    display: inline-block;
+    background: #f0fdf4;
+    color: #15803d;
+    font-weight: 700;
+    font-size: 10pt;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    width: fit-content;
+    border: 1px solid #bbf7d0;
+  }
+
+  .cover-title {
+    font-size: 32pt;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.15;
+    margin: 0 0 12px 0;
+    letter-spacing: -0.5px;
+  }
+
+  .cover-subtitle {
+    font-size: 14pt;
+    font-weight: 400;
+    color: #475569;
+    margin: 0 0 35px 0;
+    line-height: 1.4;
+  }
+
+  .cover-meta-table {
+    margin-top: 30px;
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 550px;
+  }
+
+  .cover-meta-table td {
+    padding: 8px 12px;
+    font-size: 9.5pt;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .cover-meta-table td:first-child {
+    font-weight: 600;
+    color: #64748b;
+    width: 160px;
+  }
+
+  .cover-meta-table td:last-child {
+    color: #0f172a;
+    font-weight: 500;
+  }
+
+  h1 {
+    font-size: 17pt;
+    font-weight: 700;
+    color: #0f172a;
+    border-bottom: 2px solid #16a34a;
+    padding-bottom: 6px;
+    margin-top: 32px;
+    margin-bottom: 14px;
+    page-break-after: avoid;
+  }
+
+  h2 {
+    font-size: 12.5pt;
+    font-weight: 600;
+    color: #1e293b;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    page-break-after: avoid;
+  }
+
+  h3 {
+    font-size: 10.5pt;
+    font-weight: 600;
+    color: #334155;
+    margin-top: 14px;
+    margin-bottom: 6px;
+    page-break-after: avoid;
+  }
+
+  p {
+    margin: 0 0 10px 0;
+    color: #334155;
+  }
+
+  ul, ol {
+    margin: 0 0 12px 0;
+    padding-left: 20px;
+    color: #334155;
+  }
+
+  li {
+    margin-bottom: 5px;
+  }
+
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0 18px 0;
+    font-size: 8.5pt;
+    page-break-inside: avoid;
+  }
+
+  table.data-table th {
+    background-color: #f8fafc;
+    color: #1e293b;
+    font-weight: 600;
+    text-align: left;
+    padding: 8px 10px;
+    border: 1px solid #cbd5e1;
+  }
+
+  table.data-table td {
+    padding: 7px 10px;
+    border: 1px solid #e2e8f0;
+    color: #334155;
+    vertical-align: top;
+  }
+
+  table.data-table tr:nth-child(even) td {
+    background-color: #f8fafc;
+  }
+
+  .callout {
+    background-color: #f0fdf4;
+    border-left: 4px solid #16a34a;
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin: 12px 0;
+    font-size: 9pt;
+    page-break-inside: avoid;
+  }
+
+  .callout strong {
+    color: #15803d;
+  }
+
+  code {
+    font-family: 'Cascadia Code', Consolas, Monaco, monospace;
+    font-size: 8pt;
+    background-color: #f1f5f9;
+    padding: 2px 4px;
+    border-radius: 4px;
+    color: #0f172a;
+  }
+
+  pre {
+    background-color: #0f172a;
+    color: #f8fafc;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-family: 'Cascadia Code', Consolas, Monaco, monospace;
+    font-size: 8pt;
+    overflow-x: auto;
+    margin: 10px 0;
+    page-break-inside: avoid;
+    line-height: 1.4;
+  }
+
+  .page-break {
+    page-break-before: always;
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER PAGE -->
+<div class="cover-page">
+  <div class="cover-badge">System Architecture Specification</div>
+  <h1 class="cover-title">Caelaris Linux</h1>
+  <div class="cover-subtitle">Technical Architecture, Subsystem Pipelines, Storage Topology, and Virtualization Integration Architecture</div>
+
+  <table class="cover-meta-table">
+    <tr>
+      <td>Product Name</td>
+      <td><strong>Caelaris Linux</strong> (x86_64)</td>
+    </tr>
+    <tr>
+      <td>Document Type</td>
+      <td>System Architecture & Technical Design</td>
+    </tr>
+    <tr>
+      <td>Distribution Base</td>
+      <td>Arch Linux Rolling Baseline (Kernel 6.x)</td>
+    </tr>
+    <tr>
+      <td>Document Author</td>
+      <td>Caelaris Core Architecture Team</td>
+    </tr>
+    <tr>
+      <td>Display Manager</td>
+      <td>SDDM with Breeze Theme & Wayland Sessions</td>
+    </tr>
+    <tr>
+      <td>Installer Subsystem</td>
+      <td>Caelaris Native Graphical Installer (PyQt6)</td>
+    </tr>
+    <tr>
+      <td>Compression Engine</td>
+      <td>Zstandard Level 19 (SquashFS)</td>
+    </tr>
+    <tr>
+      <td>Date Generated</td>
+      <td>September 2026</td>
+    </tr>
+  </table>
+</div>
+
+<!-- SECTION 1: ARCHITECTURAL MODEL -->
+<h1>1. High-Level Architectural Model</h1>
+<p>
+  Caelaris Linux is organized into distinct, modular subsystem layers that cleanly isolate the base operating system packages, custom desktop environments, kernel/sysctl performance optimizations, and runtime installer automation:
+</p>
+
+<pre>
++-------------------------------------------------------------------------+
+|                         USER EXPERIENCE LAYER                           |
+|   KDE Plasma 6 (Wayland) [Default]   |   GNOME 4x (Wayland) [Alternative] |
+|   Caelaris Welcome Assistant (GTK3)  |   Desktop Session Hot-Switcher     |
++-------------------------------------------------------------------------+
+|                      DISPLAY & SESSION MANAGEMENT                       |
+|   Simple Desktop Display Manager (SDDM) with Breeze Theme & Autologin   |
+|   AccountsService User Session Tracking & Polkit Privilege Agent       |
++-------------------------------------------------------------------------+
+|                  APPLICATIONS & GAMING INFRASTRUCTURE                   |
+|   Steam Client (Native / Proton)  |  MangoHud (32 & 64-bit) |  GameMode |
+|   VKD3D DirectX 12 Translation    |  PipeWire Pro-Audio Graph & ALSA/Pulse|
+|   Arch User Repository (yay)      |  Flatpak / Flathub Application Sandbox|
++-------------------------------------------------------------------------+
+|                     HARDWARE & HYPERVISOR DRIVERS                       |
+|   Mesa Gallium / Vulkan (RADV)    |  NVIDIA Proprietary + DRM Modesetting |
+|   Intel ANV & VA-API Media Driver |  VMware open-vm-tools & xf86-video-vm |
+|   VirtualBox Guest Additions      |  QEMU / SPICE VDAgentd Daemon         |
++-------------------------------------------------------------------------+
+|                 KERNEL & SYSTEM CORE OPTIMIZATIONS                      |
+|   Linux Kernel 6.x Rolling        |  mkinitcpio (Default & Fallback)     |
+|   sysctl Gaming Performance       |  ZRAM Compressed Swap Engine (zstd)   |
+|   Google BBR TCP Congestion       |  CAKE Active Queue Management         |
++-------------------------------------------------------------------------+
+|                    BOOTLOADER & STORAGE FOUNDATION                      |
+|   GRUB 2 (UEFI x86_64 & BIOS MBR) |  systemd-boot (Live ISO UEFI)         |
+|   Btrfs with Subvolume Layout     |  Ext4 Standard Filesystem             |
+|   SquashFS (Zstandard Level 19)   |  OverlayFS Copy-on-Write Live Layer   |
++-------------------------------------------------------------------------+
+</pre>
+
+<!-- SECTION 2: STORAGE & ISO HIERARCHY -->
+<h1>2. Storage Hierarchy & Live Boot Architecture</h1>
+
+<h2>2.1 Multi-Tiered Live Layering</h2>
+<p>
+  Caelaris Linux employs Archiso's standard two-tiered filesystem architecture, enhanced with maximum compression and userspace provisioning:
+</p>
+<ul>
+  <li><strong>SquashFS Base Layer (<code>airootfs.sfs</code>):</strong> The entire root filesystem containing all packages, configuration files, and desktop profiles is compressed using Zstandard level 19 (<code>-Xcompression-level 19</code>), delivering rapid decompression with ultra-compact storage (~4.2 GB uncompressed root compressed into ~3.7 GB).</li>
+  <li><strong>OverlayFS Copy-on-Write Layer:</strong> At boot, the Linux kernel mounts <code>airootfs.sfs</code> as a read-only lower filesystem and an in-memory <code>tmpfs</code> as the upper filesystem, enabling live modifications without disk writes.</li>
+  <li><strong>Copy-to-RAM Mode:</strong> An available bootloader option transfers the entire SquashFS image into RAM during early boot, allowing complete unmounting and physical removal of the installation media.</li>
+</ul>
+
+<h2>2.2 Media Layout Topology</h2>
+<pre>
+ISO_ROOT/
+├── EFI/BOOT/                   # BOOTX64.EFI & grubx64.efi executables
+├── arch/boot/x86_64/           # Kernel (vmlinuz-linux) & initramfs
+├── arch/boot/intel-ucode.img   # Intel CPU microcode updates
+├── arch/boot/amd-ucode.img     # AMD CPU microcode updates
+├── arch/x86_64/airootfs.sfs    # Compressed OS image (Zstandard-19)
+├── loader/entries/             # systemd-boot profiles (KDE, GNOME, RAM)
+└── syslinux/                   # BIOS MBR configuration files
+</pre>
+
+<div class="page-break"></div>
+
+<!-- SECTION 3: BOOTLOADER & INITRAMFS PIPELINE -->
+<h1>3. Bootloader & Initramfs Pipeline</h1>
+
+<h2>3.1 Live Media Boot Sequence</h2>
+<pre>
+[BIOS / UEFI Firmware]
+        |
+        v
+[Bootloader Menu (systemd-boot / Syslinux)]
+  - Evaluates boot params: 'desktop=plasma' or 'desktop=gnome'
+        |
+        v
+[Early Kernel Initialization (vmlinuz-linux)]
+  - Loads CPU microcode (intel-ucode / amd-ucode)
+  - Initializes hardware busses (PCIe, ACPI, USB)
+        |
+        v
+[Early Userspace (initramfs / udev)]
+  - Mounts squashfs filesystem (airootfs.sfs) via loop device
+  - Mounts OverlayFS writable ramdisk
+        |
+        v
+[Systemd Init (PID 1)]
+  - Provisions liveuser via systemd-sysusers
+  - Configures SDDM autologin for target desktop environment
+        |
+        v
+[Simple Desktop Display Manager (SDDM)]
+  - Launches KWin (KDE) or Mutter (GNOME) Wayland Compositor
+</pre>
+
+<h2>3.2 Installed System Silent Bootloader Pipeline</h2>
+<p>
+  To satisfy the requirement for a clean, direct transition into the login screen without console clutter:
+</p>
+<ul>
+  <li><strong>Suppression Parameters:</strong> <code>quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 video=1920x1080</code> suppresses non-critical kernel messages, udev logs, and systemd service startup lines.</li>
+  <li><strong>GRUB Menu Simplification:</strong> Menu entry titles are cleaned of redundant package version strings, reading strictly <strong><code>Caelaris Linux</code></strong> (or <code>Caelaris Linux (Recovery Mode)</code>).</li>
+  <li><strong>Universal Removable Fallback:</strong> Installs both the standard NVRAM entry and a universal removable fallback at <code>EFI/BOOT/BOOTX64.EFI</code>, eliminating UEFI boot loops in VMware Workstation and VirtualBox.</li>
+</ul>
+
+<!-- SECTION 4: DISPLAY & USER MANAGEMENT -->
+<h1>4. Display & User Session Management</h1>
+
+<h2>4.1 Wayland Display Compositors</h2>
+<p>
+  Both desktop environments execute natively under Wayland, avoiding X11 tearing and improving input latency:
+</p>
+<ul>
+  <li><strong>KDE Plasma 6 (Default):</strong> Managed by KWin Wayland compositor, configured with Breeze dark styling.</li>
+  <li><strong>GNOME 4x (Alternative):</strong> Managed by Mutter Wayland compositor.</li>
+  <li><strong>SDDM Integration:</strong> Provides an intuitive session selection dropdown at every login screen post-installation.</li>
+</ul>
+
+<h2>4.2 Single User Profile Architecture</h2>
+<div class="callout">
+  <strong>Single Profile Guarantee:</strong> The live user account is strictly temporary and is permanently removed during installation.
+</div>
+<p>
+  During Step 6 of the installation process:
+</p>
+<ol>
+  <li><code>arch-chroot /mnt userdel -r -f liveuser</code> deletes the live user and home directory.</li>
+  <li><code>/mnt/etc/sysusers.d/caelaris-liveuser.conf</code> is removed to prevent systemd from regenerating the user.</li>
+  <li><code>/mnt/var/lib/AccountsService/users/liveuser</code> is deleted so only the user-configured account appears in SDDM.</li>
+  <li>The installer desktop shortcut is removed from both <code>/home/{user}/Desktop/</code> and <code>/etc/skel/Desktop/</code>.</li>
+</ol>
+
+<div class="page-break"></div>
+
+<!-- SECTION 5: INSTALLER SUBSYSTEM -->
+<h1>5. Caelaris Native Graphical Installer Architecture</h1>
+
+<h2>5.1 Process & Thread Model</h2>
+<p>
+  The installer (<code>caelaris-installer-gui</code>) is built on Python 3 and PyQt6, employing a multithreaded architecture that separates GUI interactions from intensive disk I/O operations:
+</p>
+
+<pre>
++-------------------------------------------------------------+
+|                 PyQt6 UI Thread (Main Process)              |
+|   - Multi-page wizard (Disks, User Account, Options, Logs)  |
+|   - Interactive progress bar & status notification emitter   |
++-------------------------------------------------------------+
+                               | Signals / Slots
+                               v
++-------------------------------------------------------------+
+|               InstallWorker Thread (QThread)                |
+|   1. Disk Partitioning (Btrfs subvolumes or Ext4)           |
+|   2. Partition Mounting & Extraction of airootfs.sfs        |
+|   3. ESP Partition Mount to /mnt/boot/efi                   |
+|   4. fstab Generation via genfstab -U                       |
+|   5. User Account Provisioning & Password Hashing           |
+|   6. Kernel (vmlinuz-linux) & Microcode Deployment          |
+|   7. Initramfs Generation via mkinitcpio chroot             |
+|   8. GRUB Bootloader Deployment (NVRAM + Removable Fallback)|
+|   9. Hardware & Hypervisor Driver Enablement                |
+|  10. Profile Cleanup (Purge liveuser & Desktop Shortcuts)  |
++-------------------------------------------------------------+
+</pre>
+
+<h2>5.2 Btrfs Subvolume Topology</h2>
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>Subvolume</th>
+      <th>Mount Point</th>
+      <th>Mount Parameters</th>
+      <th>Function</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>@</code></td>
+      <td><code>/</code></td>
+      <td><code>rw,noatime,compress=zstd:1,subvol=@</code></td>
+      <td>Operating system root filesystem</td>
+    </tr>
+    <tr>
+      <td><code>@home</code></td>
+      <td><code>/home</code></td>
+      <td><code>rw,noatime,compress=zstd:1,subvol=@home</code></td>
+      <td>User files and application dotfiles</td>
+    </tr>
+    <tr>
+      <td><code>@cache</code></td>
+      <td><code>/var/cache</code></td>
+      <td><code>rw,noatime,subvol=@cache</code></td>
+      <td>Pacman package downloads and cache</td>
+    </tr>
+    <tr>
+      <td><code>@snapshots</code></td>
+      <td><code>/.snapshots</code></td>
+      <td><code>rw,noatime,subvol=@snapshots</code></td>
+      <td>Snapper / system rollback snapshots</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- SECTION 6: HARDWARE & VIRTUALIZATION INTEGRATION -->
+<h1>6. Hardware & Virtualization Architecture</h1>
+
+<h2>6.1 Hypervisor Guest Drivers</h2>
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>Hypervisor Platform</th>
+      <th>Kernel Drivers & Userspace Daemons</th>
+      <th>Integration Capabilities</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>VMware Workstation / Fusion</strong></td>
+      <td><code>open-vm-tools</code>, <code>vmtoolsd</code>, <code>vmware-vmblock-fuse</code>, <code>vmwgfx</code> DRM</td>
+      <td>Automatic display resizing, host shared folders, two-way clipboard.</td>
+    </tr>
+    <tr>
+      <td><strong>Oracle VirtualBox</strong></td>
+      <td><code>virtualbox-guest-utils</code>, <code>vboxservice</code>, <code>vboxvideo</code> DRM</td>
+      <td>Seamless mouse pointer, dynamic display scaling, bidirectional clipboard.</td>
+    </tr>
+    <tr>
+      <td><strong>QEMU / KVM / UTM (macOS)</strong></td>
+      <td><code>spice-vdagent</code>, <code>spice-vdagentd</code>, <code>qemu-guest-agent</code>, <code>virtio-gpu</code></td>
+      <td>Fast SPICE display synchronization, host clipboard, guest management.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>6.2 Dynamic Display Resizing Engine</h2>
+<p>
+  The userspace daemon <code>caelaris-autoresize</code> continuously listens for monitor resolution updates dispatched by hypervisor virtual display adapters, instantly invoking <code>kscreen-doctor</code> on Wayland or <code>xrandr</code> on XWayland to adapt the guest resolution to the host window.
+</p>
+
+<!-- SECTION 7: AUDIO ARCHITECTURE -->
+<h1>7. Audio Subsystem Architecture</h1>
+<p>
+  Caelaris Linux is standard on <strong>PipeWire</strong> with <strong>WirePlumber</strong> session management:
+</p>
+<ul>
+  <li><strong>Low Latency Audio Graph:</strong> Replaces legacy PulseAudio and JACK with a unified, high-performance graph engine.</li>
+  <li><strong>Compatibility Bridges:</strong> Includes <code>pipewire-pulse</code>, <code>pipewire-alsa</code>, and <code>pipewire-jack</code>, allowing native Linux games, DAW software, and web browsers to route audio simultaneously with zero configuration.</li>
+</ul>
+
+</body>
+</html>

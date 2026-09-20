@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Caelaris Linux - Comprehensive Product Features Guide</title>
+<style>
+  @page {
+    size: A4;
+    margin: 18mm 16mm 20mm 16mm;
+    @bottom-right {
+      content: "Page " counter(page) " of " counter(pages);
+      font-size: 8pt;
+      color: #718096;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color: #1e293b;
+    background-color: #ffffff;
+    line-height: 1.55;
+    font-size: 9.5pt;
+    margin: 0;
+    padding: 0;
+  }
+
+  .cover-page {
+    min-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    page-break-after: always;
+    padding: 40px 20px;
+    box-sizing: border-box;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  .cover-badge {
+    display: inline-block;
+    background: #fdf4ff;
+    color: #a21caf;
+    font-weight: 700;
+    font-size: 10pt;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    width: fit-content;
+    border: 1px solid #f0abfc;
+  }
+
+  .cover-title {
+    font-size: 32pt;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.15;
+    margin: 0 0 12px 0;
+    letter-spacing: -0.5px;
+  }
+
+  .cover-subtitle {
+    font-size: 14pt;
+    font-weight: 400;
+    color: #475569;
+    margin: 0 0 35px 0;
+    line-height: 1.4;
+  }
+
+  .cover-meta-table {
+    margin-top: 30px;
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 550px;
+  }
+
+  .cover-meta-table td {
+    padding: 8px 12px;
+    font-size: 9.5pt;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .cover-meta-table td:first-child {
+    font-weight: 600;
+    color: #64748b;
+    width: 160px;
+  }
+
+  .cover-meta-table td:last-child {
+    color: #0f172a;
+    font-weight: 500;
+  }
+
+  h1 {
+    font-size: 17pt;
+    font-weight: 700;
+    color: #0f172a;
+    border-bottom: 2px solid #c026d3;
+    padding-bottom: 6px;
+    margin-top: 32px;
+    margin-bottom: 14px;
+    page-break-after: avoid;
+  }
+
+  h2 {
+    font-size: 12.5pt;
+    font-weight: 600;
+    color: #1e293b;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    page-break-after: avoid;
+  }
+
+  h3 {
+    font-size: 10.5pt;
+    font-weight: 600;
+    color: #334155;
+    margin-top: 14px;
+    margin-bottom: 6px;
+    page-break-after: avoid;
+  }
+
+  p {
+    margin: 0 0 10px 0;
+    color: #334155;
+  }
+
+  ul, ol {
+    margin: 0 0 12px 0;
+    padding-left: 20px;
+    color: #334155;
+  }
+
+  li {
+    margin-bottom: 5px;
+  }
+
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0 18px 0;
+    font-size: 8.5pt;
+    page-break-inside: avoid;
+  }
+
+  table.data-table th {
+    background-color: #f8fafc;
+    color: #1e293b;
+    font-weight: 600;
+    text-align: left;
+    padding: 8px 10px;
+    border: 1px solid #cbd5e1;
+  }
+
+  table.data-table td {
+    padding: 7px 10px;
+    border: 1px solid #e2e8f0;
+    color: #334155;
+    vertical-align: top;
+  }
+
+  table.data-table tr:nth-child(even) td {
+    background-color: #f8fafc;
+  }
+
+  .callout {
+    background-color: #fdf4ff;
+    border-left: 4px solid #c026d3;
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin: 12px 0;
+    font-size: 9pt;
+    page-break-inside: avoid;
+  }
+
+  .callout strong {
+    color: #a21caf;
+  }
+
+  code {
+    font-family: 'Cascadia Code', Consolas, Monaco, monospace;
+    font-size: 8pt;
+    background-color: #f1f5f9;
+    padding: 2px 4px;
+    border-radius: 4px;
+    color: #0f172a;
+  }
+
+  pre {
+    background-color: #0f172a;
+    color: #f8fafc;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-family: 'Cascadia Code', Consolas, Monaco, monospace;
+    font-size: 8pt;
+    overflow-x: auto;
+    margin: 10px 0;
+    page-break-inside: avoid;
+    line-height: 1.4;
+  }
+
+  .page-break {
+    page-break-before: always;
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER PAGE -->
+<div class="cover-page">
+  <div class="cover-badge">Product Features Guide</div>
+  <h1 class="cover-title">Caelaris Linux</h1>
+  <div class="cover-subtitle">Complete Capabilities, Desktop Environments, Performance Optimizations, Driver Matrix, and Feature Comparison</div>
+
+  <table class="cover-meta-table">
+    <tr>
+      <td>Product Name</td>
+      <td><strong>Caelaris Linux</strong> (x86_64)</td>
+    </tr>
+    <tr>
+      <td>Document Type</td>
+      <td>Product Features & Capabilities Specification</td>
+    </tr>
+    <tr>
+      <td>Target Audience</td>
+      <td>Gamers, Developers, Power Users, and System Evaluators</td>
+    </tr>
+    <tr>
+      <td>Primary Desktops</td>
+      <td>KDE Plasma 6 (Default) & GNOME 4x (Wayland)</td>
+    </tr>
+    <tr>
+      <td>Installer Subsystem</td>
+      <td>Caelaris Native Graphical Installer (PyQt6)</td>
+    </tr>
+    <tr>
+      <td>Gaming Stack</td>
+      <td>Steam, GameMode, MangoHud, VKD3D & CachyOS Sysctl</td>
+    </tr>
+    <tr>
+      <td>Date Generated</td>
+      <td>September 2026</td>
+    </tr>
+  </table>
+</div>
+
+<!-- SECTION 1: OVERVIEW -->
+<h1>1. Executive Product Overview</h1>
+<p>
+  <strong>Caelaris Linux</strong> is a next-generation Arch-based operating system designed for gamers, software engineers, and power users who demand cutting-edge performance with zero configuration headaches. By combining Arch Linux's rolling package model with pre-configured dual desktop environments, automated hardware/virtualization drivers, a custom graphical installer, and CachyOS-grade gaming enhancements, Caelaris Linux delivers an uncompromising desktop experience straight from the ISO.
+</p>
+
+<pre>
+==================================================================================
+                     CAELARIS LINUX FEATURE HIGHLIGHTS
+==================================================================================
+  [1] Dual Desktop Environments   -> KDE Plasma 6 (Default) + GNOME 4x on Wayland
+  [2] Live Session Hot-Switcher   -> Switch between KDE & GNOME in 2 seconds
+  [3] Native Graphical Installer  -> Python/PyQt6 wizard with guided Btrfs & Ext4
+  [4] Silent Direct Bootloader    -> Clean single "Caelaris Linux" entry to SDDM
+  [5] Single User Profile Purity  -> Zero leftover liveuser profiles after setup
+  [6] CachyOS-Grade Gaming Stack  -> vm.max_map_count, GameMode, MangoHud, Steam
+  [7] Universal Hypervisor Tools  -> VMware, VirtualBox, and QEMU/UTM auto-scaling
+  [8] Full Software Access        -> Pacman, yay (Arch User Repository), Flathub
+  [9] Caelaris Welcome Assistant  -> 1-click maintenance tool (shown only once)
+ [10] PipeWire Pro Audio Graph    -> Low-latency audio with JACK/ALSA/Pulse bridges
+==================================================================================
+</pre>
+
+<!-- SECTION 2: DESKTOP EXPERIENCES -->
+<h1>2. Desktop Experiences & User Interface</h1>
+
+<h2>2.1 KDE Plasma 6 (Default Environment)</h2>
+<ul>
+  <li><strong>Native Wayland Compositing:</strong> Powered by KWin Wayland compositor, delivering tear-free rendering, fractional display scaling, and multi-touch trackpad gestures.</li>
+  <li><strong>Caelaris Dark Breeze Styling:</strong> Modern visual styling with translucent panels, responsive system tray, and custom wallpapers.</li>
+  <li><strong>Default Utilities:</strong> Dolphin file manager, Konsole terminal emulator, Kate text editor, and Spectacle screenshot utility.</li>
+</ul>
+
+<h2>2.2 GNOME 4x (Alternative Environment)</h2>
+<ul>
+  <li><strong>Fluid Navigation:</strong> Driven by Mutter Wayland compositor with gesture-driven workspace management and unified Activities search.</li>
+  <li><strong>Default Suite:</strong> Nautilus file manager, GNOME Terminal, Loupe image viewer, and Text Editor.</li>
+</ul>
+
+<h2>2.3 Instant Desktop Hot-Switcher</h2>
+<p>
+  Users can seamlessly switch between KDE Plasma 6 and GNOME during live preview via <code>caelaris-switch-desktop</code> in under 2 seconds without restarting the system. Post-installation, the user can freely choose between Plasma and GNOME at every SDDM login.
+</p>
+
+<div class="page-break"></div>
+
+<!-- SECTION 3: INSTALLATION & BOOTLOADER -->
+<h1>3. Installation & First-Boot Experience</h1>
+
+<h2>3.1 Caelaris Native Graphical Installer</h2>
+<ul>
+  <li><strong>PyQt6 Wizard:</strong> High-performance multithreaded GUI installer ensuring responsive feedback during intensive disk operations.</li>
+  <li><strong>Guided Storage Layout:</strong>
+    <ul>
+      <li><strong>Btrfs Mode (Recommended):</strong> Automatically configures subvolumes (<code>@</code>, <code>@home</code>, <code>@cache</code>, <code>@snapshots</code>) with transparent zstd compression.</li>
+      <li><strong>Ext4 Mode:</strong> Traditional, highly robust filesystem for maximum compatibility.</li>
+      <li><strong>EFI System Partition:</strong> Automatic FAT32 creation mounted to <code>/boot/efi</code>.</li>
+    </ul>
+  </li>
+  <li><strong>Automated Driver Activation:</strong> Auto-enables VMware tools, VirtualBox guest services, SPICE agents, and NVIDIA DRM modesetting.</li>
+</ul>
+
+<h2>3.2 Single User Profile Guarantee</h2>
+<div class="callout">
+  <strong>Pristine System State:</strong> Only your setup profile will exist on the installed disk.
+</div>
+<p>
+  The installer completely removes <code>liveuser</code> (via <code>userdel -r -f liveuser</code>), purges <code>/etc/sysusers.d/caelaris-liveuser.conf</code>, and removes all installer shortcuts from the user's Desktop so the system boots into a clean personal workspace.
+</p>
+
+<h2>3.3 Silent Direct Bootloader</h2>
+<ul>
+  <li><strong>Clean Title:</strong> Displays strictly <strong><code>Caelaris Linux</code></strong> in the GRUB boot menu.</li>
+  <li><strong>Suppressed Terminal Clutter:</strong> Uses <code>quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0</code> to transition silently straight into SDDM.</li>
+  <li><strong>Universal Removable Fallback:</strong> Deploys <code>EFI/BOOT/BOOTX64.EFI</code> to prevent UEFI boot loops in VMware Workstation.</li>
+</ul>
+
+<!-- SECTION 4: GAMING & PERFORMANCE -->
+<h1>4. Gaming & Extreme Performance Stack</h1>
+
+<h2>4.1 CachyOS-Grade Sysctl Tuning</h2>
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>Kernel Sysctl Parameter</th>
+      <th>Configured Value</th>
+      <th>Gaming & Performance Benefit</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>vm.max_map_count</code></td>
+      <td><code>2147483642</code></td>
+      <td>Prevents crashes in memory-mapped titles (Star Citizen, Hogwarts Legacy, Proton).</td>
+    </tr>
+    <tr>
+      <td><code>vm.swappiness</code></td>
+      <td><code>10</code></td>
+      <td>Keeps game memory pages in physical RAM, preventing disk I/O stutters.</td>
+    </tr>
+    <tr>
+      <td><code>net.core.default_qdisc</code></td>
+      <td><code>cake</code></td>
+      <td>Eliminates bufferbloat and latency spikes during multiplayer online gaming.</td>
+    </tr>
+    <tr>
+      <td><code>net.ipv4.tcp_congestion_control</code></td>
+      <td><code>bbr</code></td>
+      <td>Google BBR congestion algorithm for maximum network throughput and lower ping.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>4.2 Gaming Software Suite</h2>
+<ul>
+  <li><strong>Steam Client:</strong> Pre-installed and Proton-ready.</li>
+  <li><strong>MangoHud:</strong> Real-time hardware telemetry overlay for 64-bit and 32-bit Vulkan/OpenGL titles.</li>
+  <li><strong>Feral GameMode:</strong> Automatically applies CPU performance governors and process priority during games.</li>
+  <li><strong>VKD3D:</strong> Full DirectX 12 translation layer.</li>
+</ul>
+
+<div class="page-break"></div>
+
+<!-- SECTION 5: VIRTUALIZATION & DRIVERS -->
+<h1>5. Universal Virtualization & Hardware Drivers</h1>
+
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>Platform / Hardware</th>
+      <th>Integrated Drivers & Daemons</th>
+      <th>User Capabilities</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>VMware Workstation / Fusion</strong></td>
+      <td><code>open-vm-tools</code>, <code>vmtoolsd</code>, <code>vmware-vmblock-fuse</code></td>
+      <td>Dynamic 1080p window auto-resize, host shared folders, two-way clipboard.</td>
+    </tr>
+    <tr>
+      <td><strong>Oracle VirtualBox</strong></td>
+      <td><code>virtualbox-guest-utils</code>, <code>vboxservice</code></td>
+      <td>Bidirectional clipboard, mouse integration, auto display scaling.</td>
+    </tr>
+    <tr>
+      <td><strong>QEMU / KVM / UTM (macOS)</strong></td>
+      <td><code>spice-vdagent</code>, <code>spice-vdagentd</code>, <code>qemu-guest-agent</code></td>
+      <td>SPICE guest display scaling, clipboard sharing, host management.</td>
+    </tr>
+    <tr>
+      <td><strong>NVIDIA GeForce GPUs</strong></td>
+      <td>NVIDIA proprietary utils & auto DRM modeset</td>
+      <td>Full 3D acceleration with <code>options nvidia-drm modeset=1</code>.</td>
+    </tr>
+    <tr>
+      <td><strong>AMD Radeon GPUs</strong></td>
+      <td><code>amdgpu</code> & Mesa <code>vulkan-radeon</code> (RADV)</td>
+      <td>Out-of-the-box Vulkan gaming and hardware VA-API video decode.</td>
+    </tr>
+    <tr>
+      <td><strong>Intel Arc / Iris Xe</strong></td>
+      <td><code>i915</code> / <code>xe</code> & Mesa <code>vulkan-intel</code> (ANV)</td>
+      <td>Hardware acceleration and Intel Media Driver VA-API video decode.</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- SECTION 6: COMPARISON MATRIX -->
+<h1>6. Feature Comparison Matrix</h1>
+
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>Feature / Capability</th>
+      <th>Caelaris Linux</th>
+      <th>Vanilla Arch</th>
+      <th>Manjaro</th>
+      <th>CachyOS</th>
+      <th>Fedora</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Dual Desktop (KDE + GNOME)</strong></td>
+      <td><strong>Yes (Unified)</strong></td>
+      <td>Manual</td>
+      <td>Separate ISOs</td>
+      <td>Separate ISOs</td>
+      <td>Separate Spins</td>
+    </tr>
+    <tr>
+      <td><strong>Live Session Hot-Switcher</strong></td>
+      <td><strong>Yes (&lt; 2s)</strong></td>
+      <td>No</td>
+      <td>No</td>
+      <td>No</td>
+      <td>No</td>
+    </tr>
+    <tr>
+      <td><strong>Custom Graphical Installer</strong></td>
+      <td><strong>Yes (PyQt6)</strong></td>
+      <td>No (CLI)</td>
+      <td>Calamares</td>
+      <td>Calamares</td>
+      <td>Anaconda</td>
+    </tr>
+    <tr>
+      <td><strong>CachyOS-Grade Gaming Sysctl</strong></td>
+      <td><strong>Yes (Default)</strong></td>
+      <td>Manual</td>
+      <td>No</td>
+      <td>Yes</td>
+      <td>Partial</td>
+    </tr>
+    <tr>
+      <td><strong>VMware & VBox Auto-Resize</strong></td>
+      <td><strong>Yes (Built-in)</strong></td>
+      <td>Manual</td>
+      <td>Partial</td>
+      <td>Partial</td>
+      <td>Partial</td>
+    </tr>
+    <tr>
+      <td><strong>Silent Direct Bootloader</strong></td>
+      <td><strong>Yes</strong></td>
+      <td>Manual</td>
+      <td>Partial</td>
+      <td>Partial</td>
+      <td>Yes</td>
+    </tr>
+    <tr>
+      <td><strong>Purged Single User Profile</strong></td>
+      <td><strong>Yes</strong></td>
+      <td>N/A</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>Yes</td>
+    </tr>
+    <tr>
+      <td><strong>Bundled yay AUR Helper</strong></td>
+      <td><strong>Yes</strong></td>
+      <td>Manual</td>
+      <td>Pamac</td>
+      <td>Paru/Yay</td>
+      <td>No (COPR)</td>
+    </tr>
+    <tr>
+      <td><strong>PipeWire Low-Latency Audio</strong></td>
+      <td><strong>Yes</strong></td>
+      <td>Manual</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>Yes</td>
+    </tr>
+  </tbody>
+</table>
+
+</body>
+</html>
