@@ -1,5 +1,0 @@
-Windows Registry Editor Version 5.00
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\VMware, Inc.\VMware Workstation]
-"InstallPath"="D:\\VM Files\\"
-"InstallPath64"="D:\\VM Files\\x64\\"

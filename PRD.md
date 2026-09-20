@@ -124,7 +124,7 @@ caelaris-linux/
 - **Gaming Software Ecosystem:** Bundled Steam client, GameMode (`gamemoded`), MangoHud overlay (64-bit and 32-bit), VKD3D DirectX 12 translation layer, and complete 32-bit multilib graphics drivers.
 
 ### 4.5 Universal Virtualization Support (FR-5)
-- **VMware Workstation / Fusion:** Pre-configured `open-vm-tools`, `xf86-video-vmware`, and `vmware-vmblock-fuse`. Includes Windows host path patch (`fix_vmware_path.reg`).
+- **VMware Workstation / Fusion:** Pre-configured `open-vm-tools`, `xf86-video-vmware`, and `vmware-vmblock-fuse`.
 - **VirtualBox:** Pre-configured `virtualbox-guest-utils` (`vboxservice`).
 - **UTM / QEMU / KVM:** Bundled `spice-vdagentd` and `qemu-guest-agent`.
 - **Dynamic Display Geometry:** `caelaris-autoresize` daemon monitors window size adjustments and matches host resolutions in under 1 second.

@@ -748,6 +748,23 @@ class CaelarisInstaller(QMainWindow):
     def populate_disks(self):
         self.cb_disks.clear()
         found = False
+
+        # Detect live boot media (USB stick) to prevent catastrophic overwrite
+        live_devices = set()
+        for mount_check in ["/run/archiso/bootmnt", "/run/archiso", "/run/archiso/cowspace"]:
+            try:
+                src = subprocess.check_output(["findmnt", "-no", "SOURCE", mount_check], text=True).strip()
+                if src:
+                    live_devices.add(os.path.basename(src))
+                    try:
+                        pk = subprocess.check_output(["lsblk", "-no", "PKNAME", src], text=True).strip()
+                        if pk:
+                            live_devices.add(pk)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
         try:
             out = subprocess.check_output(["lsblk", "-d", "-n", "-o", "NAME,SIZE,MODEL,TYPE"], text=True)
             for line in out.strip().split("\n"):
@@ -755,7 +772,12 @@ class CaelarisInstaller(QMainWindow):
                 if len(parts) >= 2 and parts[-1] == "disk":
                     name, size = parts[0], parts[1]
                     if not name.startswith("loop") and not name.startswith("zram"):
-                        self.cb_disks.addItem(f"/dev/{name} ({size})", f"/dev/{name}")
+                        # Exclude live USB installer media
+                        if name in live_devices or any(name in d for d in live_devices):
+                            continue
+                        model = " ".join(parts[2:-1]) if len(parts) > 3 else ""
+                        display_text = f"/dev/{name} ({size} - {model})" if model else f"/dev/{name} ({size})"
+                        self.cb_disks.addItem(display_text, f"/dev/{name}")
                         found = True
         except Exception:
             pass
@@ -800,10 +822,15 @@ class CaelarisInstaller(QMainWindow):
         if self.current_step == 6:
             self.update_summary()
         if self.current_step == 7:
-            confirm = QMessageBox.question(
-                self, "Confirm Installation",
-                f"Are you sure you want to write Caelaris Linux to {self.cb_disks.currentData()}?\nExisting data will be erased.",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            target_disk = self.cb_disks.currentData()
+            confirm = QMessageBox.warning(
+                self, "⚠️ CRITICAL: Confirm Entire Disk Erasure",
+                f"Are you sure you want to install Caelaris Linux to {target_disk}?\n\n"
+                f"🚨 WARNING: This will completely ERASE and REPARTITION the entire drive ({target_disk})!\n"
+                f"All existing operating systems, personal files, and partitions on this drive will be permanently deleted.\n\n"
+                f"Do you wish to proceed?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No
             )
             if confirm != QMessageBox.StandardButton.Yes:
                 return
