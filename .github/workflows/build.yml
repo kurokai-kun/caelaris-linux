@@ -47,25 +47,27 @@ jobs:
               ./scripts/build.sh ${{ inputs.edition || 'kde' }}
             "
 
-      - name: Upload ISO Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: caelaris-${{ inputs.edition || 'kde' }}-iso
-          path: out/*.iso
-          retention-days: 1
-
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: latest
+          tag_name: rolling-release
           name: Caelaris Linux Latest Rolling ISO
+          make_latest: true
           body: |
-            ## ✨ Caelaris Linux Rolling ISO
-            - Clean single-entry bootloader (KDE Plasma 6 default)
+            ## ✨ Caelaris Linux Latest Rolling ISO
+            - Clean single-entry bootloader (KDE Plasma 6 default with 3s timeout)
             - Dual desktops (KDE Plasma 6 + GNOME) selectable at SDDM login
             - Native kernel & microcode in `/boot` for instant GRUB boot
             - Universal virtualization drivers (VMware, VirtualBox, UTM)
           files: out/*.iso
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload ISO Artifact
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: caelaris-${{ inputs.edition || 'kde' }}-iso
+          path: out/*.iso
+          retention-days: 1
