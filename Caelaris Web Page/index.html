@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Caelaris Linux — Next-Generation Arch-Based Desktop OS</title>
+  <meta name="description" content="Next-Generation High-Performance Arch-Based Linux Distribution with Dual Desktop Sessions (KDE Plasma 6 & GNOME), CachyOS-Grade Gaming, and Universal Virtualization.">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ================= NAVBAR ================= -->
+  <nav class="navbar">
+    <div class="container nav-container">
+      <a href="#" class="nav-brand">
+        <img src="assets/logo.svg" alt="Caelaris Logo" class="nav-logo">
+        <span>Caelaris <span class="text-gradient">Linux</span></span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="#features" class="nav-link">Features</a></li>
+        <li><a href="#desktops" class="nav-link">Dual Desktops</a></li>
+        <li><a href="#gaming" class="nav-link">Gaming</a></li>
+        <li><a href="#install" class="nav-link">Install Guide</a></li>
+        <li><a href="#documentation" class="nav-link">Docs</a></li>
+        <li><a href="#faq" class="nav-link">FAQ</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <a href="https://github.com/kurokai-kun/caelaris-linux" target="_blank" class="btn btn-secondary" title="GitHub Repository">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          GitHub
+        </a>
+        <a href="#download" class="btn btn-primary">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Download ISO
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ================= HERO ================= -->
+  <header class="hero">
+    <div class="container">
+      <div class="hero-badge">
+        <span>✨ Arch Linux Re-imagined</span>
+        <span>•</span>
+        <span>Rolling Release 2026</span>
+      </div>
+
+      <h1 class="hero-title">
+        Uncompromising Power. <br>
+        <span class="text-gradient">Pure Desktop Elegance.</span>
+      </h1>
+
+      <p class="hero-description">
+        Experience the cutting-edge performance of Arch Linux without the configuration barrier. Featuring dual Wayland environments (KDE Plasma 6 + GNOME), CachyOS-grade gaming tuning, universal hypervisor drivers, and an intuitive native graphical installer.
+      </p>
+
+      <div class="hero-buttons">
+        <a href="#download" class="btn btn-primary btn-lg">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Get Caelaris Linux
+        </a>
+        <a href="#features" class="btn btn-secondary btn-lg">
+          Explore Features
+        </a>
+      </div>
+
+      <!-- Interactive Desktop Showcase -->
+      <div class="hero-showcase" id="desktops">
+        <div class="showcase-header">
+          <div class="window-dots">
+            <div class="dot red"></div>
+            <div class="dot yellow"></div>
+            <div class="dot green"></div>
+          </div>
+          <div class="showcase-tabs">
+            <button class="de-tab active" data-de="plasma">KDE Plasma 6 (Default)</button>
+            <button class="de-tab" data-de="gnome">GNOME 4x (Alternative)</button>
+          </div>
+          <div style="font-size: 0.8rem; color: var(--text-dim);">Live Wayland Session</div>
+        </div>
+
+        <div class="showcase-viewport">
+          <!-- KDE Plasma View -->
+          <div class="desktop-preview active" id="preview-plasma">
+            <div class="mock-desktop">
+              <div class="mock-widgets">
+                <div class="mock-card">
+                  <h4>🚀 KDE Plasma 6</h4>
+                  <p>KWin Wayland compositor with fractional scaling, tear-free rendering, and fluid animations.</p>
+                </div>
+                <div class="mock-card">
+                  <h4>🎮 CachyOS Sysctl</h4>
+                  <p><code>vm.max_map_count</code> set to 2.1B with Google BBR congestion and CAKE bufferbloat elimination.</p>
+                </div>
+                <div class="mock-card">
+                  <h4>📦 Universal Yay</h4>
+                  <p>Pre-configured access to Arch User Repository (AUR), Flathub, and official Arch mirrors.</p>
+                </div>
+              </div>
+              <div class="mock-panel">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <img src="assets/logo.svg" style="width: 22px; height: 22px;">
+                  <span style="font-size: 0.85rem; font-weight: 600;">Application Launcher</span>
+                </div>
+                <div style="display: flex; gap: 14px; font-size: 0.85rem; color: var(--text-muted);">
+                  <span>🔊 PipeWire Low-Latency</span>
+                  <span>📶 NetworkManager</span>
+                  <span style="color: #fff; font-weight: 600;">100% Battery</span>
+                  <span>12:00 PM</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- GNOME View -->
+          <div class="desktop-preview" id="preview-gnome">
+            <div class="mock-desktop" style="background: linear-gradient(135deg, #101524 0%, #1e1338 50%, #0a1f2d 100%);">
+              <div class="mock-panel" style="position: absolute; top: 16px; left: 16px; right: 16px;">
+                <span style="font-size: 0.85rem; font-weight: 600;">Activities</span>
+                <span style="font-size: 0.85rem; color: #fff; font-weight: 600;">Mon Sep 21  12:00 PM</span>
+                <div style="display: flex; gap: 10px; font-size: 0.85rem; color: var(--text-muted);">
+                  <span>📶</span>
+                  <span>🔊</span>
+                  <span>⏻</span>
+                </div>
+              </div>
+              <div class="mock-widgets" style="margin-top: 60px;">
+                <div class="mock-card">
+                  <h4>⚡ GNOME 4x Wayland</h4>
+                  <p>Mutter compositor with three-finger gesture navigation and distraction-free Activities overview.</p>
+                </div>
+                <div class="mock-card">
+                  <h4>✨ Clean Experience</h4>
+                  <p>Zero duplicate apps or clutter. Dedicated native app drawer filtered specifically for GNOME.</p>
+                </div>
+                <div class="mock-card">
+                  <h4>🔄 2-Second Hot-Switch</h4>
+                  <p>Switch between Plasma and GNOME instantly in live preview without rebooting.</p>
+                </div>
+              </div>
+              <div style="text-align: center; margin-top: auto; padding-top: 20px;">
+                <span style="background: rgba(0,0,0,0.4); padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; color: var(--text-muted); border: 1px solid var(--border-subtle);">
+                  Dock: Files • Terminal • Text Editor • Steam • Firefox • Settings
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= FEATURES GRID ================= -->
+  <section id="features">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Core Capabilities</span>
+        <h2 class="section-title">Engineered for Extreme Performance & Day-One Usability</h2>
+        <p class="section-subtitle">
+          Caelaris eliminates the manual configuration overhead of Arch Linux while preserving total user control and bleeding-edge software access.
+        </p>
+      </div>
+
+      <div class="features-grid">
+        <!-- Feature 1 -->
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">🔄</div>
+          <h3>Dual Wayland Sessions</h3>
+          <p>
+            Choose between <strong>KDE Plasma 6</strong> and <strong>GNOME 4x</strong> on the fly. Switch within 2 seconds during live preview, and select your preferred desktop at every SDDM login.
+          </p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="feature-card" id="gaming">
+          <div class="feature-icon-wrapper">🎮</div>
+          <h3>CachyOS-Grade Gaming Stack</h3>
+          <p>
+            Tuned sysctl parameters with <code>vm.max_map_count=2147483642</code>, Feral GameMode, MangoHud overlay, Steam Proton, and CAKE queue discipline to eliminate multiplayer bufferbloat.
+          </p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">🛠️</div>
+          <h3>Native Graphical Installer</h3>
+          <p>
+            PyQt6 multithreaded installation wizard (`caelaris-installer-gui`) supporting guided Btrfs subvolumes (`@`, `@home`, `@cache`), Ext4, automatic driver provisioning, and USB protection.
+          </p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">🖥️</div>
+          <h3>Universal Hypervisor Suite</h3>
+          <p>
+            First-boot acceleration for VMware Workstation (`open-vm-tools`), VirtualBox (`vboxservice`), and UTM/QEMU (`spice-vdagentd`) with automated dynamic resolution matching.
+          </p>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">🤫</div>
+          <h3>Clean Silent Direct Boot</h3>
+          <p>
+            Single bootloader title displaying strictly <strong>Caelaris Linux</strong>, booting silently directly into SDDM with zero console clutter or flickering kernel messages.
+          </p>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">👤</div>
+          <h3>Pristine Single User Profile</h3>
+          <p>
+            Temporary live user accounts and sysusers definitions are completely purged during installation. Only your personal setup profile exists on the installed system.
+          </p>
+        </div>
+
+        <!-- Feature 7 -->
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">🎵</div>
+          <h3>PipeWire Pro-Audio Architecture</h3>
+          <p>
+            Unified low-latency PipeWire sound server with WirePlumber session management, featuring seamless ALSA, PulseAudio, and professional JACK audio routing.
+          </p>
+        </div>
+
+        <!-- Feature 8 -->
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">📦</div>
+          <h3>100,000+ Packages via Yay & AUR</h3>
+          <p>
+            Pre-installed `yay` AUR helper alongside official Arch Linux Core, Extra, and Multilib repositories, plus Flathub sandbox integration for endless software freedom.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= COMPARISON MATRIX ================= -->
+  <section style="background: rgba(11, 17, 32, 0.4); border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle);">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Comparison</span>
+        <h2 class="section-title">How Caelaris Stacks Up</h2>
+        <p class="section-subtitle">
+          See why Caelaris Linux delivers a cleaner, faster, and more versatile computing experience than conventional distributions.
+        </p>
+      </div>
+
+      <div class="comparison-table-wrapper">
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Feature / Capability</th>
+              <th style="color: var(--primary);">Caelaris Linux</th>
+              <th>Vanilla Arch</th>
+              <th>Manjaro</th>
+              <th>CachyOS</th>
+              <th>Fedora 40</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="highlight">
+              <td><strong>Dual Desktop (KDE + GNOME)</strong></td>
+              <td class="check">✔ Unified ISO</td>
+              <td class="cross">✖ Manual</td>
+              <td class="cross">✖ Separate ISOs</td>
+              <td class="cross">✖ Separate ISOs</td>
+              <td class="cross">✖ Separate Spins</td>
+            </tr>
+            <tr>
+              <td><strong>Live Desktop Hot-Switcher</strong></td>
+              <td class="check">✔ &lt; 2 seconds</td>
+              <td class="cross">✖ None</td>
+              <td class="cross">✖ None</td>
+              <td class="cross">✖ None</td>
+              <td class="cross">✖ None</td>
+            </tr>
+            <tr class="highlight">
+              <td><strong>Custom Native GUI Installer</strong></td>
+              <td class="check">✔ PyQt6 Engine</td>
+              <td class="cross">✖ CLI Only</td>
+              <td>Calamares</td>
+              <td>Calamares</td>
+              <td>Anaconda</td>
+            </tr>
+            <tr>
+              <td><strong>CachyOS-Grade Gaming Sysctl</strong></td>
+              <td class="check">✔ Out-of-the-box</td>
+              <td class="cross">✖ Manual</td>
+              <td class="cross">✖ Standard</td>
+              <td class="check">✔ Built-in</td>
+              <td class="cross">✖ Partial</td>
+            </tr>
+            <tr class="highlight">
+              <td><strong>VMware & VBox Auto-Resize</strong></td>
+              <td class="check">✔ Integrated Daemon</td>
+              <td class="cross">✖ Manual</td>
+              <td>Partial</td>
+              <td>Partial</td>
+              <td>Partial</td>
+            </tr>
+            <tr>
+              <td><strong>Silent Direct Bootloader</strong></td>
+              <td class="check">✔ Direct to SDDM</td>
+              <td class="cross">✖ Manual</td>
+              <td>Partial</td>
+              <td>Partial</td>
+              <td>Yes (Plymouth)</td>
+            </tr>
+            <tr class="highlight">
+              <td><strong>Bundled AUR Helper (`yay`)</strong></td>
+              <td class="check">✔ Pre-installed</td>
+              <td class="cross">✖ Manual</td>
+              <td>Pamac</td>
+              <td>Paru/Yay</td>
+              <td class="cross">✖ COPR Only</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= DOWNLOAD CENTER ================= -->
+  <section id="download" class="download-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Get Caelaris</span>
+        <h2 class="section-title">Download Caelaris Linux Rolling ISO</h2>
+        <p class="section-subtitle">
+          Choose between our multi-part GitHub Releases download or direct single-file mirror. Free, open-source, and verified clean.
+        </p>
+      </div>
+
+      <!-- Main Download Card -->
+      <div class="download-card-main">
+        <div class="download-header">
+          <div class="download-title-area">
+            <h3 class="text-gradient">Caelaris Linux Rolling Edition</h3>
+            <div class="download-meta-tags">
+              <span class="tag">x86_64 Architecture</span>
+              <span class="tag">Kernel 6.x Rolling</span>
+              <span class="tag">KDE Plasma 6 + GNOME 4x</span>
+              <span class="tag">~4.0 GB ISO</span>
+              <span class="tag">UEFI & Legacy BIOS</span>
+            </div>
+          </div>
+          <div>
+            <a href="https://github.com/kurokai-kun/caelaris-linux/releases/tag/rolling-release" target="_blank" class="btn btn-primary btn-lg">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              View GitHub Release
+            </a>
+          </div>
+        </div>
+
+        <div class="download-options-grid">
+          <!-- Option A: GitHub Releases Parts -->
+          <div class="download-tile">
+            <div>
+              <h4>📦 GitHub Release Assets (High Speed)</h4>
+              <p>Due to GitHub's 2GB per-asset limit, download the parts below and run `combine.bat` (or use copy command) to assemble.</p>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/caelaris-kde-2026.09.20-x86_64.iso.part-00" class="btn btn-secondary" style="font-size: 0.85rem; padding: 8px 14px;">Download Part 00 (1.9 GB)</a>
+              <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/caelaris-kde-2026.09.20-x86_64.iso.part-01" class="btn btn-secondary" style="font-size: 0.85rem; padding: 8px 14px;">Download Part 01 (1.9 GB)</a>
+              <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/caelaris-kde-2026.09.20-x86_64.iso.part-02" class="btn btn-secondary" style="font-size: 0.85rem; padding: 8px 14px;">Download Part 02 (251 MB)</a>
+              <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/combine.bat" class="btn btn-primary" style="font-size: 0.85rem; padding: 8px 14px;">Download combine.bat (1-Click Reassembly)</a>
+            </div>
+            <button onclick="openCombineModal()" class="btn btn-secondary" style="font-size: 0.8rem; margin-top: 4px;">
+              📖 How to Reassemble (Windows / Linux / Mac)
+            </button>
+          </div>
+
+          <!-- Option B: Direct Mirror -->
+          <div class="download-tile">
+            <div>
+              <h4>⚡ Direct Mirror (Single 4.0GB File)</h4>
+              <p>Download the complete, non-split ISO file directly from our fast cloud mirror.</p>
+            </div>
+            <div style="margin-top: auto;">
+              <a href="https://github.com/kurokai-kun/caelaris-linux/releases/tag/rolling-release" target="_blank" class="btn btn-primary" style="width: 100%;">
+                Direct Cloud Download
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- SHA256 Checksum Box -->
+        <div class="checksum-box">
+          <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            <span style="color: var(--primary); font-weight: 700;">SHA256:</span>
+            <span id="checksum-val">Available in .sha256 file on GitHub Release</span>
+          </div>
+          <button class="copy-btn copy-trigger" data-copy="certutil -hashfile caelaris-kde.iso SHA256">
+            <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            Copy Verification Command
+          </button>
+        </div>
+      </div>
+
+      <!-- System Requirements -->
+      <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 32px; backdrop-filter: blur(10px);">
+        <h3 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 20px;">Hardware Requirements</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
+          <div>
+            <h4 style="color: var(--primary); font-size: 1.1rem; margin-bottom: 10px;">Minimum Requirements</h4>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px; color: var(--text-muted); font-size: 0.95rem;">
+              <li>• <strong>CPU:</strong> 64-bit dual-core x86_64 processor</li>
+              <li>• <strong>RAM:</strong> 2 GB RAM (4 GB recommended for live preview)</li>
+              <li>• <strong>Storage:</strong> 25 GB free disk space</li>
+              <li>• <strong>Graphics:</strong> Any OpenGL 3.3+ capable GPU (Intel, AMD, NVIDIA, or VM SVGA)</li>
+              <li>• <strong>Firmware:</strong> UEFI or Legacy BIOS</li>
+            </ul>
+          </div>
+          <div>
+            <h4 style="color: var(--accent-green); font-size: 1.1rem; margin-bottom: 10px;">Recommended (Gaming & Power Users)</h4>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px; color: var(--text-muted); font-size: 0.95rem;">
+              <li>• <strong>CPU:</strong> Quad-core modern processor (Intel Core i5/i7 or AMD Ryzen)</li>
+              <li>• <strong>RAM:</strong> 8 GB+ RAM with ZRAM compression</li>
+              <li>• <strong>Storage:</strong> 60 GB+ NVMe SSD (Btrfs subvolumes recommended)</li>
+              <li>• <strong>Graphics:</strong> Dedicated AMD Radeon (RADV) or NVIDIA RTX/GTX with Vulkan</li>
+              <li>• <strong>Display:</strong> 1920x1080 or higher with Wayland scaling</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= INSTALLATION QUICKSTART ================= -->
+  <section id="install">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Quickstart</span>
+        <h2 class="section-title">Installation Guide</h2>
+        <p class="section-subtitle">
+          Get Caelaris Linux running on your physical computer or inside your favorite virtual machine in minutes.
+        </p>
+      </div>
+
+      <div style="max-width: 900px; margin: 0 auto; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 32px; backdrop-filter: blur(12px);">
+        <!-- Tabs -->
+        <div style="display: flex; gap: 10px; margin-bottom: 24px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 14px; flex-wrap: wrap;">
+          <button class="de-tab guide-tab active" data-guide="baremetal">Physical PC (USB)</button>
+          <button class="de-tab guide-tab" data-guide="vmware">VMware Workstation</button>
+          <button class="de-tab guide-tab" data-guide="vbox">Oracle VirtualBox</button>
+          <button class="de-tab guide-tab" data-guide="utm">QEMU / UTM (Mac)</button>
+        </div>
+
+        <!-- Panel 1: Baremetal -->
+        <div class="guide-panel active" id="guide-baremetal">
+          <h4 style="font-size: 1.15rem; color: #fff; margin-bottom: 12px;">Installing on Bare Metal Physical PC</h4>
+          <ol style="padding-left: 20px; color: var(--text-muted); display: flex; flex-direction: column; gap: 10px; font-size: 0.95rem;">
+            <li>Flash the assembled <code>caelaris-kde.iso</code> to a USB flash drive using <strong>Rufus</strong> (select DD mode) or <strong>Ventoy</strong> or <strong>balenaEtcher</strong>.</li>
+            <li>Reboot your PC and press your boot menu key (F12, F11, F8, or Esc) to select the USB drive.</li>
+            <li>Select <strong>Caelaris Linux (KDE Plasma 6 - Default)</strong> from the bootloader menu.</li>
+            <li>In the live desktop preview, double-click the <strong>Install Caelaris Linux</strong> icon.</li>
+            <li>Follow the guided PyQt6 wizard to partition (Btrfs recommended), configure your user account, and install!</li>
+          </ol>
+        </div>
+
+        <!-- Panel 2: VMware -->
+        <div class="guide-panel" id="guide-vmware" style="display: none;">
+          <h4 style="font-size: 1.15rem; color: #fff; margin-bottom: 12px;">Running in VMware Workstation / Fusion</h4>
+          <ol style="padding-left: 20px; color: var(--text-muted); display: flex; flex-direction: column; gap: 10px; font-size: 0.95rem;">
+            <li>Create a new Virtual Machine: Choose <strong>Linux</strong> &gt; <strong>Arch Linux 64-bit</strong>.</li>
+            <li>Allocate at least 4 GB RAM, 2-4 vCPUs, and 30 GB virtual disk.</li>
+            <li>Attach the Caelaris Linux `.iso` to the virtual CD/DVD drive.</li>
+            <li>Boot the VM: <code>open-vm-tools</code> and automatic 1080p display resizing will engage automatically!</li>
+          </ol>
+        </div>
+
+        <!-- Panel 3: VirtualBox -->
+        <div class="guide-panel" id="guide-vbox" style="display: none;">
+          <h4 style="font-size: 1.15rem; color: #fff; margin-bottom: 12px;">Running in Oracle VirtualBox</h4>
+          <ol style="padding-left: 20px; color: var(--text-muted); display: flex; flex-direction: column; gap: 10px; font-size: 0.95rem;">
+            <li>Create VM: Type <strong>Linux</strong>, Version <strong>Arch Linux (64-bit)</strong>.</li>
+            <li>In Settings &gt; System &gt; Motherboard, make sure <strong>Enable EFI (special OSes only)</strong> is checked.</li>
+            <li>In Settings &gt; Display, allocate 128 MB Video Memory and choose <strong>VMSVGA</strong> controller.</li>
+            <li>Start the VM. VirtualBox Guest Services will automatically scale the display and enable shared clipboard!</li>
+          </ol>
+        </div>
+
+        <!-- Panel 4: UTM -->
+        <div class="guide-panel" id="guide-utm" style="display: none;">
+          <h4 style="font-size: 1.15rem; color: #fff; margin-bottom: 12px;">Running in UTM / QEMU (macOS Apple Silicon & Intel)</h4>
+          <ol style="padding-left: 20px; color: var(--text-muted); display: flex; flex-direction: column; gap: 10px; font-size: 0.95rem;">
+            <li>Create new VM: Choose <strong>Emulate</strong> (on Apple Silicon M1/M2/M3) or <strong>Virtualize</strong> (on Intel Mac).</li>
+            <li>Select <strong>Linux</strong>, browse and choose the Caelaris ISO.</li>
+            <li>Allocate 4 GB RAM and enable UEFI Boot.</li>
+            <li>The integrated <code>spice-vdagentd</code> provides dynamic mouse navigation and resolution synchronization out-of-the-box.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= DOCUMENTATION & SPECS ================= -->
+  <section id="documentation" style="background: rgba(11, 17, 32, 0.4); border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle);">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Specifications</span>
+        <h2 class="section-title">Official Architecture & Product Documents</h2>
+        <p class="section-subtitle">
+          Read or download the complete engineering specifications, system architecture designs, and product capability documents for Caelaris Linux.
+        </p>
+      </div>
+
+      <div class="docs-grid">
+        <!-- Doc 1: PRD -->
+        <div class="doc-card">
+          <div>
+            <div style="font-size: 0.8rem; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 6px;">Product Roadmap & Specs</div>
+            <h4>Product Requirement Document (PRD)</h4>
+            <p>Comprehensive breakdown of product vision, user personas, SLAs, functional requirements, and release milestones.</p>
+          </div>
+          <a href="docs/Caelaris_Linux_PRD.pdf" target="_blank" class="btn btn-secondary">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            Download PRD (PDF)
+          </a>
+        </div>
+
+        <!-- Doc 2: Architecture -->
+        <div class="doc-card">
+          <div>
+            <div style="font-size: 0.8rem; font-weight: 700; color: var(--accent); text-transform: uppercase; margin-bottom: 6px;">Deep Technical Architecture</div>
+            <h4>System Architecture Specification</h4>
+            <p>In-depth technical blueprints covering storage hierarchy (Zstd-19 SquashFS), bootloader pipeline, Btrfs subvolumes, and driver stacks.</p>
+          </div>
+          <a href="docs/Caelaris_Linux_Architecture.pdf" target="_blank" class="btn btn-secondary">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            Download Architecture (PDF)
+          </a>
+        </div>
+
+        <!-- Doc 3: Features -->
+        <div class="doc-card">
+          <div>
+            <div style="font-size: 0.8rem; font-weight: 700; color: var(--accent-purple); text-transform: uppercase; margin-bottom: 6px;">Features & Comparisons</div>
+            <h4>Product Features & Capabilities Guide</h4>
+            <p>Complete guide exploring dual Wayland sessions, CachyOS sysctl benchmarks, hardware driver matrix, and distro comparisons.</p>
+          </div>
+          <a href="docs/Caelaris_Linux_Product_Features.pdf" target="_blank" class="btn btn-secondary">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            Download Features (PDF)
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FAQ ACCORDION ================= -->
+  <section id="faq">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Questions & Answers</span>
+        <h2 class="section-title">Frequently Asked Questions</h2>
+        <p class="section-subtitle">
+          Everything you need to know about installing, running, and updating Caelaris Linux.
+        </p>
+      </div>
+
+      <div class="faq-list">
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>Is Caelaris Linux a rolling release?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer">
+            Yes! Caelaris Linux inherits the true rolling release nature of Arch Linux. Once installed, you will never need to reinstall for a major version upgrade. Simply running <code>yay -Syu</code> or updating via the Welcome app updates your entire system to the newest kernel, mesa drivers, and desktop packages.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>How does the dual desktop environment work?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer">
+            Both KDE Plasma 6 (default) and GNOME 4x run natively on Wayland and are packaged into a single ISO. During live preview, you can test both or hot-switch in 2 seconds via <code>caelaris-switch-desktop</code>. On installed systems, you can freely select Plasma or GNOME from the SDDM session dropdown at every login.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>How do I assemble the split ISO parts on Windows?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer">
+            Because GitHub Releases enforces a 2GB limit per file, the ISO is split into <code>.part-00</code>, <code>.part-01</code>, and <code>.part-02</code>. Download all parts and <code>combine.bat</code> into the same folder, then double-click <code>combine.bat</code>. It will automatically concatenate them using binary copy into a complete, verified ISO!
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>What gaming optimizations are pre-configured?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer">
+            Caelaris includes CachyOS-grade kernel sysctl parameters: <code>vm.max_map_count = 2147483642</code> (preventing Star Citizen / Unreal Engine 5 Proton crashes), low swappiness, CAKE network packet queueing, Steam, Feral GameMode, MangoHud overlay (32 & 64-bit), and full 32-bit Vulkan driver support.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>Is my existing Windows partition safe during installation?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer">
+            The Caelaris Graphical Installer includes live USB media protection to ensure you cannot accidentally overwrite your boot drive, plus a bold confirmation warning. When choosing a disk, make sure to select a dedicated drive for Caelaris (or install inside a virtual machine) because the installer formats the chosen target disk.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FOOTER ================= -->
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+            <img src="assets/logo.svg" style="width: 32px; height: 32px;">
+            <h4 style="margin: 0; font-size: 1.25rem;">Caelaris Linux</h4>
+          </div>
+          <p>
+            Next-generation high-performance Arch-based desktop operating system. Built for gamers, engineers, and modern creators.
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h5>System</h5>
+          <ul class="footer-links">
+            <li><a href="#features" class="footer-link">Features</a></li>
+            <li><a href="#desktops" class="footer-link">Dual Wayland Desktops</a></li>
+            <li><a href="#gaming" class="footer-link">Gaming Optimizations</a></li>
+            <li><a href="#download" class="footer-link">Download ISO</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h5>Documentation</h5>
+          <ul class="footer-links">
+            <li><a href="docs/Caelaris_Linux_PRD.pdf" target="_blank" class="footer-link">Product Requirements (PRD)</a></li>
+            <li><a href="docs/Caelaris_Linux_Architecture.pdf" target="_blank" class="footer-link">System Architecture</a></li>
+            <li><a href="docs/Caelaris_Linux_Product_Features.pdf" target="_blank" class="footer-link">Product Features</a></li>
+            <li><a href="#install" class="footer-link">Installation Guide</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h5>Community & Source</h5>
+          <ul class="footer-links">
+            <li><a href="https://github.com/kurokai-kun/caelaris-linux" target="_blank" class="footer-link">GitHub Repository</a></li>
+            <li><a href="https://github.com/kurokai-kun/caelaris-linux/releases" target="_blank" class="footer-link">Release Notes</a></li>
+            <li><a href="https://github.com/kurokai-kun/caelaris-linux/issues" target="_blank" class="footer-link">Issue Tracker</a></li>
+            <li><a href="https://archlinux.org" target="_blank" class="footer-link">Arch Linux Base</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>© 2026 Caelaris Linux Project. Open-source under the GPLv3 / MIT License. Arch Linux is a recognized trademark of Arch Linux.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ================= MODAL FOR REASSEMBLY ================= -->
+  <div id="combine-modal" style="display: none; position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #0f172a; border: 1px solid var(--border-glow); border-radius: var(--radius-lg); max-width: 620px; width: 100%; padding: 32px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 14px;">
+        <h3 style="font-size: 1.35rem; color: #fff; margin: 0;">How to Reassemble Split ISO Parts</h3>
+        <button onclick="closeCombineModal()" style="background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
+      </div>
+      <div style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; display: flex; flex-direction: column; gap: 14px;">
+        <p><strong>Option 1: Windows (1-Click Automated)</strong></p>
+        <p>1. Download all <code>.part-00</code>, <code>.part-01</code>, <code>.part-02</code> files and <code>combine.bat</code> into the same directory.<br>
+           2. Double-click <code>combine.bat</code>.<br>
+           3. It will merge the files and generate <code>caelaris-kde.iso</code> ready for flashing or virtualization!</p>
+        
+        <p><strong>Option 2: Windows Command Prompt (CMD)</strong></p>
+        <pre style="background: #020617; padding: 10px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.85rem; color: #38bdf8;">copy /b *.part-* caelaris-kde.iso</pre>
+
+        <p><strong>Option 3: Linux or macOS Terminal</strong></p>
+        <pre style="background: #020617; padding: 10px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.85rem; color: #38bdf8;">cat *.part-* > caelaris-kde.iso</pre>
+      </div>
+      <div style="margin-top: 24px; text-align: right;">
+        <button onclick="closeCombineModal()" class="btn btn-primary">Got it, thanks!</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
