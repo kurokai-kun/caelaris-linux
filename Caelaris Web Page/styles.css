@@ -316,20 +316,15 @@ a:hover {
 
 .showcase-viewport {
   position: relative;
-  min-height: 480px;
+  width: 100%;
   background: #020617;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .desktop-preview {
   display: none;
   width: 100%;
-  height: 100%;
-  padding: 30px;
-  animation: fadeIn 0.4s ease forwards;
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .desktop-preview.active {
@@ -337,59 +332,30 @@ a:hover {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.99); }
+  from { opacity: 0; transform: scale(0.995); }
   to { opacity: 1; transform: scale(1); }
 }
 
-.mock-desktop {
-  background: linear-gradient(135deg, #090e1a 0%, #17153a 50%, #0c2136 100%);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: var(--radius-md);
-  min-height: 420px;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+.desktop-image-container {
   position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #090e1a;
+  overflow: hidden;
 }
 
-.mock-widgets {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
+.desktop-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+  transition: transform 0.5s ease;
 }
 
-.mock-card {
-  background: rgba(15, 23, 42, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-sm);
-  padding: 16px;
-  backdrop-filter: blur(8px);
-}
-
-.mock-card h4 {
-  font-size: 0.95rem;
-  color: var(--primary);
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.mock-card p {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
-.mock-panel {
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-sm);
-  padding: 8px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  backdrop-filter: blur(12px);
+.hero-showcase:hover .desktop-img {
+  transform: scale(1.008);
 }
 
 /* Sections General */
