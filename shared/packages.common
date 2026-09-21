@@ -36,7 +36,7 @@ memtest86+
 memtest86+-efi
 
 # ==========================================================
-# Performance, Power & Memory Management (CachyOS/Fedora)
+# Performance, Power & Memory Management
 # ==========================================================
 zram-generator
 ananicy-cpp
@@ -123,7 +123,7 @@ spice-vdagent
 qemu-guest-agent
 
 # ==========================================================
-# CachyOS-Grade Gaming Stack & App Ecosystem
+# Pro-Grade Gaming Stack & App Ecosystem
 # ==========================================================
 mangohud
 lib32-mangohud

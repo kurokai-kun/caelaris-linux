@@ -14,13 +14,13 @@
 ### 1.1 Vision Statement
 **Caelaris Linux** is engineered to eliminate the friction and compromise between bleeding-edge Linux software access and immediate, out-of-the-box desktop usability. Arch Linux provides an unmatched rolling package ecosystem, but its manual installation and unconfigured baseline create steep friction for developers, gamers, and testers. Conversely, existing turnkey distributions often introduce unwanted system bloat, unoptimized kernels, heavy background telemetry, or inflexible desktop lock-in.
 
-Caelaris Linux delivers an ultra-responsive, modern, and gaming-optimized computing platform built upon Arch Linux. It features out-of-the-box dual graphical sessions (**KDE Plasma 6** as default and **GNOME 4x** as an alternative), instant session switching, an intuitive custom graphical installer, deep virtualization guest acceleration (VMware, VirtualBox, QEMU/SPICE), complete GPU driver stacks (AMD, Intel, NVIDIA with DRM modesetting), and CachyOS-grade performance tuning without unnecessary bloat.
+Caelaris Linux delivers an ultra-responsive, modern, and gaming-optimized computing platform built upon Arch Linux. It features out-of-the-box dual graphical sessions (**KDE Plasma 6** as default and **GNOME 4x** as an alternative), instant session switching, an intuitive custom graphical installer, deep virtualization guest acceleration (VMware, VirtualBox, QEMU/SPICE), complete GPU driver stacks (AMD, Intel, NVIDIA with DRM modesetting), and pro-grade performance tuning without unnecessary bloat.
 
 ### 1.2 Core Value Proposition
 - **Turnkey Live Preview & Installation:** Zero-setup live preview featuring instant 1080p display auto-resizing, pre-configured live user, and full sudo permissions.
 - **Dual Desktop Flexibility:** Boot into KDE Plasma 6 or GNOME directly from the bootloader, switch seamlessly during live preview, and select your preferred desktop at every SDDM login post-installation.
 - **Custom Native Graphical Installer:** A dedicated Python/PyQt6 installer (`caelaris-installer-gui`) supporting automated Btrfs subvolume partitioning, ext4, UEFI/BIOS GRUB deployment, hardware driver enablement, and pristine post-install system sanitization.
-- **CachyOS-Grade Gaming Performance:** Pre-configured kernel sysctl tuning (`vm.max_map_count=2147483642`, `vm.swappiness=10`, Google BBR TCP congestion, CAKE packet scheduling), PipeWire low-latency audio, GameMode, MangoHud, Steam, and 32-bit Vulkan drivers.
+- **Pro-Grade Gaming Performance:** Pre-configured kernel sysctl tuning (`vm.max_map_count=2147483642`, `vm.swappiness=10`, Google BBR TCP congestion, CAKE packet scheduling), PipeWire low-latency audio, GameMode, MangoHud, Steam, and 32-bit Vulkan drivers.
 - **Universal Hardware & Hypervisor Integration:** Automatic detection and service configuration for physical GPUs (AMD, Intel, NVIDIA proprietary) and hypervisors (`open-vm-tools`, `vboxservice`, `spice-vdagentd`, `qemu-guest-agent`).
 - **Clean Boot & Single User Profile:** Silent, uncluttered bootloader entry labeled strictly **`Caelaris Linux`** booting directly to the graphical login screen with zero scrolling terminal clutter, guaranteeing that only the user-created account exists on the target disk.
 
@@ -63,7 +63,7 @@ caelaris-linux/
 │   ├── branding/               # Distro identity, os-release, logos
 │   └── airootfs/               # Overlay root filesystem
 │       ├── etc/default/grub    # Silent boot parameters & GRUB styling
-│       ├── etc/sysctl.d/       # CachyOS-grade gaming & network performance
+│       ├── etc/sysctl.d/       # Pro-grade low-latency gaming & network sysctl
 │       ├── etc/sysusers.d/     # Live preview systemd-sysusers provisioning
 │       ├── etc/sddm.conf.d/    # Display manager autologin & theme configs
 │       └── usr/bin/
@@ -115,7 +115,7 @@ caelaris-linux/
   - UEFI NVRAM installation with universal `--removable` fallback (`EFI/BOOT/BOOTX64.EFI`) ensuring instant boot on VMware, VirtualBox, and UEFI PCs.
   - Silent boot flags: `quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 video=1920x1080`.
 
-### 4.4 CachyOS-Grade Performance & Gaming Stack (FR-4)
+### 4.4 Pro-Grade Performance & Gaming Stack (FR-4)
 - **Sysctl Kernel Parameterization (`/etc/sysctl.d/99-caelaris-gaming.conf`):**
   - `vm.max_map_count = 2147483642` (ensures smooth operation for Star Citizen, Hogwarts Legacy, Proton games).
   - `vm.swappiness = 10` (keeps game assets in RAM, minimizing disk I/O latency).

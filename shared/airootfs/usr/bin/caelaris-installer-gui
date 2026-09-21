@@ -690,7 +690,7 @@ class CaelarisInstaller(QMainWindow):
         self.rb_ext4 = QRadioButton("Ext4 (Classic standard Linux)")
         cl4.addWidget(self.rb_btrfs)
         cl4.addWidget(self.rb_ext4)
-        self.chk_zram = QCheckBox("Enable ZRAM swap (Low-latency RAM compression - Fedora/CachyOS default)")
+        self.chk_zram = QCheckBox("Enable ZRAM swap (Low-latency RAM compression for smooth gaming & multitasking)")
         self.chk_zram.setChecked(True)
         cl4.addWidget(self.chk_zram)
         l4.addWidget(c4)

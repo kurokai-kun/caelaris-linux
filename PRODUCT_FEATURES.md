@@ -11,7 +11,7 @@
 
 ## 1. Executive Product Overview
 
-**Caelaris Linux** is a next-generation Arch-based operating system designed for gamers, software engineers, and power users who demand cutting-edge performance with zero configuration headaches. By combining Arch Linux's rolling package model with pre-configured dual desktop environments, automated hardware/virtualization drivers, a custom graphical installer, and CachyOS-grade gaming enhancements, Caelaris Linux offers an uncompromising desktop experience straight from the ISO.
+**Caelaris Linux** is a next-generation Arch-based operating system designed for gamers, software engineers, and power users who demand cutting-edge performance with zero configuration headaches. By combining Arch Linux's rolling package model with pre-configured dual desktop environments, automated hardware/virtualization drivers, a custom graphical installer, and pro-grade gaming enhancements, Caelaris Linux offers an uncompromising desktop experience straight from the ISO.
 
 ---
 
@@ -26,7 +26,7 @@
   [3] Native Graphical Installer  -> Python/PyQt6 wizard with guided Btrfs & Ext4
   [4] Silent Direct Bootloader    -> Clean single "Caelaris Linux" entry to SDDM
   [5] Single User Profile Purity  -> Zero leftover liveuser profiles after setup
-  [6] CachyOS-Grade Gaming Stack  -> vm.max_map_count, GameMode, MangoHud, Steam
+  [6] Pro-Grade Gaming Stack      -> vm.max_map_count, GameMode, MangoHud, Steam
   [7] Universal Hypervisor Tools  -> VMware, VirtualBox, and QEMU/UTM auto-scaling
   [8] Full Software Access        -> Pacman, yay (Arch User Repository), Flathub
   [9] Caelaris Welcome Assistant  -> 1-click maintenance tool (shown only once)
@@ -80,7 +80,7 @@
 
 ## 5. Gaming & Extreme Performance Stack
 
-### 5.1 CachyOS-Grade Kernel & Sysctl Optimizations
+### 5.1 Pro-Grade Kernel & Sysctl Optimizations
 - **High Memory Map Limit:** `vm.max_map_count = 2147483642` eliminates crashes and shader stalls in modern memory-intensive titles (e.g. Star Citizen, Hogwarts Legacy, complex Wine/Proton games).
 - **Reduced Swappiness:** `vm.swappiness = 10` forces the kernel to preserve gaming textures and processes in physical RAM.
 - **CAKE Network Queue Management:** `net.core.default_qdisc = cake` actively prevents bufferbloat during online multiplayer matches.
@@ -146,12 +146,12 @@
 
 ## 10. Feature Comparison Matrix
 
-| Feature / Capability | Caelaris Linux | Vanilla Arch | Manjaro | CachyOS | Fedora Workstation |
+| Feature / Capability | Caelaris Linux | Vanilla Arch | Manjaro | Pop!_OS | Fedora Workstation |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Dual Desktop (KDE + GNOME)** | Yes (Unified ISO) | Manual | Separate ISOs | Separate ISOs | Separate Spins |
+| **Dual Desktop (KDE + GNOME)** | Yes (Unified ISO) | Manual | Separate ISOs | Separate Spins | Separate Spins |
 | **Live Session Hot-Switcher** | Yes (< 2s) | No | No | No | No |
-| **Custom Graphical Installer** | Yes (PyQt6) | No (CLI) | Calamares | Calamares | Anaconda |
-| **CachyOS-Grade Gaming Sysctl** | Yes | Manual | No | Yes | Partial |
+| **Custom Graphical Installer** | Yes (PyQt6) | No (CLI) | Calamares | Custom | Anaconda |
+| **Tuned Low-Latency Gaming Sysctl** | Yes | Manual | No | Partial | Partial |
 | **VMware & VBox Auto-Resize** | Yes (Built-in) | Manual | Partial | Partial | Partial |
 | **Silent Direct Bootloader** | Yes | Manual | Partial | Partial | Yes (Plymouth) |
 | **Purged Single User Profile** | Yes | N/A | Yes | Yes | Yes |
