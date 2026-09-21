@@ -157,3 +157,22 @@
 | **Purged Single User Profile** | Yes | N/A | Yes | Yes | Yes |
 | **Bundled yay AUR Helper** | Yes | Manual | Pamac | Paru/Yay | No (COPR) |
 | **PipeWire Low-Latency Audio** | Yes | Manual | Yes | Yes | Yes |
+
+---
+
+## 11. Platform Architecture & Raspberry Pi / ARM64 Roadmap
+
+### 11.1 Tier 1: x86_64 PCs, Laptops & Virtual Machines (Production)
+- **Target Processors:** Intel Core / Xeon & AMD Ryzen / EPYC (64-bit x86_64).
+- **Boot Subsystem:** UEFI NVRAM with universal removable fallback (`EFI/BOOT/BOOTX64.EFI`) and Legacy BIOS via GRUB.
+- **Distribution Format:** Bootable live hybrid ISO with multithreaded PyQt6 graphical installer (`caelaris-installer-gui`) and automated Btrfs subvolume layout.
+- **Graphics & Hypervisors:** Native Mesa Gallium drivers (AMD RADV, Intel ANV), proprietary NVIDIA DRM modesetting, and full guest suite (`open-vm-tools`, `virtualbox-guest-utils`, `spice-vdagent`).
+
+### 11.2 Tier 2: ARM64 & Raspberry Pi Edition (In Development — Q4 2026 Roadmap)
+- **Target Hardware:**
+  - **Raspberry Pi 5 (4GB / 8GB RAM):** Primary recommended SBC target offering desktop-class performance for dual KDE Plasma 6 & GNOME Wayland sessions.
+  - **Raspberry Pi 4 Model B (4GB / 8GB RAM):** Fully supported with tuned lightweight compositor profiles.
+- **Base OS Foundation:** Arch Linux ARM (`aarch64` ALARM baseline) retaining rolling release packaging and `yay` AUR support.
+- **Kernel & GPU Stack:** Vendor-optimized `linux-rpi` kernel with native Broadcom VideoCore VII / VI (V3D / VC4) hardware graphics acceleration under Wayland.
+- **Distribution Format:** Pre-configured `.img.xz` raw disk images ready for 1-click writing via **Raspberry Pi Imager** or **BalenaEtcher** to MicroSD cards, USB SSDs, or NVMe HATs.
+- **Gaming & Emulation Stack:** Integrated `Box64` and `FEX-Emu` dynamic binary translation engines, enabling x86 game binaries, Steam ARM experimentation, and RetroArch emulation directly on the Raspberry Pi.

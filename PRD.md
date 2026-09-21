@@ -167,7 +167,7 @@ caelaris-linux/
 
 ---
 
-## 7. Product Roadmap
+## 7. Product Roadmap & Multi-Architecture Strategy
 
 ```
 [Phase 1: Foundations]        -> Archiso base, KDE Plasma 6 profile, pacman mirrors (COMPLETED)
@@ -175,4 +175,13 @@ caelaris-linux/
 [Phase 3: Native Installer]   -> PyQt6 GUI installer, silent boot, single profile (COMPLETED)
 [Phase 4: Release Pipeline]   -> GitHub Actions CI, chunked releases, combine.bat (COMPLETED)
 [Phase 5: Kernel & Theme]     -> Custom Caelaris Zen-BORE kernel & bespoke theme (ROADMAP)
+[Phase 6: ARM64 & SBCs]       -> Caelaris Linux Raspberry Pi 5 & 4 Edition (Arch Linux ARM) (ROADMAP)
 ```
+
+### 7.1 Architecture Roadmap: Caelaris Linux ARM64 (Raspberry Pi Edition)
+- **Scope & Objectives:** Port Caelaris Linux's dual Wayland desktop environment and gaming optimizations to 64-bit ARM single-board computers, headlined by the Raspberry Pi 5 and Raspberry Pi 4 Model B (4GB / 8GB RAM).
+- **Core Technical Specifications:**
+  - **Base OS:** Arch Linux ARM (`aarch64` ALARM).
+  - **Kernel:** `linux-rpi` vendor kernel with Broadcom VideoCore VII/VI (V3D/VC4) GPU hardware acceleration.
+  - **Image Format:** Compressed `.img.xz` raw flashable disk image for direct deployment via Raspberry Pi Imager or BalenaEtcher.
+  - **Gaming & Emulation:** Bundled `Box64`, `FEX-Emu`, and RetroArch for x86-to-ARM game execution and emulation.

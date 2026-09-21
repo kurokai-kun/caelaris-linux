@@ -503,5 +503,57 @@
   </tbody>
 </table>
 
+<div class="page-break"></div>
+
+<!-- SECTION 7: PLATFORM ARCHITECTURE & ARM64 ROADMAP -->
+<h1>7. Platform Architecture & Raspberry Pi / ARM64 Roadmap</h1>
+
+<h2>7.1 Tier 1: x86_64 PCs, Laptops & Virtual Machines (Production)</h2>
+<p>
+  The current production release of Caelaris Linux targets 64-bit x86_64 hardware (Intel & AMD) alongside major desktop hypervisors (VMware, VirtualBox, QEMU/SPICE). It is distributed as a live bootable hybrid ISO featuring automated Btrfs partitioning and native PyQt6 installation.
+</p>
+
+<h2>7.2 Tier 2: ARM64 & Raspberry Pi Edition (In Development — Q4 2026 Roadmap)</h2>
+<div class="callout">
+  <strong>Single-Board Computer Expansion:</strong> Bringing Caelaris Linux's dual Wayland desktop environments and pro performance tuning to ARM64 single-board computers, headlined by the <strong>Raspberry Pi 5</strong> and <strong>Raspberry Pi 4 (4GB / 8GB)</strong>.
+</div>
+
+<table class="data-table">
+  <thead>
+    <tr>
+      <th style="width: 25%;">Subsystem</th>
+      <th style="width: 35%;">Raspberry Pi Edition Specification</th>
+      <th style="width: 40%;">Technical Capabilities</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Target Devices</strong></td>
+      <td>Raspberry Pi 5 (4GB / 8GB), Raspberry Pi 4 Model B (4GB / 8GB).</td>
+      <td>Desktop-class dual session performance on Pi 5; lightweight Wayland profile on Pi 4.</td>
+    </tr>
+    <tr>
+      <td><strong>OS Baseline</strong></td>
+      <td>Arch Linux ARM (<code>aarch64</code> ALARM).</td>
+      <td>Rolling release model, full Arch User Repository (AUR) access via bundled <code>yay</code>.</td>
+    </tr>
+    <tr>
+      <td><strong>Kernel & Graphics</strong></td>
+      <td><code>linux-rpi</code> vendor kernel + Broadcom VideoCore VII/VI (V3D / VC4).</td>
+      <td>Hardware-accelerated Wayland rendering for KDE Plasma 6 and GNOME sessions.</td>
+    </tr>
+    <tr>
+      <td><strong>Distribution Format</strong></td>
+      <td>Flashable raw disk image (<code>.img.xz</code>).</td>
+      <td>Direct writing to MicroSD cards, USB SSDs, or NVMe HATs via Raspberry Pi Imager or BalenaEtcher.</td>
+    </tr>
+    <tr>
+      <td><strong>Gaming & Emulation</strong></td>
+      <td><code>Box64</code>, <code>FEX-Emu</code>, RetroArch, Steam ARM experimental.</td>
+      <td>Enables execution of x86 game binaries and retro console emulation on ARM64.</td>
+    </tr>
+  </tbody>
+</table>
+
 </body>
 </html>

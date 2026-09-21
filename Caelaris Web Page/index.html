@@ -369,6 +369,48 @@
         </div>
       </div>
 
+      <!-- ARM64 / Raspberry Pi Roadmap Card -->
+      <div class="arm64-roadmap-card">
+        <div class="arm64-header">
+          <div class="arm64-title-group">
+            <span class="arm64-badge">🍓 Hardware Architecture Roadmap</span>
+            <h4>Caelaris Linux ARM64 — Raspberry Pi Edition</h4>
+            <p>Expanding the Caelaris ecosystem to single-board computers with dual Wayland desktop environments, Broadcom VideoCore acceleration, and retro/indie gaming emulation.</p>
+          </div>
+          <div class="arm64-status">
+            <span class="status-indicator"></span>
+            <span>In Development • Q4 2026</span>
+          </div>
+        </div>
+
+        <div class="arm64-specs-grid">
+          <div class="arm64-spec-item">
+            <span class="spec-label">Target Hardware</span>
+            <span class="spec-value">Raspberry Pi 5 &amp; Pi 4 (4GB / 8GB)</span>
+          </div>
+          <div class="arm64-spec-item">
+            <span class="spec-label">CPU Architecture</span>
+            <span class="spec-value">ARM64 / AArch64</span>
+          </div>
+          <div class="arm64-spec-item">
+            <span class="spec-label">Distribution Format</span>
+            <span class="spec-value">Flashable <code>.img.xz</code> (RPi Imager)</span>
+          </div>
+          <div class="arm64-spec-item">
+            <span class="spec-label">Graphics &amp; Kernel</span>
+            <span class="spec-value">V3D/VC4 Mesa + <code>linux-rpi</code></span>
+          </div>
+          <div class="arm64-spec-item">
+            <span class="spec-label">Desktop Sessions</span>
+            <span class="spec-value">KDE Plasma 6 &amp; GNOME (Wayland)</span>
+          </div>
+          <div class="arm64-spec-item">
+            <span class="spec-label">Gaming &amp; Emulation</span>
+            <span class="spec-value">Box64, FEX-Emu &amp; RetroArch</span>
+          </div>
+        </div>
+      </div>
+
       <!-- System Requirements -->
       <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 32px; backdrop-filter: blur(10px);">
         <h3 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 20px;">Hardware Requirements</h3>
@@ -594,6 +636,16 @@
           </button>
           <div class="faq-answer">
             The Caelaris Graphical Installer includes live USB media protection to ensure you cannot accidentally overwrite your boot drive, plus a bold confirmation warning. When choosing a disk, make sure to select a dedicated drive for Caelaris (or install inside a virtual machine) because the installer formats the chosen target disk.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>Can I run Caelaris Linux on a Raspberry Pi or ARM64 device?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer">
+            The current release ISO is built specifically for <strong>x86_64 PCs and Laptops</strong> (Intel and AMD processors) with standard UEFI/BIOS bootloaders and cannot be booted directly on ARM hardware. However, a dedicated <strong>Caelaris Linux ARM64 Edition</strong> is actively on our development roadmap targeting the <strong>Raspberry Pi 5</strong> and <strong>Raspberry Pi 4 (4GB/8GB)</strong>. It will feature Arch Linux ARM (<code>aarch64</code>), the <code>linux-rpi</code> kernel, Broadcom VideoCore hardware acceleration, and flashable <code>.img.xz</code> disk images ready for Raspberry Pi Imager.
           </div>
         </div>
       </div>
