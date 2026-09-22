@@ -296,117 +296,181 @@
         </p>
       </div>
 
-      <!-- Main Download Card -->
-      <div class="download-card-main">
-        <div class="download-header">
-          <div class="download-title-area">
-            <h3 class="text-gradient">Caelaris Linux Rolling Edition</h3>
-            <div class="download-meta-tags">
-              <span class="tag">x86_64 Architecture</span>
-              <span class="tag">Kernel 6.x Rolling</span>
-              <span class="tag">KDE Plasma 6 + GNOME 4x</span>
-              <span class="tag">~4.0 GB ISO</span>
-              <span class="tag">UEFI & Legacy BIOS</span>
-            </div>
+      <!-- Architecture Selector Tabs -->
+      <div class="arch-selector">
+        <button class="arch-tab active" data-arch="x86_64">
+          <span class="arch-tab-icon">🖥️</span>
+          <div class="arch-tab-text">
+            <strong>x86_64 PC &amp; Laptop</strong>
+            <small>Intel &amp; AMD 64-Bit Desktop ISO</small>
           </div>
-          <div>
-            <a href="https://github.com/kurokai-kun/caelaris-linux/releases/tag/rolling-release" target="_blank" class="btn btn-primary btn-lg">
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
-              View GitHub Release
-            </a>
+          <span class="arch-badge">PC Release</span>
+        </button>
+        <button class="arch-tab" data-arch="arm64">
+          <span class="arch-tab-icon">🍓</span>
+          <div class="arch-tab-text">
+            <strong>Raspberry Pi / ARM64</strong>
+            <small>Pi 5 &amp; 4 ISO / .img.xz Image</small>
           </div>
-        </div>
+          <span class="arch-badge rpi-badge">ARM64 Release</span>
+        </button>
+      </div>
 
-        <div class="download-options-grid">
-          <!-- Option A: GitHub Releases Parts -->
-          <div class="download-tile">
+      <!-- x86_64 PC Panel -->
+      <div class="arch-panel active" id="arch-panel-x86_64">
+        <div class="download-card-main">
+          <div class="download-header">
+            <div class="download-title-area">
+              <h3 class="text-gradient">Caelaris Linux Rolling Edition</h3>
+              <div class="download-meta-tags">
+                <span class="tag">x86_64 Architecture</span>
+                <span class="tag">Kernel 6.x Rolling</span>
+                <span class="tag">KDE Plasma 6 + GNOME 4x</span>
+                <span class="tag">~4.0 GB ISO</span>
+                <span class="tag">UEFI & Legacy BIOS</span>
+              </div>
+            </div>
             <div>
-              <h4>📦 GitHub Release Assets (High Speed)</h4>
-              <p>Due to GitHub's 2GB per-asset limit, download the parts below and run `combine.bat` (or use copy command) to assemble.</p>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-              <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/caelaris-kde-2026.09.20-x86_64.iso.part-00" class="btn btn-secondary" style="font-size: 0.85rem; padding: 8px 14px;">Download Part 00 (1.9 GB)</a>
-              <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/caelaris-kde-2026.09.20-x86_64.iso.part-01" class="btn btn-secondary" style="font-size: 0.85rem; padding: 8px 14px;">Download Part 01 (1.9 GB)</a>
-              <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/caelaris-kde-2026.09.20-x86_64.iso.part-02" class="btn btn-secondary" style="font-size: 0.85rem; padding: 8px 14px;">Download Part 02 (251 MB)</a>
-              <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/combine.bat" class="btn btn-primary" style="font-size: 0.85rem; padding: 8px 14px;">Download combine.bat (1-Click Reassembly)</a>
-            </div>
-            <button onclick="openCombineModal()" class="btn btn-secondary" style="font-size: 0.8rem; margin-top: 4px;">
-              📖 How to Reassemble (Windows / Linux / Mac)
-            </button>
-          </div>
-
-          <!-- Option B: Direct Mirror -->
-          <div class="download-tile">
-            <div>
-              <h4>⚡ Direct Mirror (Single 4.0GB File)</h4>
-              <p>Download the complete, non-split ISO file directly from our fast cloud mirror.</p>
-            </div>
-            <div style="margin-top: auto;">
-              <a href="https://github.com/kurokai-kun/caelaris-linux/releases/tag/rolling-release" target="_blank" class="btn btn-primary" style="width: 100%;">
-                Direct Cloud Download
+              <a href="https://github.com/kurokai-kun/caelaris-linux/releases/tag/rolling-release" target="_blank" class="btn btn-primary btn-lg">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                View GitHub Release
               </a>
             </div>
           </div>
-        </div>
 
-        <!-- SHA256 Checksum Box -->
-        <div class="checksum-box">
-          <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-            <span style="color: var(--primary); font-weight: 700;">SHA256:</span>
-            <span id="checksum-val">Available in .sha256 file on GitHub Release</span>
+          <div class="download-options-grid">
+            <!-- Option A: GitHub Releases Parts -->
+            <div class="download-tile">
+              <div>
+                <h4>📦 GitHub Release Assets (High Speed)</h4>
+                <p>Due to GitHub's 2GB per-asset limit, download the parts below and run `combine.bat` (or use copy command) to assemble.</p>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/caelaris-kde-2026.09.20-x86_64.iso.part-00" class="btn btn-secondary" style="font-size: 0.85rem; padding: 8px 14px;">Download Part 00 (1.9 GB)</a>
+                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/caelaris-kde-2026.09.20-x86_64.iso.part-01" class="btn btn-secondary" style="font-size: 0.85rem; padding: 8px 14px;">Download Part 01 (1.9 GB)</a>
+                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/caelaris-kde-2026.09.20-x86_64.iso.part-02" class="btn btn-secondary" style="font-size: 0.85rem; padding: 8px 14px;">Download Part 02 (251 MB)</a>
+                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/combine.bat" class="btn btn-primary" style="font-size: 0.85rem; padding: 8px 14px;">Download combine.bat (1-Click Reassembly)</a>
+              </div>
+              <button onclick="openCombineModal()" class="btn btn-secondary" style="font-size: 0.8rem; margin-top: 4px;">
+                📖 How to Reassemble (Windows / Linux / Mac)
+              </button>
+            </div>
+
+            <!-- Option B: Direct Mirror -->
+            <div class="download-tile">
+              <div>
+                <h4>⚡ Direct Mirror (Single 4.0GB File)</h4>
+                <p>Download the complete, non-split ISO file directly from our fast cloud mirror.</p>
+              </div>
+              <div style="margin-top: auto;">
+                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/tag/rolling-release" target="_blank" class="btn btn-primary" style="width: 100%;">
+                  Direct Cloud Download
+                </a>
+              </div>
+            </div>
           </div>
-          <button class="copy-btn copy-trigger" data-copy="certutil -hashfile caelaris-kde.iso SHA256">
-            <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-            </svg>
-            Copy Verification Command
-          </button>
+
+          <!-- SHA256 Checksum Box -->
+          <div class="checksum-box">
+            <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              <span style="color: var(--primary); font-weight: 700;">SHA256:</span>
+              <span id="checksum-val">Available in .sha256 file on GitHub Release</span>
+            </div>
+            <button class="copy-btn copy-trigger" data-copy="certutil -hashfile caelaris-kde.iso SHA256">
+              <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              Copy Verification Command
+            </button>
+          </div>
         </div>
       </div>
 
-      <!-- ARM64 / Raspberry Pi Roadmap Card -->
-      <div class="arm64-roadmap-card">
-        <div class="arm64-header">
-          <div class="arm64-title-group">
-            <span class="arm64-badge">🍓 Hardware Architecture Roadmap</span>
-            <h4>Caelaris Linux ARM64 — Raspberry Pi Edition</h4>
-            <p>Expanding the Caelaris ecosystem to single-board computers with dual Wayland desktop environments, Broadcom VideoCore acceleration, and retro/indie gaming emulation.</p>
+      <!-- ARM64 / Raspberry Pi Panel -->
+      <div class="arch-panel" id="arch-panel-arm64">
+        <div class="download-card-main" style="border-color: rgba(225, 29, 72, 0.4); box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6), 0 0 40px rgba(225, 29, 72, 0.15);">
+          <div class="download-header">
+            <div class="download-title-area">
+              <h3 style="background: linear-gradient(135deg, #fb7185 0%, #f43f5e 50%, #38bdf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Caelaris Linux ARM64 (Raspberry Pi Edition)</h3>
+              <div class="download-meta-tags">
+                <span class="tag" style="border-color: rgba(225, 29, 72, 0.35); color: #fb7185;">ARM64 / AArch64</span>
+                <span class="tag">Raspberry Pi 5 &amp; 4</span>
+                <span class="tag">linux-rpi Kernel</span>
+                <span class="tag">KDE Plasma 6 + GNOME 4x</span>
+                <span class="tag">VideoCore VII / VI Hardware Accel</span>
+              </div>
+            </div>
+            <div>
+              <a href="https://github.com/kurokai-kun/caelaris-linux/releases/tag/rpi-arm64-release" target="_blank" class="btn btn-primary btn-lg" style="background: linear-gradient(135deg, #e11d48 0%, #be123c 100%); box-shadow: 0 4px 18px rgba(225, 29, 72, 0.35);">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                View ARM64 GitHub Release
+              </a>
+            </div>
           </div>
-          <div class="arm64-status">
-            <span class="status-indicator"></span>
-            <span>In Development • Q4 2026</span>
-          </div>
-        </div>
 
-        <div class="arm64-specs-grid">
-          <div class="arm64-spec-item">
-            <span class="spec-label">Target Hardware</span>
-            <span class="spec-value">Raspberry Pi 5 &amp; Pi 4 (4GB / 8GB)</span>
+          <div class="download-options-grid">
+            <!-- Option 1: ARM64 ISO -->
+            <div class="download-tile">
+              <div>
+                <h4>💿 Raspberry Pi / ARM64 ISO</h4>
+                <p>Hybrid UEFI bootable ARM64 ISO. Bootable on Raspberry Pi with UEFI firmware, ARM64 virtual machines (QEMU/UTM on Apple Silicon / PC), and cloud ARM instances.</p>
+              </div>
+              <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
+                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rpi-arm64-release/caelaris-rpi-arm64.iso" class="btn btn-primary" style="background: linear-gradient(135deg, #e11d48 0%, #be123c 100%); width: 100%;">
+                  Download ARM64 ISO
+                </a>
+              </div>
+            </div>
+
+            <!-- Option 2: Flashable Image (.img.xz) -->
+            <div class="download-tile">
+              <div>
+                <h4>💾 Flashable MicroSD / NVMe Image (.img.xz)</h4>
+                <p>Raw disk image for Raspberry Pi 5 &amp; Pi 4. Directly flash to your MicroSD card, USB drive, or NVMe HAT using Raspberry Pi Imager or BalenaEtcher.</p>
+              </div>
+              <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
+                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rpi-arm64-release/caelaris-rpi-arm64.img.xz" class="btn btn-secondary" style="width: 100%; border-color: rgba(225, 29, 72, 0.3);">
+                  Download .img.xz Image
+                </a>
+              </div>
+            </div>
+
+            <!-- Option 3: Raspberry Pi Imager Quick Steps -->
+            <div class="download-tile">
+              <div>
+                <h4>⚡ Raspberry Pi Imager 1-Click Flash</h4>
+                <p>Use the official Raspberry Pi Imager tool: Click <strong>Choose OS</strong> &rarr; scroll to bottom &rarr; select <strong>Use custom</strong> &rarr; pick the downloaded file &rarr; select SD card &rarr; <strong>Write</strong>!</p>
+              </div>
+              <div style="margin-top: auto;">
+                <a href="https://www.raspberrypi.com/software/" target="_blank" class="btn btn-secondary" style="width: 100%;">
+                  Get Raspberry Pi Imager ↗
+                </a>
+              </div>
+            </div>
           </div>
-          <div class="arm64-spec-item">
-            <span class="spec-label">CPU Architecture</span>
-            <span class="spec-value">ARM64 / AArch64</span>
-          </div>
-          <div class="arm64-spec-item">
-            <span class="spec-label">Distribution Format</span>
-            <span class="spec-value">Flashable <code>.img.xz</code> (RPi Imager)</span>
-          </div>
-          <div class="arm64-spec-item">
-            <span class="spec-label">Graphics &amp; Kernel</span>
-            <span class="spec-value">V3D/VC4 Mesa + <code>linux-rpi</code></span>
-          </div>
-          <div class="arm64-spec-item">
-            <span class="spec-label">Desktop Sessions</span>
-            <span class="spec-value">KDE Plasma 6 &amp; GNOME (Wayland)</span>
-          </div>
-          <div class="arm64-spec-item">
-            <span class="spec-label">Gaming &amp; Emulation</span>
-            <span class="spec-value">Box64, FEX-Emu &amp; RetroArch</span>
+
+          <!-- SHA256 Checksum Box -->
+          <div class="checksum-box">
+            <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              <span style="color: #fb7185; font-weight: 700;">SHA256:</span>
+              <span>Available in .sha256 file on ARM64 GitHub Release</span>
+            </div>
+            <button class="copy-btn copy-trigger" data-copy="certutil -hashfile caelaris-rpi-arm64.iso SHA256">
+              <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              Copy Verification Command
+            </button>
           </div>
         </div>
       </div>

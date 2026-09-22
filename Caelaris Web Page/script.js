@@ -4,6 +4,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   initDesktopSwitcher();
+  initArchSwitcher();
   initFaqAccordion();
   initCopyButtons();
   initInstallGuideTabs();
@@ -118,3 +119,24 @@ window.addEventListener('click', (e) => {
     closeCombineModal();
   }
 });
+
+// 6. Architecture Switcher (x86_64 vs ARM64)
+function initArchSwitcher() {
+  const tabs = document.querySelectorAll('.arch-tab');
+  const panels = document.querySelectorAll('.arch-panel');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const arch = tab.getAttribute('data-arch');
+
+      tabs.forEach(t => t.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+
+      tab.classList.add('active');
+      const targetPanel = document.getElementById(`arch-panel-${arch}`);
+      if (targetPanel) {
+        targetPanel.classList.add('active');
+      }
+    });
+  });
+}

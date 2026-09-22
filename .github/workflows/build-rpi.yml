@@ -1,0 +1,92 @@
+name: Build Caelaris Linux ARM64 (Raspberry Pi)
+
+on:
+  workflow_dispatch:
+    inputs:
+      edition:
+        description: 'Desktop Edition to build'
+        required: true
+        default: 'kde'
+        type: choice
+        options:
+          - kde
+          - gnome
+      format:
+        description: 'Target Format'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - both
+          - iso
+          - img
+
+permissions:
+  contents: write
+
+jobs:
+  build-arm64:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Free Disk Space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache
+          sudo rm -rf /usr/share/swift
+          df -h
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install ARM64 & Image Building Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static binfmt-support parted dosfstools e2fsprogs xorriso xz-utils libarchive-tools squashfs-tools curl mtools
+
+      - name: Build Caelaris Linux ARM64 / Raspberry Pi Image & ISO
+        run: |
+          chmod +x scripts/*.sh
+          sudo ./scripts/build_rpi.sh "${{ inputs.edition || 'kde' }}" "${{ inputs.format || 'both' }}"
+
+      - name: Prepare Release Assets
+        id: prep
+        run: |
+          mkdir -p release_assets
+          cp out-rpi/* release_assets/ 2>/dev/null || true
+          ls -lh release_assets/
+
+      - name: Publish GitHub Release (Raspberry Pi / ARM64)
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main'
+        with:
+          tag_name: rpi-arm64-release
+          name: Caelaris Linux ARM64 (Raspberry Pi Edition)
+          make_latest: false
+          body: |
+            ## 🍓 Caelaris Linux ARM64 (Raspberry Pi Edition)
+
+            Official ARM64 builds of Caelaris Linux engineered specifically for single-board computers, headlined by the **Raspberry Pi 5** and **Raspberry Pi 4 Model B (4GB / 8GB)**.
+
+            ---
+
+            ### 📦 Available Release Assets:
+            1. **`caelaris-rpi-arm64-*.img.xz`**: Flashable MicroSD / USB SSD / NVMe image.
+               - Flash directly using **[Raspberry Pi Imager](https://www.raspberrypi.com/software/)** (*Choose OS -> Use Custom*) or **BalenaEtcher**.
+            2. **`caelaris-rpi-arm64-*.iso`**: Hybrid UEFI ARM64 ISO.
+               - Bootable on Raspberry Pi with UEFI firmware, ARM64 virtual machines (QEMU / UTM on Apple Silicon / Linux ARM64), and cloud ARM instances.
+            3. **`*.sha256`**: Cryptographic integrity checksums.
+
+            ---
+
+            ### ⚡ Key Features:
+            - **Arch Linux ARM (`aarch64`) Base**: Full rolling release model with `yay` AUR support.
+            - **Hardware Acceleration**: Broadcom VideoCore VII (Pi 5) and VI (Pi 4) V3D driver support under Wayland.
+            - **Dual Desktop Sessions**: KDE Plasma 6 & GNOME 4x Wayland.
+            - **Tuned Sysctl & ZRAM**: High memory map limit (`vm.max_map_count=2147483642`), low swappiness, and zstd ZRAM compressed swap.
+            - **x86 Emulation**: Pre-configured support for Box64, FEX-Emu, and RetroArch.
+          files: release_assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
