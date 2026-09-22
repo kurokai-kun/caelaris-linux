@@ -56,11 +56,17 @@ jobs:
         run: |
           mkdir -p release_assets
           cp out-rpi/* release_assets/ 2>/dev/null || true
+          for f in out-rpi/*.iso; do [ -f "$f" ] && cp "$f" release_assets/caelaris-rpi-arm64.iso; done
+          for f in out-rpi/*.img.xz; do [ -f "$f" ] && cp "$f" release_assets/caelaris-rpi-arm64.img.xz; done
+          cd release_assets
+          sha256sum caelaris-rpi-arm64.iso > caelaris-rpi-arm64.iso.sha256 2>/dev/null || true
+          sha256sum caelaris-rpi-arm64.img.xz > caelaris-rpi-arm64.img.xz.sha256 2>/dev/null || true
+          cd ..
           ls -lh release_assets/
 
       - name: Publish GitHub Release (Raspberry Pi / ARM64)
         uses: softprops/action-gh-release@v2
-        if: github.ref == 'refs/heads/main'
+        if: success()
         with:
           tag_name: rpi-arm64-release
           name: Caelaris Linux ARM64 (Raspberry Pi Edition)
