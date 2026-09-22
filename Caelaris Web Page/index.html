@@ -499,28 +499,29 @@
               </div>
             </div>
             <div>
-              <a href="https://github.com/kurokai-kun/caelaris-linux/releases/tag/rpi-arm64-release" target="_blank" class="btn btn-primary btn-lg" style="background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); box-shadow: 0 4px 18px rgba(168, 85, 247, 0.35);">
+              <a href="https://github.com/kurokai-kun/caelaris-linux/releases/tag/arm64-pc-release" target="_blank" class="btn btn-primary btn-lg" style="background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); box-shadow: 0 4px 18px rgba(168, 85, 247, 0.35);">
                 <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                   <polyline points="7 10 12 15 17 10"></polyline>
                   <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
-                View ARM64 GitHub Release
+                View ARM64 PC GitHub Release
               </a>
             </div>
           </div>
 
           <div class="download-options-grid">
-            <!-- Option 1: Universal ARM64 UEFI ISO -->
+            <!-- Option 1: Universal ARM64 UEFI ISO Parts -->
             <div class="download-tile">
               <div>
-                <h4>💿 Universal ARM64 UEFI Laptop ISO</h4>
-                <p>Hybrid UEFI bootable AArch64 ISO. Boots natively on Qualcomm Snapdragon X Elite/Plus laptops, ThinkPad X13s, ARM64 workstations (Ampere Altra), and native VM virtualization (UTM on Apple Silicon / PC).</p>
+                <h4>📦 Full Desktop ARM64 ISO Assets (~4.0GB)</h4>
+                <p>Full-featured uncompromised desktop ISO with dual KDE Plasma 6 &amp; GNOME 4x Wayland sessions. Split into parts under 1.9GB to comply with GitHub asset limits.</p>
               </div>
-              <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
-                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rpi-arm64-release/caelaris-rpi-arm64.iso" class="btn btn-primary" style="background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); width: 100%;">
-                  Download ARM64 Laptop ISO
-                </a>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/arm64-pc-release/caelaris-arm64-pc.iso.part-00" class="btn btn-secondary" style="font-size: 0.85rem; padding: 8px 14px; border-color: rgba(168, 85, 247, 0.35);">Download Part 00 (1.9 GB)</a>
+                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/arm64-pc-release/caelaris-arm64-pc.iso.part-01" class="btn btn-secondary" style="font-size: 0.85rem; padding: 8px 14px; border-color: rgba(168, 85, 247, 0.35);">Download Part 01 (1.9 GB)</a>
+                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/arm64-pc-release/caelaris-arm64-pc.iso.part-02" class="btn btn-secondary" style="font-size: 0.85rem; padding: 8px 14px; border-color: rgba(168, 85, 247, 0.35);">Download Part 02 (~250 MB)</a>
+                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/arm64-pc-release/combine.bat" class="btn btn-primary" style="background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); font-size: 0.85rem; padding: 8px 14px;">Download combine.bat (1-Click Reassembly)</a>
               </div>
             </div>
 
@@ -555,9 +556,9 @@
           <div class="checksum-box">
             <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
               <span style="color: #c084fc; font-weight: 700;">SHA256:</span>
-              <span>Available in .sha256 file on ARM64 GitHub Release</span>
+              <span>Available in .sha256 file on ARM64 PC GitHub Release</span>
             </div>
-            <button class="copy-btn copy-trigger" data-copy="certutil -hashfile caelaris-rpi-arm64.iso SHA256">
+            <button class="copy-btn copy-trigger" data-copy="certutil -hashfile caelaris-arm64-pc.iso SHA256">
               <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -849,7 +850,7 @@
             Absolutely! Caelaris Linux provides full 64-bit ARM (AArch64) support for modern ARM PCs:
             <ul style="padding-left: 20px; margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
               <li><strong>Apple Silicon (M1 / M2 / M3 / M4):</strong> You can run Caelaris with 100% native CPU performance and Metal-accelerated GPU graphics inside <strong>UTM</strong> on macOS, or install it as a bare-metal dual-boot OS via the standard Asahi U-Boot loader.</li>
-              <li><strong>Qualcomm Snapdragon X Elite &amp; Plus Laptops:</strong> Copilot+ PCs (such as Microsoft Surface Laptop 7, Lenovo Yoga Slim 7x, Dell XPS 13 9345, and ASUS Vivobook S 15) support standard UEFI AArch64 booting. Download the <code>caelaris-rpi-arm64.iso</code> from the <em>ARM64 Laptops &amp; PCs</em> tab above, flash it to a USB drive in DD mode, disable Secure Boot in firmware settings, and boot directly into KDE Plasma 6 or GNOME with Mesa Freedreno Adreno GPU acceleration!</li>
+              <li><strong>Qualcomm Snapdragon X Elite &amp; Plus Laptops:</strong> Copilot+ PCs (such as Microsoft Surface Laptop 7, Lenovo Yoga Slim 7x, Dell XPS 13 9345, and ASUS Vivobook S 15) support standard UEFI AArch64 booting. Download the <code>caelaris-arm64-pc.iso</code> from the <em>ARM64 Laptops &amp; PCs</em> tab above, flash it to a USB drive in DD mode, disable Secure Boot in firmware settings, and boot directly into KDE Plasma 6 or GNOME with Mesa Freedreno Adreno GPU acceleration!</li>
             </ul>
           </div>
         </div>

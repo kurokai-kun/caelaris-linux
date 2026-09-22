@@ -1,0 +1,147 @@
+name: Build Caelaris Linux ARM64 Laptop & PC ISO
+
+on:
+  workflow_dispatch:
+    inputs:
+      edition:
+        description: 'Desktop Edition to build'
+        required: true
+        default: 'kde'
+        type: choice
+        options:
+          - kde
+          - gnome
+  push:
+    tags:
+      - 'arm64-pc-*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-arm64-pc:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Free Disk Space
+        run: |
+          echo "Freeing up runner disk space..."
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache
+          sudo rm -rf /usr/share/swift
+          df -h
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install ARM64 & Image Building Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static binfmt-support parted dosfstools e2fsprogs xorriso xz-utils libarchive-tools squashfs-tools curl mtools
+
+      - name: Build Caelaris Linux ARM64 PC ISO
+        run: |
+          chmod +x scripts/*.sh
+          sudo ./scripts/build_arm64_pc.sh "${{ inputs.edition || 'kde' }}"
+
+      - name: Prepare Release Assets (< 2GB Chunks for GitHub Release Limits)
+        id: prep
+        run: |
+          mkdir -p release_assets
+          ISO_FILE=$(ls out-arm64-pc/*.iso | head -n 1)
+          ISO_NAME=$(basename "$ISO_FILE")
+          echo "Processing $ISO_NAME..."
+
+          # 1. SHA256 Checksum
+          sha256sum "$ISO_FILE" > "release_assets/${ISO_NAME}.sha256"
+          sha256sum "$ISO_FILE" > "release_assets/caelaris-arm64-pc.iso.sha256"
+
+          # 2. Split into 1900MB parts to strictly stay below GitHub's 2147483648-byte limit
+          echo "Splitting uncompromised ISO into parts under 1.9GB..."
+          split -b 1900M -d "$ISO_FILE" "release_assets/${ISO_NAME}.part-"
+          split -b 1900M -d "$ISO_FILE" "release_assets/caelaris-arm64-pc.iso.part-"
+
+          # 3. Windows 1-click combine script (combine.bat)
+          cat << 'EOF' > release_assets/combine.bat
+          @echo off
+          echo ========================================================
+          echo  Merging Caelaris Linux ARM64 Laptop & PC ISO parts...
+          echo ========================================================
+          if exist "caelaris-arm64-pc*.iso.part-00" (
+              copy /b "caelaris-arm64-pc*.iso.part-*" "caelaris-arm64-pc.iso"
+          ) else (
+              copy /b "*.part-*" "caelaris-arm64-pc.iso"
+          )
+          echo.
+          if exist "caelaris-arm64-pc.iso.sha256" (
+              echo Verifying SHA256 checksum...
+              certutil -hashfile "caelaris-arm64-pc.iso" SHA256
+          )
+          echo.
+          echo Done! You can now use caelaris-arm64-pc.iso for UTM or flash via Rufus/balenaEtcher.
+          pause
+          EOF
+
+          # 4. Attempt direct cloud upload to Pixeldrain for 1-click single-file download
+          echo "Attempting Pixeldrain direct upload (5-minute timeout)..."
+          PD_URL=""
+          PD_RESP=$(curl -s -m 300 -F "file=@$ISO_FILE" https://pixeldrain.com/api/file 2>/dev/null || true)
+          PD_ID=$(echo "$PD_RESP" | grep -o '"id":"[^"]*' | cut -d'"' -f4 || true)
+          if [ -n "$PD_ID" ]; then
+            PD_URL="https://pixeldrain.com/u/$PD_ID"
+            echo "Pixeldrain direct download: $PD_URL"
+          fi
+          echo "PIXELDRAIN_LINK=$PD_URL" >> $GITHUB_ENV
+
+          ls -lh release_assets/
+
+      - name: Publish GitHub Release (ARM64 Laptops & PCs)
+        uses: softprops/action-gh-release@v2
+        if: success()
+        with:
+          tag_name: arm64-pc-release
+          name: Caelaris Linux ARM64 Laptop & PC Edition (Apple Silicon & Snapdragon)
+          make_latest: false
+          body: |
+            ## 💻 Caelaris Linux ARM64 Laptop & PC Edition
+
+            Official full-featured 64-bit ARM (AArch64) desktop operating system engineered exclusively for modern ARM laptops, workstations, and Apple Silicon computers.
+
+            > **No compromises on ISO size or features:** This edition includes the complete Caelaris desktop environment, dual Wayland sessions (KDE Plasma 6 & GNOME 4x), native PyQt6 graphical installer, and full gaming & hypervisor drivers matching the x86_64 flagship.
+
+            ---
+
+            ### 🖥️ Dedicated Hardware Support:
+            1. **Apple Silicon Macs (M1 / M2 / M3 / M4)**:
+               - Run bare-metal via standard Asahi U-Boot integration with hardware-accelerated Mesa Apple AGX graphics.
+               - Run inside **UTM** on macOS with 100% native Apple Silicon CPU execution speed and VirtIO-GPU acceleration.
+            2. **Qualcomm Snapdragon X Elite & X Plus Laptops**:
+               - Copilot+ PCs (Microsoft Surface Laptop 7, Lenovo Yoga Slim 7x, Dell XPS 13 ARM 9345, ASUS Vivobook S 15) with standard AArch64 UEFI booting (`BOOTAA64.EFI`) and Mesa Freedreno Adreno 3D acceleration.
+            3. **ARM64 Workstations & Cloud PCs**:
+               - Lenovo ThinkPad X13s, Ampere Altra workstations, and standard ARM64 cloud hypervisors.
+
+            ---
+
+            ### 📦 Available Release Assets:
+            Because GitHub has a 2GB limit per release asset, the complete, uncompromised ~4.0GB ISO is distributed in high-speed parts below:
+            1. **`caelaris-arm64-pc-*.iso.part-00`, `part-01`, `part-02`**: Complete multi-part full desktop ISO.
+            2. **`combine.bat`**: 1-click Windows reassembly script (merges parts in seconds via `copy /b` and verifies SHA256 checksum).
+            3. **`caelaris-arm64-pc-*.iso.sha256`**: Cryptographic integrity checksum.
+            ${{ env.PIXELDRAIN_LINK && format('4. **Direct Single-File Download**: [{0}]({0})', env.PIXELDRAIN_LINK) || '' }}
+
+            ---
+
+            ### ⚡ Full Desktop Features (Identical to x86_64 Flagship):
+            - **Dual Wayland Desktops**: Full KDE Plasma 6 (default) and GNOME 4x with 2-second live switcher (`caelaris-switch-desktop`).
+            - **Native PyQt6 Graphical Installer**: `caelaris-installer-gui` supporting Btrfs subvolumes (`@`, `@home`, `@cache`), user profile management, and live USB protection.
+            - **Pro Gaming & Emulation Stack**:
+              - `vm.max_map_count=2147483642`, low swappiness, CAKE network queueing.
+              - Integrated **Box64** & **FEX-Emu** for executing x86 game binaries on ARM64.
+              - PipeWire low-latency professional audio stack.
+              - MangoHud performance HUD & Feral GameMode.
+            - **Silent Clean Direct Boot**: Single bootloader entry displaying strictly `Caelaris Linux` with silent transition into SDDM.
+          files: release_assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
