@@ -511,17 +511,16 @@
           </div>
 
           <div class="download-options-grid">
-            <!-- Option 1: Universal ARM64 UEFI ISO Parts -->
+            <!-- Option 1: Direct ARM64 UEFI Laptop ISO -->
             <div class="download-tile">
               <div>
-                <h4>📦 Full Desktop ARM64 ISO Assets (~4.0GB)</h4>
-                <p>Full-featured uncompromised desktop ISO with dual KDE Plasma 6 &amp; GNOME 4x Wayland sessions. Split into parts under 1.9GB to comply with GitHub asset limits.</p>
+                <h4>💿 Direct Single-File ARM64 ISO (~951 MB)</h4>
+                <p>Universal bootable hybrid UEFI ARM64 ISO for Apple Silicon (UTM / Asahi), Qualcomm Snapdragon X Elite/Plus laptops, and ARM64 workstations. 1-click complete download.</p>
               </div>
-              <div style="display: flex; flex-direction: column; gap: 8px;">
-                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/arm64-pc-release/caelaris-arm64-pc.iso.part-00" class="btn btn-secondary" style="font-size: 0.85rem; padding: 8px 14px; border-color: rgba(168, 85, 247, 0.35);">Download Part 00 (1.9 GB)</a>
-                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/arm64-pc-release/caelaris-arm64-pc.iso.part-01" class="btn btn-secondary" style="font-size: 0.85rem; padding: 8px 14px; border-color: rgba(168, 85, 247, 0.35);">Download Part 01 (1.9 GB)</a>
-                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/arm64-pc-release/caelaris-arm64-pc.iso.part-02" class="btn btn-secondary" style="font-size: 0.85rem; padding: 8px 14px; border-color: rgba(168, 85, 247, 0.35);">Download Part 02 (~250 MB)</a>
-                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/arm64-pc-release/combine.bat" class="btn btn-primary" style="background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); font-size: 0.85rem; padding: 8px 14px;">Download combine.bat (1-Click Reassembly)</a>
+              <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
+                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/arm64-pc-release/caelaris-arm64-pc.iso" class="btn btn-primary" style="background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); width: 100%;">
+                  Download ARM64 Laptop ISO (951 MB)
+                </a>
               </div>
             </div>
 
@@ -556,7 +555,7 @@
           <div class="checksum-box">
             <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
               <span style="color: #c084fc; font-weight: 700;">SHA256:</span>
-              <span>Available in .sha256 file on ARM64 PC GitHub Release</span>
+              <span style="font-family: monospace; font-size: 0.85rem;">4015a2f18edddad7707fd2c0ee4fa5fefe02c9693e9a6bf67b4b04ae8360bfe9</span>
             </div>
             <button class="copy-btn copy-trigger" data-copy="certutil -hashfile caelaris-arm64-pc.iso SHA256">
               <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
