@@ -168,11 +168,14 @@
 - **Distribution Format:** Bootable live hybrid ISO with multithreaded PyQt6 graphical installer (`caelaris-installer-gui`) and automated Btrfs subvolume layout.
 - **Graphics & Hypervisors:** Native Mesa Gallium drivers (AMD RADV, Intel ANV), proprietary NVIDIA DRM modesetting, and full guest suite (`open-vm-tools`, `virtualbox-guest-utils`, `spice-vdagent`).
 
-### 11.2 Tier 2: ARM64 & Raspberry Pi Edition (In Development — Q4 2026 Roadmap)
+### 11.2 Tier 2: ARM64 & Raspberry Pi Edition (Active Build & Release Pipeline)
 - **Target Hardware:**
   - **Raspberry Pi 5 (4GB / 8GB RAM):** Primary recommended SBC target offering desktop-class performance for dual KDE Plasma 6 & GNOME Wayland sessions.
   - **Raspberry Pi 4 Model B (4GB / 8GB RAM):** Fully supported with tuned lightweight compositor profiles.
+  - **Raspberry Pi 3 Model B+ (1GB RAM):** Fully supported with VideoCore IV KMS drivers and active zstd ZRAM memory compression.
 - **Base OS Foundation:** Arch Linux ARM (`aarch64` ALARM baseline) retaining rolling release packaging and `yay` AUR support.
-- **Kernel & GPU Stack:** Vendor-optimized `linux-rpi` kernel with native Broadcom VideoCore VII / VI (V3D / VC4) hardware graphics acceleration under Wayland.
-- **Distribution Format:** Pre-configured `.img.xz` raw disk images ready for 1-click writing via **Raspberry Pi Imager** or **BalenaEtcher** to MicroSD cards, USB SSDs, or NVMe HATs.
+- **Kernel & GPU Stack:** Vendor-optimized `linux-rpi` kernel with native Broadcom VideoCore VII (Pi 5), VI (Pi 4), and IV (Pi 3B+) hardware graphics acceleration under Wayland.
+- **Distribution Formats:**
+  - **Hybrid UEFI ARM64 ISO (`caelaris-rpi-arm64.iso`):** Universal bootable ISO for UEFI Pi firmware, ARM64 VMs (QEMU/UTM), and cloud ARM instances.
+  - **Compressed Raw Image (`caelaris-rpi-arm64.img.xz`):** Ready for 1-click writing via **Raspberry Pi Imager** or **BalenaEtcher** to MicroSD cards, USB SSDs, or NVMe HATs.
 - **Gaming & Emulation Stack:** Integrated `Box64` and `FEX-Emu` dynamic binary translation engines, enabling x86 game binaries, Steam ARM experimentation, and RetroArch emulation directly on the Raspberry Pi.

@@ -175,13 +175,14 @@ caelaris-linux/
 [Phase 3: Native Installer]   -> PyQt6 GUI installer, silent boot, single profile (COMPLETED)
 [Phase 4: Release Pipeline]   -> GitHub Actions CI, chunked releases, combine.bat (COMPLETED)
 [Phase 5: Kernel & Theme]     -> Custom Caelaris Zen-BORE kernel & bespoke theme (ROADMAP)
-[Phase 6: ARM64 & SBCs]       -> Caelaris Linux Raspberry Pi 5 & 4 Edition (Arch Linux ARM) (ROADMAP)
+[Phase 6: ARM64 & SBCs]       -> Caelaris Linux Raspberry Pi 5, 4 & 3B+ Edition (Arch Linux ARM) (ACTIVE)
 ```
 
 ### 7.1 Architecture Roadmap: Caelaris Linux ARM64 (Raspberry Pi Edition)
-- **Scope & Objectives:** Port Caelaris Linux's dual Wayland desktop environment and gaming optimizations to 64-bit ARM single-board computers, headlined by the Raspberry Pi 5 and Raspberry Pi 4 Model B (4GB / 8GB RAM).
+- **Scope & Objectives:** Port Caelaris Linux's dual Wayland desktop environment and gaming optimizations to 64-bit ARM single-board computers, natively supporting the Raspberry Pi 5, Raspberry Pi 4 Model B, and Raspberry Pi 3 Model B+ (1GB RAM).
 - **Core Technical Specifications:**
   - **Base OS:** Arch Linux ARM (`aarch64` ALARM).
-  - **Kernel:** `linux-rpi` vendor kernel with Broadcom VideoCore VII/VI (V3D/VC4) GPU hardware acceleration.
-  - **Image Format:** Compressed `.img.xz` raw flashable disk image for direct deployment via Raspberry Pi Imager or BalenaEtcher.
+  - **Kernel & GPU:** `linux-rpi` vendor kernel with Broadcom VideoCore VII (Pi 5), VI (Pi 4), and IV (Pi 3B+) hardware graphics acceleration.
+  - **Memory Optimization:** Dynamic zstd ZRAM compressed swap and tailored CMA limits (`cma-128`) enabling responsive desktop sessions on 1GB hardware.
+  - **Image Formats:** Compressed `.img.xz` raw flashable disk image for direct deployment via Raspberry Pi Imager or BalenaEtcher, alongside hybrid UEFI ARM64 bootable ISO.
   - **Gaming & Emulation:** Bundled `Box64`, `FEX-Emu`, and RetroArch for x86-to-ARM game execution and emulation.

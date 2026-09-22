@@ -13,7 +13,7 @@ IMAGE_NAME="caelaris-rpi-arm64-${BUILD_DATE}"
 
 echo "=========================================================="
 echo " Building Caelaris Linux ARM64 (Raspberry Pi Edition)     "
-echo " Target: Raspberry Pi 5 / 4 | Format: ${FORMAT}           "
+echo " Target: Raspberry Pi 5, 4 & 3B+ | Format: ${FORMAT}      "
 echo "=========================================================="
 
 mkdir -p "$WORK_DIR" "$OUT_DIR" "$ROOTFS_DIR"
@@ -69,14 +69,31 @@ fi
 
 # Configure Raspberry Pi config.txt with VideoCore hardware acceleration
 cat << 'EOF' >> "${ROOTFS_DIR}/boot/config.txt"
-# Caelaris Linux - Raspberry Pi Hardware Acceleration
+# Caelaris Linux - Universal Raspberry Pi Hardware Acceleration
+
+# --- Universal Settings ---
+[all]
 arm_64bit=1
-dtoverlay=vc4-kms-v3d
-dtoverlay=rp1
-gpu_mem=256
 disable_overscan=1
 hdmi_force_hotplug=1
 dtparam=audio=on
+
+# --- Raspberry Pi 3 / 3B+ (1GB RAM Optimization) ---
+[pi3]
+dtoverlay=vc4-kms-v3d,cma-128
+gpu_mem=64
+arm_freq=1400
+
+# --- Raspberry Pi 4 / 400 ---
+[pi4]
+dtoverlay=vc4-kms-v3d
+gpu_mem=128
+
+# --- Raspberry Pi 5 ---
+[pi5]
+dtoverlay=vc4-kms-v3d
+dtoverlay=rp1
+gpu_mem=256
 EOF
 
 # Configure default user 'caelaris' in sysusers and sudoers

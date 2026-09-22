@@ -310,7 +310,7 @@
           <span class="arch-tab-icon">🍓</span>
           <div class="arch-tab-text">
             <strong>Raspberry Pi / ARM64</strong>
-            <small>Pi 5 &amp; 4 ISO / .img.xz Image</small>
+            <small>Pi 5, 4 &amp; 3B+ ISO / .img.xz Image</small>
           </div>
           <span class="arch-badge rpi-badge">ARM64 Release</span>
         </button>
@@ -399,10 +399,10 @@
               <h3 style="background: linear-gradient(135deg, #fb7185 0%, #f43f5e 50%, #38bdf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Caelaris Linux ARM64 (Raspberry Pi Edition)</h3>
               <div class="download-meta-tags">
                 <span class="tag" style="border-color: rgba(225, 29, 72, 0.35); color: #fb7185;">ARM64 / AArch64</span>
-                <span class="tag">Raspberry Pi 5 &amp; 4</span>
+                <span class="tag">Raspberry Pi 5, 4 &amp; 3B+</span>
                 <span class="tag">linux-rpi Kernel</span>
                 <span class="tag">KDE Plasma 6 + GNOME 4x</span>
-                <span class="tag">VideoCore VII / VI Hardware Accel</span>
+                <span class="tag">VideoCore VII / VI / IV Hardware Accel</span>
               </div>
             </div>
             <div>
@@ -422,7 +422,7 @@
             <div class="download-tile">
               <div>
                 <h4>💿 Raspberry Pi / ARM64 ISO</h4>
-                <p>Hybrid UEFI bootable ARM64 ISO. Bootable on Raspberry Pi with UEFI firmware, ARM64 virtual machines (QEMU/UTM on Apple Silicon / PC), and cloud ARM instances.</p>
+                <p>Hybrid UEFI bootable ARM64 ISO. Bootable on Raspberry Pi 5, 4 &amp; 3B+ (with UEFI firmware), ARM64 virtual machines (QEMU/UTM on Apple Silicon / PC), and cloud ARM instances.</p>
               </div>
               <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
                 <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rpi-arm64-release/caelaris-rpi-arm64.iso" class="btn btn-primary" style="background: linear-gradient(135deg, #e11d48 0%, #be123c 100%); width: 100%;">
@@ -435,7 +435,7 @@
             <div class="download-tile">
               <div>
                 <h4>💾 Flashable MicroSD / NVMe Image (.img.xz)</h4>
-                <p>Raw disk image for Raspberry Pi 5 &amp; Pi 4. Directly flash to your MicroSD card, USB drive, or NVMe HAT using Raspberry Pi Imager or BalenaEtcher.</p>
+                <p>Universal raw disk image for Raspberry Pi 5, Pi 4 &amp; Pi 3B+. Directly flash to your MicroSD card, USB drive, or NVMe HAT using Raspberry Pi Imager or BalenaEtcher.</p>
               </div>
               <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
                 <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rpi-arm64-release/caelaris-rpi-arm64.img.xz" class="btn btn-secondary" style="width: 100%; border-color: rgba(225, 29, 72, 0.3);">
@@ -497,6 +497,16 @@
               <li>• <strong>Storage:</strong> 60 GB+ NVMe SSD (Btrfs subvolumes recommended)</li>
               <li>• <strong>Graphics:</strong> Dedicated AMD Radeon (RADV) or NVIDIA RTX/GTX with Vulkan</li>
               <li>• <strong>Display:</strong> 1920x1080 or higher with Wayland scaling</li>
+            </ul>
+          </div>
+          <div>
+            <h4 style="color: #fb7185; font-size: 1.1rem; margin-bottom: 10px;">🍓 Raspberry Pi / ARM64 SBCs</h4>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px; color: var(--text-muted); font-size: 0.95rem;">
+              <li>• <strong>Supported Models:</strong> Raspberry Pi 5, Pi 4 Model B, Pi 3 Model B+</li>
+              <li>• <strong>RAM:</strong> 1 GB (Pi 3B+ with ZRAM swap) / 4 GB+ (Pi 4/5 recommended)</li>
+              <li>• <strong>Storage:</strong> 16 GB+ MicroSD card (A2 speed rating) or USB/NVMe SSD</li>
+              <li>• <strong>Graphics:</strong> VideoCore VII / VI / IV with KMS V3D Wayland acceleration</li>
+              <li>• <strong>Flashing Tool:</strong> Raspberry Pi Imager or BalenaEtcher</li>
             </ul>
           </div>
         </div>
@@ -709,7 +719,7 @@
             <span class="faq-icon">+</span>
           </button>
           <div class="faq-answer">
-            The current release ISO is built specifically for <strong>x86_64 PCs and Laptops</strong> (Intel and AMD processors) with standard UEFI/BIOS bootloaders and cannot be booted directly on ARM hardware. However, a dedicated <strong>Caelaris Linux ARM64 Edition</strong> is actively on our development roadmap targeting the <strong>Raspberry Pi 5</strong> and <strong>Raspberry Pi 4 (4GB/8GB)</strong>. It will feature Arch Linux ARM (<code>aarch64</code>), the <code>linux-rpi</code> kernel, Broadcom VideoCore hardware acceleration, and flashable <code>.img.xz</code> disk images ready for Raspberry Pi Imager.
+            Yes! We provide dedicated <strong>ARM64 releases</strong> built specifically for single-board computers, supporting the <strong>Raspberry Pi 5</strong>, <strong>Raspberry Pi 4 Model B</strong>, and <strong>Raspberry Pi 3 Model B+</strong>. In the Download section above, select the <em>Raspberry Pi / ARM64</em> tab to download either the hybrid ARM64 ISO or the pre-configured <code>.img.xz</code> disk image for 1-click writing with Raspberry Pi Imager. On the 1GB Raspberry Pi 3B+, Caelaris leverages Broadcom VideoCore IV KMS drivers and active zstd ZRAM swap compression to ensure smooth, responsive Wayland desktop operation.
           </div>
         </div>
       </div>

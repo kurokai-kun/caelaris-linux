@@ -513,9 +513,9 @@
   The current production release of Caelaris Linux targets 64-bit x86_64 hardware (Intel & AMD) alongside major desktop hypervisors (VMware, VirtualBox, QEMU/SPICE). It is distributed as a live bootable hybrid ISO featuring automated Btrfs partitioning and native PyQt6 installation.
 </p>
 
-<h2>7.2 Tier 2: ARM64 & Raspberry Pi Edition (In Development — Q4 2026 Roadmap)</h2>
+<h2>7.2 Tier 2: ARM64 & Raspberry Pi Edition (Active Build & Release Pipeline)</h2>
 <div class="callout">
-  <strong>Single-Board Computer Expansion:</strong> Bringing Caelaris Linux's dual Wayland desktop environments and pro performance tuning to ARM64 single-board computers, headlined by the <strong>Raspberry Pi 5</strong> and <strong>Raspberry Pi 4 (4GB / 8GB)</strong>.
+  <strong>Single-Board Computer Expansion:</strong> Bringing Caelaris Linux's dual Wayland desktop environments and pro performance tuning to ARM64 single-board computers, natively supporting the <strong>Raspberry Pi 5</strong>, <strong>Raspberry Pi 4 Model B</strong>, and <strong>Raspberry Pi 3 Model B+</strong>.
 </div>
 
 <table class="data-table">
@@ -529,8 +529,8 @@
   <tbody>
     <tr>
       <td><strong>Target Devices</strong></td>
-      <td>Raspberry Pi 5 (4GB / 8GB), Raspberry Pi 4 Model B (4GB / 8GB).</td>
-      <td>Desktop-class dual session performance on Pi 5; lightweight Wayland profile on Pi 4.</td>
+      <td>Raspberry Pi 5 (4GB / 8GB), Raspberry Pi 4 Model B (4GB / 8GB), Raspberry Pi 3 Model B+ (1GB).</td>
+      <td>Desktop-class dual session performance on Pi 5; tuned Wayland profile on Pi 4; memory-optimized zstd ZRAM swap &amp; CMA tuning on Pi 3B+.</td>
     </tr>
     <tr>
       <td><strong>OS Baseline</strong></td>
@@ -539,13 +539,13 @@
     </tr>
     <tr>
       <td><strong>Kernel & Graphics</strong></td>
-      <td><code>linux-rpi</code> vendor kernel + Broadcom VideoCore VII/VI (V3D / VC4).</td>
-      <td>Hardware-accelerated Wayland rendering for KDE Plasma 6 and GNOME sessions.</td>
+      <td><code>linux-rpi</code> vendor kernel + Broadcom VideoCore VII (Pi 5), VI (Pi 4), and IV (Pi 3B+).</td>
+      <td>Hardware-accelerated Wayland rendering (V3D / VC4 KMS) for KDE Plasma 6 and GNOME sessions.</td>
     </tr>
     <tr>
-      <td><strong>Distribution Format</strong></td>
-      <td>Flashable raw disk image (<code>.img.xz</code>).</td>
-      <td>Direct writing to MicroSD cards, USB SSDs, or NVMe HATs via Raspberry Pi Imager or BalenaEtcher.</td>
+      <td><strong>Distribution Formats</strong></td>
+      <td>Hybrid UEFI ARM64 ISO (<code>.iso</code>) &amp; Flashable raw disk image (<code>.img.xz</code>).</td>
+      <td>Direct writing to MicroSD cards, USB SSDs, or NVMe HATs via Raspberry Pi Imager or BalenaEtcher, plus universal UEFI ISO booting.</td>
     </tr>
     <tr>
       <td><strong>Gaming & Emulation</strong></td>

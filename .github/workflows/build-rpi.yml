@@ -68,7 +68,7 @@ jobs:
           body: |
             ## 🍓 Caelaris Linux ARM64 (Raspberry Pi Edition)
 
-            Official ARM64 builds of Caelaris Linux engineered specifically for single-board computers, headlined by the **Raspberry Pi 5** and **Raspberry Pi 4 Model B (4GB / 8GB)**.
+            Official ARM64 builds of Caelaris Linux engineered specifically for single-board computers, supporting **Raspberry Pi 5**, **Raspberry Pi 4 Model B (4GB / 8GB)**, and **Raspberry Pi 3 Model B+ (1GB)**.
 
             ---
 
@@ -83,9 +83,9 @@ jobs:
 
             ### ⚡ Key Features:
             - **Arch Linux ARM (`aarch64`) Base**: Full rolling release model with `yay` AUR support.
-            - **Hardware Acceleration**: Broadcom VideoCore VII (Pi 5) and VI (Pi 4) V3D driver support under Wayland.
+            - **Hardware Acceleration**: Broadcom VideoCore VII (Pi 5), VI (Pi 4), and IV (Pi 3B+) V3D driver support under Wayland.
             - **Dual Desktop Sessions**: KDE Plasma 6 & GNOME 4x Wayland.
-            - **Tuned Sysctl & ZRAM**: High memory map limit (`vm.max_map_count=2147483642`), low swappiness, and zstd ZRAM compressed swap.
+            - **Tuned Sysctl & ZRAM**: High memory map limit (`vm.max_map_count=2147483642`), low swappiness, and zstd ZRAM compressed swap (crucial for smooth multitasking on 1GB Pi 3B+).
             - **x86 Emulation**: Pre-configured support for Box64, FEX-Emu, and RetroArch.
           files: release_assets/*
         env:
