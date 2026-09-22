@@ -309,10 +309,18 @@
         <button class="arch-tab" data-arch="arm64">
           <span class="arch-tab-icon">🍓</span>
           <div class="arch-tab-text">
-            <strong>Raspberry Pi / ARM64</strong>
+            <strong>Raspberry Pi SBCs</strong>
             <small>Pi 5, 4 &amp; 3B+ ISO / .img.xz Image</small>
           </div>
-          <span class="arch-badge rpi-badge">ARM64 Release</span>
+          <span class="arch-badge rpi-badge">Raspberry Pi</span>
+        </button>
+        <button class="arch-tab" data-arch="arm64-pc">
+          <span class="arch-tab-icon">💻</span>
+          <div class="arch-tab-text">
+            <strong>ARM64 Laptops &amp; PCs</strong>
+            <small>Apple Silicon, Snapdragon &amp; ARM PCs</small>
+          </div>
+          <span class="arch-badge armpc-badge">Apple &amp; Snapdragon</span>
         </button>
       </div>
 
@@ -475,12 +483,97 @@
         </div>
       </div>
 
+      <!-- ARM64 Laptops & PCs Panel (Apple Silicon & Snapdragon X Elite) -->
+      <div class="arch-panel" id="arch-panel-arm64-pc">
+        <div class="download-card-main" style="border-color: rgba(168, 85, 247, 0.4); box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6), 0 0 40px rgba(168, 85, 247, 0.15);">
+          <div class="download-header">
+            <div class="download-title-area">
+              <h3 style="background: linear-gradient(135deg, #c084fc 0%, #a855f7 50%, #38bdf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Caelaris Linux for ARM64 Laptops &amp; PCs</h3>
+              <div class="download-meta-tags">
+                <span class="tag" style="border-color: rgba(168, 85, 247, 0.35); color: #c084fc;">ARM64 / AArch64</span>
+                <span class="tag">Apple Silicon (M1 / M2 / M3 / M4)</span>
+                <span class="tag">Qualcomm Snapdragon X Elite / Plus</span>
+                <span class="tag">Standard UEFI Boot (BOOTAA64.EFI)</span>
+                <span class="tag">KDE Plasma 6 + GNOME 4x Wayland</span>
+                <span class="tag">Mesa Freedreno &amp; Apple AGX</span>
+              </div>
+            </div>
+            <div>
+              <a href="https://github.com/kurokai-kun/caelaris-linux/releases/tag/rpi-arm64-release" target="_blank" class="btn btn-primary btn-lg" style="background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); box-shadow: 0 4px 18px rgba(168, 85, 247, 0.35);">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                View ARM64 GitHub Release
+              </a>
+            </div>
+          </div>
+
+          <div class="download-options-grid">
+            <!-- Option 1: Universal ARM64 UEFI ISO -->
+            <div class="download-tile">
+              <div>
+                <h4>💿 Universal ARM64 UEFI Laptop ISO</h4>
+                <p>Hybrid UEFI bootable AArch64 ISO. Boots natively on Qualcomm Snapdragon X Elite/Plus laptops, ThinkPad X13s, ARM64 workstations (Ampere Altra), and native VM virtualization (UTM on Apple Silicon / PC).</p>
+              </div>
+              <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
+                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rpi-arm64-release/caelaris-rpi-arm64.iso" class="btn btn-primary" style="background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); width: 100%;">
+                  Download ARM64 Laptop ISO
+                </a>
+              </div>
+            </div>
+
+            <!-- Option 2: Apple Silicon Native & UTM -->
+            <div class="download-tile">
+              <div>
+                <h4>🍏 Apple Silicon (M1 / M2 / M3 / M4)</h4>
+                <p>Run Caelaris Linux on Apple Silicon Macs! Supports bare-metal dual boot via standard Asahi U-Boot integration, or 100% native CPU speed virtualization in <strong>UTM</strong> with hardware VirtIO-GPU acceleration.</p>
+              </div>
+              <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
+                <button onclick="document.querySelector('[data-guide=\'utm\']').click(); document.getElementById('install').scrollIntoView({behavior: 'smooth'});" class="btn btn-secondary" style="width: 100%; border-color: rgba(168, 85, 247, 0.35);">
+                  📖 Apple Silicon &amp; UTM Guide
+                </button>
+              </div>
+            </div>
+
+            <!-- Option 3: Snapdragon X Elite & ARM PCs -->
+            <div class="download-tile">
+              <div>
+                <h4>⚡ Snapdragon X Elite &amp; ARM Laptops</h4>
+                <p>Engineered for Copilot+ ARM laptops (Surface Laptop 7, Lenovo Yoga Slim 7x, Dell XPS 13 ARM, ASUS Vivobook S 15). Flash ISO to USB with Rufus (DD Mode) or BalenaEtcher and boot via UEFI.</p>
+              </div>
+              <div style="margin-top: auto;">
+                <button onclick="document.querySelector('[data-guide=\'arm-laptop\']').click(); document.getElementById('install').scrollIntoView({behavior: 'smooth'});" class="btn btn-secondary" style="width: 100%; border-color: rgba(168, 85, 247, 0.35);">
+                  ⚡ Snapdragon Boot Steps
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SHA256 Checksum Box -->
+          <div class="checksum-box">
+            <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              <span style="color: #c084fc; font-weight: 700;">SHA256:</span>
+              <span>Available in .sha256 file on ARM64 GitHub Release</span>
+            </div>
+            <button class="copy-btn copy-trigger" data-copy="certutil -hashfile caelaris-rpi-arm64.iso SHA256">
+              <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              Copy Verification Command
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- System Requirements -->
       <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 32px; backdrop-filter: blur(10px);">
         <h3 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 20px;">Hardware Requirements</h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px;">
           <div>
-            <h4 style="color: var(--primary); font-size: 1.1rem; margin-bottom: 10px;">Minimum Requirements</h4>
+            <h4 style="color: var(--primary); font-size: 1.1rem; margin-bottom: 10px;">Minimum Requirements (x86_64)</h4>
             <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px; color: var(--text-muted); font-size: 0.95rem;">
               <li>• <strong>CPU:</strong> 64-bit dual-core x86_64 processor</li>
               <li>• <strong>RAM:</strong> 2 GB RAM (4 GB recommended for live preview)</li>
@@ -490,7 +583,7 @@
             </ul>
           </div>
           <div>
-            <h4 style="color: var(--accent-green); font-size: 1.1rem; margin-bottom: 10px;">Recommended (Gaming & Power Users)</h4>
+            <h4 style="color: var(--accent-green); font-size: 1.1rem; margin-bottom: 10px;">Recommended (Gaming &amp; Power)</h4>
             <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px; color: var(--text-muted); font-size: 0.95rem;">
               <li>• <strong>CPU:</strong> Quad-core modern processor (Intel Core i5/i7 or AMD Ryzen)</li>
               <li>• <strong>RAM:</strong> 8 GB+ RAM with ZRAM compression</li>
@@ -500,13 +593,23 @@
             </ul>
           </div>
           <div>
-            <h4 style="color: #fb7185; font-size: 1.1rem; margin-bottom: 10px;">🍓 Raspberry Pi / ARM64 SBCs</h4>
+            <h4 style="color: #fb7185; font-size: 1.1rem; margin-bottom: 10px;">🍓 Raspberry Pi SBCs</h4>
             <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px; color: var(--text-muted); font-size: 0.95rem;">
               <li>• <strong>Supported Models:</strong> Raspberry Pi 5, Pi 4 Model B, Pi 3 Model B+</li>
               <li>• <strong>RAM:</strong> 1 GB (Pi 3B+ with ZRAM swap) / 4 GB+ (Pi 4/5 recommended)</li>
               <li>• <strong>Storage:</strong> 16 GB+ MicroSD card (A2 speed rating) or USB/NVMe SSD</li>
               <li>• <strong>Graphics:</strong> VideoCore VII / VI / IV with KMS V3D Wayland acceleration</li>
               <li>• <strong>Flashing Tool:</strong> Raspberry Pi Imager or BalenaEtcher</li>
+            </ul>
+          </div>
+          <div>
+            <h4 style="color: #c084fc; font-size: 1.1rem; margin-bottom: 10px;">💻 ARM64 Laptops &amp; Apple Silicon</h4>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px; color: var(--text-muted); font-size: 0.95rem;">
+              <li>• <strong>Supported Devices:</strong> Apple Silicon (M1/M2/M3/M4), Qualcomm Snapdragon X Elite/Plus laptops, ThinkPad X13s</li>
+              <li>• <strong>RAM:</strong> 8 GB+ Unified / LPDDR5x RAM with zstd ZRAM</li>
+              <li>• <strong>Storage:</strong> 30 GB+ NVMe SSD or UTM virtual disk</li>
+              <li>• <strong>Graphics:</strong> Apple AGX or Qualcomm Adreno (Freedreno) with Wayland</li>
+              <li>• <strong>Boot Method:</strong> Standard UEFI AArch64 or UTM native virtualization</li>
             </ul>
           </div>
         </div>
@@ -529,9 +632,10 @@
         <!-- Tabs -->
         <div style="display: flex; gap: 10px; margin-bottom: 24px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 14px; flex-wrap: wrap;">
           <button class="de-tab guide-tab active" data-guide="baremetal">Physical PC (USB)</button>
+          <button class="de-tab guide-tab" data-guide="arm-laptop">ARM64 Laptop / Snapdragon</button>
+          <button class="de-tab guide-tab" data-guide="utm">Apple Silicon / UTM (Mac)</button>
           <button class="de-tab guide-tab" data-guide="vmware">VMware Workstation</button>
           <button class="de-tab guide-tab" data-guide="vbox">Oracle VirtualBox</button>
-          <button class="de-tab guide-tab" data-guide="utm">QEMU / UTM (Mac)</button>
         </div>
 
         <!-- Panel 1: Baremetal -->
@@ -546,8 +650,20 @@
           </ol>
         </div>
 
-        <!-- Panel 2: VMware -->
-        <div class="guide-panel" id="guide-vmware" style="display: none;">
+        <!-- Panel 2: ARM64 Laptop / Snapdragon -->
+        <div class="guide-panel" id="guide-arm-laptop">
+          <h4 style="font-size: 1.15rem; color: #fff; margin-bottom: 12px;">Installing on ARM64 Laptop (Snapdragon X Elite / Copilot+ PC)</h4>
+          <ol style="padding-left: 20px; color: var(--text-muted); display: flex; flex-direction: column; gap: 10px; font-size: 0.95rem;">
+            <li>Download the <strong>ARM64 UEFI ISO</strong> from the <em>ARM64 Laptops &amp; PCs</em> tab above.</li>
+            <li>Flash the ISO to a USB 3.0+ flash drive using <strong>Rufus</strong> (select <em>DD Image Mode</em>) or <strong>balenaEtcher</strong>.</li>
+            <li>In Windows on your Snapdragon laptop, disable BitLocker Device Encryption and reboot into UEFI BIOS firmware (hold Shift + Restart &rarr; Troubleshoot &rarr; Advanced &rarr; UEFI Firmware Settings).</li>
+            <li>In UEFI Settings, temporarily disable <strong>Secure Boot</strong> (or allow Microsoft 3rd Party UEFI CA).</li>
+            <li>Press F12 / Boot Menu key to select your USB drive. Caelaris Linux GRUB AArch64 bootloader will initialize and boot directly into KDE Plasma 6 or GNOME on Wayland!</li>
+          </ol>
+        </div>
+
+        <!-- Panel 3: VMware -->
+        <div class="guide-panel" id="guide-vmware">
           <h4 style="font-size: 1.15rem; color: #fff; margin-bottom: 12px;">Running in VMware Workstation / Fusion</h4>
           <ol style="padding-left: 20px; color: var(--text-muted); display: flex; flex-direction: column; gap: 10px; font-size: 0.95rem;">
             <li>Create a new Virtual Machine: Choose <strong>Linux</strong> &gt; <strong>Arch Linux 64-bit</strong>.</li>
@@ -557,8 +673,8 @@
           </ol>
         </div>
 
-        <!-- Panel 3: VirtualBox -->
-        <div class="guide-panel" id="guide-vbox" style="display: none;">
+        <!-- Panel 4: VirtualBox -->
+        <div class="guide-panel" id="guide-vbox">
           <h4 style="font-size: 1.15rem; color: #fff; margin-bottom: 12px;">Running in Oracle VirtualBox</h4>
           <ol style="padding-left: 20px; color: var(--text-muted); display: flex; flex-direction: column; gap: 10px; font-size: 0.95rem;">
             <li>Create VM: Type <strong>Linux</strong>, Version <strong>Arch Linux (64-bit)</strong>.</li>
@@ -568,14 +684,15 @@
           </ol>
         </div>
 
-        <!-- Panel 4: UTM -->
-        <div class="guide-panel" id="guide-utm" style="display: none;">
-          <h4 style="font-size: 1.15rem; color: #fff; margin-bottom: 12px;">Running in UTM / QEMU (macOS Apple Silicon & Intel)</h4>
+        <!-- Panel 5: UTM & Apple Silicon -->
+        <div class="guide-panel" id="guide-utm">
+          <h4 style="font-size: 1.15rem; color: #fff; margin-bottom: 12px;">Running on Apple Silicon (M1 / M2 / M3 / M4) via UTM or Bare Metal</h4>
           <ol style="padding-left: 20px; color: var(--text-muted); display: flex; flex-direction: column; gap: 10px; font-size: 0.95rem;">
-            <li>Create new VM: Choose <strong>Emulate</strong> (on Apple Silicon M1/M2/M3) or <strong>Virtualize</strong> (on Intel Mac).</li>
-            <li>Select <strong>Linux</strong>, browse and choose the Caelaris ISO.</li>
-            <li>Allocate 4 GB RAM and enable UEFI Boot.</li>
-            <li>The integrated <code>spice-vdagentd</code> provides dynamic mouse navigation and resolution synchronization out-of-the-box.</li>
+            <li><strong>UTM Hypervisor (Instant &amp; 100% Native CPU Speed):</strong> Download the ARM64 ISO. In <a href="https://mac.getutm.app/" target="_blank" style="color: var(--primary);">UTM</a>, click <strong>Create a New Virtual Machine</strong> &rarr; <strong>Virtualize</strong> &rarr; <strong>Linux</strong>.</li>
+            <li>Browse and select <code>caelaris-rpi-arm64.iso</code>. Allocate 4–8 GB RAM and at least 4 CPU cores.</li>
+            <li>Enable <strong>UEFI Boot</strong> and <strong>VirtIO-GPU (Metal OpenGL/Vulkan acceleration)</strong> in VM Display settings.</li>
+            <li>Boot the VM: <code>spice-vdagentd</code> automatically synchronizes clipboard, audio, and dynamic retina display scaling!</li>
+            <li><strong>Bare Metal Dual Boot (Asahi U-Boot):</strong> You can also install directly to an APFS container using the standard Asahi Linux installer environment pointing to the Caelaris ARM64 rootfs.</li>
           </ol>
         </div>
       </div>
@@ -719,7 +836,21 @@
             <span class="faq-icon">+</span>
           </button>
           <div class="faq-answer">
-            Yes! We provide dedicated <strong>ARM64 releases</strong> built specifically for single-board computers, supporting the <strong>Raspberry Pi 5</strong>, <strong>Raspberry Pi 4 Model B</strong>, and <strong>Raspberry Pi 3 Model B+</strong>. In the Download section above, select the <em>Raspberry Pi / ARM64</em> tab to download either the hybrid ARM64 ISO or the pre-configured <code>.img.xz</code> disk image for 1-click writing with Raspberry Pi Imager. On the 1GB Raspberry Pi 3B+, Caelaris leverages Broadcom VideoCore IV KMS drivers and active zstd ZRAM swap compression to ensure smooth, responsive Wayland desktop operation.
+            Yes! We provide dedicated <strong>ARM64 releases</strong> built specifically for single-board computers, supporting the <strong>Raspberry Pi 5</strong>, <strong>Raspberry Pi 4 Model B</strong>, and <strong>Raspberry Pi 3 Model B+</strong>. In the Download section above, select the <em>Raspberry Pi SBCs</em> tab to download either the hybrid ARM64 ISO or the pre-configured <code>.img.xz</code> disk image for 1-click writing with Raspberry Pi Imager. On the 1GB Raspberry Pi 3B+, Caelaris leverages Broadcom VideoCore IV KMS drivers and active zstd ZRAM swap compression to ensure smooth, responsive Wayland desktop operation.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>Can I run Caelaris Linux on Apple Silicon Macs or Snapdragon X Elite ARM PCs?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer">
+            Absolutely! Caelaris Linux provides full 64-bit ARM (AArch64) support for modern ARM PCs:
+            <ul style="padding-left: 20px; margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
+              <li><strong>Apple Silicon (M1 / M2 / M3 / M4):</strong> You can run Caelaris with 100% native CPU performance and Metal-accelerated GPU graphics inside <strong>UTM</strong> on macOS, or install it as a bare-metal dual-boot OS via the standard Asahi U-Boot loader.</li>
+              <li><strong>Qualcomm Snapdragon X Elite &amp; Plus Laptops:</strong> Copilot+ PCs (such as Microsoft Surface Laptop 7, Lenovo Yoga Slim 7x, Dell XPS 13 9345, and ASUS Vivobook S 15) support standard UEFI AArch64 booting. Download the <code>caelaris-rpi-arm64.iso</code> from the <em>ARM64 Laptops &amp; PCs</em> tab above, flash it to a USB drive in DD mode, disable Secure Boot in firmware settings, and boot directly into KDE Plasma 6 or GNOME with Mesa Freedreno Adreno GPU acceleration!</li>
+            </ul>
           </div>
         </div>
       </div>

@@ -555,5 +555,47 @@
   </tbody>
 </table>
 
+<h2>7.3 Tier 3: ARM64 Laptops, Apple Silicon &amp; Snapdragon PCs (Active Release Pipeline)</h2>
+<div class="callout">
+  <strong>ARM Laptop Revolution:</strong> Engineered for high-efficiency mobile compute, providing native Wayland desktop performance on <strong>Apple Silicon (M1/M2/M3/M4)</strong> and <strong>Qualcomm Snapdragon X Elite / Plus</strong> laptops.
+</div>
+
+<table class="data-table">
+  <thead>
+    <tr>
+      <th style="width: 25%;">Subsystem</th>
+      <th style="width: 35%;">ARM64 Laptop Specification</th>
+      <th style="width: 40%;">Technical Capabilities</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Target Devices</strong></td>
+      <td>Apple Silicon Macs (M1/M2/M3/M4), Qualcomm Snapdragon X Elite/Plus laptops, ThinkPad X13s, ARM64 workstations.</td>
+      <td>Dual-boot on Mac via Asahi U-Boot or 100% native CPU virtualization via UTM; standard UEFI boot on Snapdragon laptops.</td>
+    </tr>
+    <tr>
+      <td><strong>OS Baseline</strong></td>
+      <td>Arch Linux ARM (<code>aarch64</code> ALARM).</td>
+      <td>Rolling release model, full Arch User Repository (AUR) access via bundled <code>yay</code>.</td>
+    </tr>
+    <tr>
+      <td><strong>Kernel &amp; Graphics</strong></td>
+      <td>Standard AArch64 kernel + Mesa Freedreno (Adreno) &amp; Mesa Apple AGX.</td>
+      <td>Hardware-accelerated Wayland rendering for KDE Plasma 6 and GNOME sessions.</td>
+    </tr>
+    <tr>
+      <td><strong>Distribution Format</strong></td>
+      <td>Hybrid UEFI ARM64 ISO (<code>.iso</code>).</td>
+      <td>Standard UEFI bootloader (<code>BOOTAA64.EFI</code>) compatible with Snapdragon BIOS and UTM virtual machines.</td>
+    </tr>
+    <tr>
+      <td><strong>Emulation &amp; Memory</strong></td>
+      <td><code>Box64</code>, <code>FEX-Emu</code>, dynamic zstd ZRAM.</td>
+      <td>High-speed x86 translation for games and apps with dynamic memory compression.</td>
+    </tr>
+  </tbody>
+</table>
+
 </body>
 </html>

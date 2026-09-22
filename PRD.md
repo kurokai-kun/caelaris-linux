@@ -175,7 +175,7 @@ caelaris-linux/
 [Phase 3: Native Installer]   -> PyQt6 GUI installer, silent boot, single profile (COMPLETED)
 [Phase 4: Release Pipeline]   -> GitHub Actions CI, chunked releases, combine.bat (COMPLETED)
 [Phase 5: Kernel & Theme]     -> Custom Caelaris Zen-BORE kernel & bespoke theme (ROADMAP)
-[Phase 6: ARM64 & SBCs]       -> Caelaris Linux Raspberry Pi 5, 4 & 3B+ Edition (Arch Linux ARM) (ACTIVE)
+[Phase 6: ARM64 SBCs & PCs]   -> Raspberry Pi 5/4/3B+, Apple Silicon & Snapdragon X Elite (ACTIVE)
 ```
 
 ### 7.1 Architecture Roadmap: Caelaris Linux ARM64 (Raspberry Pi Edition)
@@ -186,3 +186,11 @@ caelaris-linux/
   - **Memory Optimization:** Dynamic zstd ZRAM compressed swap and tailored CMA limits (`cma-128`) enabling responsive desktop sessions on 1GB hardware.
   - **Image Formats:** Compressed `.img.xz` raw flashable disk image for direct deployment via Raspberry Pi Imager or BalenaEtcher, alongside hybrid UEFI ARM64 bootable ISO.
   - **Gaming & Emulation:** Bundled `Box64`, `FEX-Emu`, and RetroArch for x86-to-ARM game execution and emulation.
+
+### 7.2 Architecture Roadmap: ARM64 Laptops, Apple Silicon & Snapdragon PCs
+- **Scope & Objectives:** Expand Caelaris Linux AArch64 builds to modern ARM laptops and workstations, including Apple Silicon (M1/M2/M3/M4) and Qualcomm Snapdragon X Elite / Plus Copilot+ PCs.
+- **Core Technical Specifications:**
+  - **Base OS:** Arch Linux ARM (`aarch64` ALARM).
+  - **Kernel & GPU:** Generic AArch64 Linux kernel with Mesa Freedreno (Adreno) and Mesa Apple AGX drivers.
+  - **Bootloader:** Standard UEFI `BOOTAA64.EFI` bootloader supporting PC firmware and Asahi U-Boot integration.
+  - **Virtualization & Emulation:** UTM native speed virtualization with VirtIO-GPU, alongside Box64 and FEX-Emu x86 game translation.

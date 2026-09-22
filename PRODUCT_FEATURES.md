@@ -179,3 +179,12 @@
   - **Hybrid UEFI ARM64 ISO (`caelaris-rpi-arm64.iso`):** Universal bootable ISO for UEFI Pi firmware, ARM64 VMs (QEMU/UTM), and cloud ARM instances.
   - **Compressed Raw Image (`caelaris-rpi-arm64.img.xz`):** Ready for 1-click writing via **Raspberry Pi Imager** or **BalenaEtcher** to MicroSD cards, USB SSDs, or NVMe HATs.
 - **Gaming & Emulation Stack:** Integrated `Box64` and `FEX-Emu` dynamic binary translation engines, enabling x86 game binaries, Steam ARM experimentation, and RetroArch emulation directly on the Raspberry Pi.
+
+### 11.3 Tier 3: ARM64 Laptops, Apple Silicon & Snapdragon PCs (Active Release Pipeline)
+- **Target Hardware:**
+  - **Apple Silicon Macs (M1 / M2 / M3 / M4):** Native bare-metal dual-boot via Asahi U-Boot integration and 100% native CPU speed virtualization via UTM with VirtIO-GPU acceleration.
+  - **Qualcomm Snapdragon X Elite & Plus Laptops:** Copilot+ ARM laptops (Surface Laptop 7, Lenovo Yoga Slim 7x, Dell XPS 13 ARM, ASUS Vivobook S 15) using standard AArch64 UEFI booting (`BOOTAA64.EFI`).
+  - **ARM64 Workstations & Cloud:** Lenovo ThinkPad X13s, Ampere Altra workstations, and standard ARM64 hypervisors.
+- **Kernel & GPU Stack:** Standard AArch64 Linux kernel with Mesa Freedreno (Qualcomm Adreno) and Mesa Apple AGX drivers under Wayland.
+- **Distribution Format:** Bootable Hybrid UEFI ARM64 ISO (`caelaris-rpi-arm64.iso`) with standard UEFI bootloader support.
+- **Desktop & Gaming:** Dual KDE Plasma 6 & GNOME 4x Wayland sessions, zstd ZRAM memory compression, and Box64 / FEX-Emu x86 emulation.
