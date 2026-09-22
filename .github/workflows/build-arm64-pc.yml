@@ -55,12 +55,10 @@ jobs:
           echo "Processing $ISO_NAME..."
 
           # 1. SHA256 Checksum
-          sha256sum "$ISO_FILE" > "release_assets/${ISO_NAME}.sha256"
           sha256sum "$ISO_FILE" > "release_assets/caelaris-arm64-pc.iso.sha256"
 
-          # 2. Split into 1900MB parts to strictly stay below GitHub's 2147483648-byte limit
-          echo "Splitting uncompromised ISO into parts under 1.9GB..."
-          split -b 1900M -d "$ISO_FILE" "release_assets/${ISO_NAME}.part-"
+          # 2. Direct ISO copy & multi-part split (< 1.9GB)
+          cp "$ISO_FILE" "release_assets/caelaris-arm64-pc.iso"
           split -b 1900M -d "$ISO_FILE" "release_assets/caelaris-arm64-pc.iso.part-"
 
           # 3. Windows 1-click combine script (combine.bat)
