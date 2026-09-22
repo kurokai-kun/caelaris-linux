@@ -46,53 +46,75 @@ jobs:
           chmod +x scripts/*.sh
           sudo ./scripts/build_arm64_pc.sh "${{ inputs.edition || 'kde' }}"
 
-      - name: Prepare Release Assets (< 2GB Chunks for GitHub Release Limits)
+      - name: Prepare Release Assets
         id: prep
         run: |
           mkdir -p release_assets
           ISO_FILE=$(ls out-arm64-pc/*.iso | head -n 1)
-          ISO_NAME=$(basename "$ISO_FILE")
-          echo "Processing $ISO_NAME..."
+          ISO_SIZE=$(stat -c%s "$ISO_FILE" 2>/dev/null || stat -f%z "$ISO_FILE")
+          echo "Processing ISO: $ISO_FILE ($ISO_SIZE bytes)..."
 
-          # 1. SHA256 Checksum
-          sha256sum "$ISO_FILE" > "release_assets/caelaris-arm64-pc.iso.sha256"
-
-          # 2. Direct ISO copy & multi-part split (< 1.9GB)
+          # 1. Canonical ISO copy
           cp "$ISO_FILE" "release_assets/caelaris-arm64-pc.iso"
-          split -b 1900M -d "$ISO_FILE" "release_assets/caelaris-arm64-pc.iso.part-"
 
-          # 3. Windows 1-click combine script (combine.bat)
-          cat << 'EOF' > release_assets/combine.bat
+          # 2. Clean relative checksums
+          cd release_assets
+          sha256sum caelaris-arm64-pc.iso > caelaris-arm64-pc.iso.sha256
+          sha256sum caelaris-arm64-pc.iso > SHA256SUMS.txt
+
+          # 3. Only split if file exceeds 1.9GB GitHub asset limit
+          if [ "$ISO_SIZE" -gt 1992294400 ]; then
+            echo "ISO exceeds 1.9GB. Generating multi-part split for GitHub Release..."
+            split -b 1900M -d caelaris-arm64-pc.iso "caelaris-arm64-pc.iso.part-"
+            cat << 'EOF' > combine.bat
           @echo off
           echo ========================================================
           echo  Merging Caelaris Linux ARM64 Laptop & PC ISO parts...
           echo ========================================================
-          if exist "caelaris-arm64-pc*.iso.part-00" (
-              copy /b "caelaris-arm64-pc*.iso.part-*" "caelaris-arm64-pc.iso"
-          ) else (
-              copy /b "*.part-*" "caelaris-arm64-pc.iso"
-          )
+          copy /b "caelaris-arm64-pc.iso.part-*" "caelaris-arm64-pc.iso"
           echo.
-          if exist "caelaris-arm64-pc.iso.sha256" (
-              echo Verifying SHA256 checksum...
-              certutil -hashfile "caelaris-arm64-pc.iso" SHA256
-          )
+          echo Verifying SHA256 checksum...
+          certutil -hashfile "caelaris-arm64-pc.iso" SHA256
           echo.
           echo Done! You can now use caelaris-arm64-pc.iso for UTM or flash via Rufus/balenaEtcher.
           pause
           EOF
-
-          # 4. Attempt direct cloud upload to Pixeldrain for 1-click single-file download
-          echo "Attempting Pixeldrain direct upload (5-minute timeout)..."
-          PD_URL=""
-          PD_RESP=$(curl -s -m 300 -F "file=@$ISO_FILE" https://pixeldrain.com/api/file 2>/dev/null || true)
-          PD_ID=$(echo "$PD_RESP" | grep -o '"id":"[^"]*' | cut -d'"' -f4 || true)
-          if [ -n "$PD_ID" ]; then
-            PD_URL="https://pixeldrain.com/u/$PD_ID"
-            echo "Pixeldrain direct download: $PD_URL"
+          else
+            echo "ISO size is $ISO_SIZE bytes (< 1.9GB). Standalone ISO uploaded without split."
           fi
-          echo "PIXELDRAIN_LINK=$PD_URL" >> $GITHUB_ENV
 
+          # 4. Quickstart Guide
+          cat << 'EOF' > QUICKSTART_ARM64_PC.txt
+          ========================================================================
+           Caelaris Linux - ARM64 Laptop & PC Edition Quickstart Guide
+           Target Hardware: Apple Silicon (M1-M4), Qualcomm Snapdragon X Elite/Plus
+          ========================================================================
+
+          1. APPLE SILICON (M1 / M2 / M3 / M4):
+             a. UTM Virtualization (100% Native CPU speed & VirtIO-GPU):
+                - Download 'caelaris-arm64-pc.iso'
+                - In UTM (https://mac.getutm.app/), click Create -> Virtualize -> Linux
+                - Select the ISO, allocate 4-8 GB RAM and 4+ CPU cores
+                - In Display, enable VirtIO-GPU Metal acceleration
+                - Boot VM directly into KDE Plasma 6 or GNOME on Wayland!
+             b. Bare-Metal Dual Boot (Asahi U-Boot):
+                - Deploy rootfs partition using standard Asahi Linux APFS installer.
+
+          2. QUALCOMM SNAPDRAGON X ELITE & X PLUS LAPTOPS:
+             (Surface Laptop 7, Lenovo Yoga Slim 7x, Dell XPS 13 9345, Vivobook S 15)
+             a. Flash 'caelaris-arm64-pc.iso' to a USB 3.0+ flash drive using
+                Rufus (select 'DD Image mode') or BalenaEtcher.
+             b. In Windows, turn off BitLocker Device Encryption.
+             c. Reboot into UEFI BIOS firmware (Shift + Restart -> UEFI Settings).
+             d. Temporarily disable Secure Boot (or enable Microsoft 3rd Party CA).
+             e. Boot from USB drive into KDE Plasma 6 or GNOME with Adreno GPU acceleration!
+
+          3. VERIFICATION:
+             sha256sum -c SHA256SUMS.txt
+          ========================================================================
+          EOF
+
+          cd ..
           ls -lh release_assets/
 
       - name: Publish GitHub Release (ARM64 Laptops & PCs)
