@@ -386,9 +386,9 @@
                 </button>
               </div>
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 10px;">
-                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/caelaris-kde-2026.09.20-x86_64.iso.part-00" class="btn btn-secondary" style="font-size: 0.85rem; padding: 10px 14px; text-align: center;">Download Part 00 (1.9 GB)</a>
-                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/caelaris-kde-2026.09.20-x86_64.iso.part-01" class="btn btn-secondary" style="font-size: 0.85rem; padding: 10px 14px; text-align: center;">Download Part 01 (1.9 GB)</a>
-                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/caelaris-kde-2026.09.20-x86_64.iso.part-02" class="btn btn-secondary" style="font-size: 0.85rem; padding: 10px 14px; text-align: center;">Download Part 02 (251 MB)</a>
+                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/caelaris-kde-2026.09.23-x86_64.iso.part-00" class="btn btn-secondary" style="font-size: 0.85rem; padding: 10px 14px; text-align: center;">Download Part 00 (1.9 GB)</a>
+                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/caelaris-kde-2026.09.23-x86_64.iso.part-01" class="btn btn-secondary" style="font-size: 0.85rem; padding: 10px 14px; text-align: center;">Download Part 01 (1.9 GB)</a>
+                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/caelaris-kde-2026.09.23-x86_64.iso.part-02" class="btn btn-secondary" style="font-size: 0.85rem; padding: 10px 14px; text-align: center;">Download Part 02 (260 MB)</a>
                 <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/combine.bat" class="btn btn-primary" style="font-size: 0.85rem; padding: 10px 14px; text-align: center;">⚡ combine.bat (1-Click Reassembly)</a>
               </div>
             </div>
@@ -969,10 +969,10 @@
         <!-- Panel 1: Physical Bare Metal Server -->
         <div class="server-panel active" id="server-baremetal">
           <h4 style="font-size: 1.2rem; color: #fff; margin-bottom: 12px;">Deploying on Physical Server / Mini-PC / Workstation</h4>
-          <p style="color: var(--text-muted); margin-bottom: 16px;">Ideal for dedicated homelab servers, NAS storage rigs, local build agents, and Intel NUC / AMD Mini-PCs.</p>
-          <ol style="padding-left: 20px; color: var(--text-muted); display: flex; flex-direction: column; gap: 12px; font-size: 0.95rem;">
-            <li><strong>Flash the ISO:</strong> Flash <code>caelaris-kde.iso</code> (or ARM64 ISO) to a USB 3.0+ flash drive using Rufus (DD mode), Ventoy, or balenaEtcher.</li>
-            <li><strong>Boot to Minimal / Headless Mode:</strong> Plug into your server node, power on, and at the GRUB bootloader, highlight <strong>Caelaris Linux (Headless Server / Minimal CLI)</strong> or press <code>e</code> and append <code>systemd.unit=multi-user.target</code>.</li>
+          <p style="color: #cbd5e1; margin-bottom: 16px;">Ideal for dedicated homelab servers, NAS storage rigs, local build agents, and Intel NUC / AMD Mini-PCs.</p>
+          <ol style="padding-left: 20px; color: #e2e8f0; display: flex; flex-direction: column; gap: 12px; font-size: 0.95rem;">
+            <li><strong>Flash the ISO:</strong> Flash <code>caelaris-server-x86_64.iso</code> to a USB 3.0+ flash drive using Rufus (DD mode), Ventoy, or balenaEtcher.</li>
+            <li><strong>Boot to Minimal / Headless Mode:</strong> Plug into your server node, power on, and at the boot menu, select <strong>Caelaris Linux Server &amp; Headless</strong>.</li>
             <li><strong>Launch the High-Speed TUI Installer:</strong>
               <div class="server-code-box">
                 <code>sudo caelaris-installer-cli</code>
@@ -987,8 +987,8 @@
         <!-- Panel 2: Remote Unattended SSH Install -->
         <div class="server-panel" id="server-remote">
           <h4 style="font-size: 1.2rem; color: #fff; margin-bottom: 12px;">Unattended Remote SSH Installation (No Monitor / No Keyboard Needed)</h4>
-          <p style="color: var(--text-muted); margin-bottom: 16px;">Designed for rackmount servers, headless nodes in server closets, and remote homelabs without physical peripherals.</p>
-          <ol style="padding-left: 20px; color: var(--text-muted); display: flex; flex-direction: column; gap: 12px; font-size: 0.95rem;">
+          <p style="color: #cbd5e1; margin-bottom: 16px;">Designed for rackmount servers, headless nodes in server closets, and remote homelabs without physical peripherals.</p>
+          <ol style="padding-left: 20px; color: #e2e8f0; display: flex; flex-direction: column; gap: 12px; font-size: 0.95rem;">
             <li><strong>Plug in Ethernet &amp; USB:</strong> Connect your server node to your local gigabit LAN via Ethernet and insert the bootable Caelaris USB.</li>
             <li><strong>Power On:</strong> The live ISO automatically requests a DHCP lease, establishes IPv4/IPv6 connectivity, and brings up the live SSH installer daemon.</li>
             <li><strong>Connect Remotely from your Laptop / Desktop:</strong>
@@ -996,7 +996,7 @@
                 <code>ssh root@caelaris-live.local</code>
                 <button class="copy-btn copy-trigger" data-copy="ssh root@caelaris-live.local">Copy</button>
               </div>
-              <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 4px;">(Or find the IP address via your router dashboard or <code>arp -a</code> / <code>nmap -sn 192.168.1.0/24</code>)</p>
+              <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px;">(Or find the IP address via your router dashboard or <code>arp -a</code> / <code>nmap -sn 192.168.1.0/24</code>)</p>
             </li>
             <li><strong>Run Installation Over SSH:</strong>
               <div class="server-code-box">
@@ -1011,10 +1011,10 @@
         <!-- Panel 3: Proxmox VE & KVM Hypervisor -->
         <div class="server-panel" id="server-proxmox">
           <h4 style="font-size: 1.2rem; color: #fff; margin-bottom: 12px;">Virtual Server on Proxmox VE, KVM / QEMU, or ESXi</h4>
-          <p style="color: var(--text-muted); margin-bottom: 16px;">Maximum I/O performance and minimal hypervisor memory footprint for container hosts and virtual microservices.</p>
-          <ol style="padding-left: 20px; color: var(--text-muted); display: flex; flex-direction: column; gap: 12px; font-size: 0.95rem;">
+          <p style="color: #cbd5e1; margin-bottom: 16px;">Maximum I/O performance and minimal hypervisor memory footprint for container hosts and virtual microservices.</p>
+          <ol style="padding-left: 20px; color: #e2e8f0; display: flex; flex-direction: column; gap: 12px; font-size: 0.95rem;">
             <li><strong>Create Virtual Machine:</strong>
-              <ul style="list-style: disc; padding-left: 20px; margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
+              <ul style="list-style: disc; padding-left: 20px; margin-top: 6px; display: flex; flex-direction: column; gap: 4px; color: #cbd5e1;">
                 <li>OS: Linux 6.x / 5.x / 2.6 Kernel (64-bit)</li>
                 <li>System: Machine <code>q35</code>, BIOS <code>OVMF (UEFI)</code>, QEMU Guest Agent checked</li>
                 <li>Disks: Bus/Device <code>VirtIO Block</code> or <code>SCSI (VirtIO SCSI Single)</code> with Discard enabled</li>
@@ -1031,8 +1031,8 @@
         <!-- Panel 4: Raspberry Pi & ARM64 Edge Server -->
         <div class="server-panel" id="server-arm-edge">
           <h4 style="font-size: 1.2rem; color: #fff; margin-bottom: 12px;">Raspberry Pi 5/4 &amp; ARM64 Edge Server (Low-Power 24/7 Homelab)</h4>
-          <p style="color: var(--text-muted); margin-bottom: 16px;">Perfect for energy-efficient home servers drawing under 5W—ideal for Pi-hole, Nextcloud, Home Assistant, WireGuard, and media servers.</p>
-          <ol style="padding-left: 20px; color: var(--text-muted); display: flex; flex-direction: column; gap: 12px; font-size: 0.95rem;">
+          <p style="color: #cbd5e1; margin-bottom: 16px;">Perfect for energy-efficient home servers drawing under 5W—ideal for Pi-hole, Nextcloud, Home Assistant, WireGuard, and media servers.</p>
+          <ol style="padding-left: 20px; color: #e2e8f0; display: flex; flex-direction: column; gap: 12px; font-size: 0.95rem;">
             <li><strong>Download ARM64 Server Image:</strong> Grab <code>caelaris-rpi-arm64.img.xz</code> from the Raspberry Pi release.</li>
             <li><strong>Flash to MicroSD or NVMe SSD:</strong> Use Raspberry Pi Imager or balenaEtcher to flash the image.</li>
             <li><strong>Headless First Boot:</strong> Insert card/drive, connect Ethernet, and power on. No HDMI monitor required.</li>
@@ -1059,7 +1059,7 @@
               <code>sudo systemctl enable --now cockpit.socket</code>
               <button class="copy-btn copy-trigger" data-copy="sudo systemctl enable --now cockpit.socket">Copy</button>
             </div>
-            <p style="font-size: 0.82rem; color: var(--text-dim);">Navigate to <code>https://your-server-ip:9090</code> in any web browser.</p>
+            <p style="font-size: 0.85rem; color: #cbd5e1;">Navigate to <code>https://your-server-ip:9090</code> in any web browser.</p>
           </div>
 
           <div>
@@ -1068,7 +1068,7 @@
               <code>sudo systemctl enable --now docker</code>
               <button class="copy-btn copy-trigger" data-copy="sudo systemctl enable --now docker">Copy</button>
             </div>
-            <p style="font-size: 0.82rem; color: var(--text-dim);">Runs with native Btrfs snapshotting driver for zero-copy layer staging.</p>
+            <p style="font-size: 0.85rem; color: #cbd5e1;">Runs with native Btrfs snapshotting driver for zero-copy layer staging.</p>
           </div>
 
           <div>
@@ -1077,16 +1077,16 @@
               <code>sudo ufw allow 22/tcp && sudo ufw allow 9090/tcp && sudo ufw enable</code>
               <button class="copy-btn copy-trigger" data-copy="sudo ufw allow 22/tcp &amp;&amp; sudo ufw allow 9090/tcp &amp;&amp; sudo ufw enable">Copy</button>
             </div>
-            <p style="font-size: 0.82rem; color: var(--text-dim);">Enables SSH and Cockpit while securing all unexposed ports.</p>
+            <p style="font-size: 0.85rem; color: #cbd5e1;">Enables SSH and Cockpit while securing all unexposed ports.</p>
           </div>
 
           <div>
             <span style="font-size: 0.85rem; color: #c084fc; font-weight: 600;">Non-Blocking Server Package Update:</span>
             <div class="server-code-box">
-              <code>yay -Syu --noconfirm</code>
-              <button class="copy-btn copy-trigger" data-copy="yay -Syu --noconfirm">Copy</button>
+              <code>sudo pacman -Syu --noconfirm</code>
+              <button class="copy-btn copy-trigger" data-copy="sudo pacman -Syu --noconfirm">Copy</button>
             </div>
-            <p style="font-size: 0.82rem; color: var(--text-dim);">Rolling updates execute in background without reboot locks or library crashes.</p>
+            <p style="font-size: 0.85rem; color: #cbd5e1;">Rolling updates execute in background without reboot locks or library crashes.</p>
           </div>
         </div>
       </div>

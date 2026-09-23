@@ -57,9 +57,7 @@ bind
 
 # Web Management Console (Cockpit)
 cockpit
-cockpit-bridge
 cockpit-storaged
-cockpit-networkmanager
 cockpit-packagekit
 cockpit-podman
 packagekit
