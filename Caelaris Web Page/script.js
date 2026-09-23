@@ -114,11 +114,30 @@ function closeCombineModal() {
   }
 }
 
-// Close modal when clicking outside of it
+// 6. Open Modal Helper for Cloud ISO Mirrors
+function openCloudModal() {
+  const modal = document.getElementById('cloud-modal');
+  if (modal) {
+    modal.style.display = 'flex';
+  }
+}
+
+function closeCloudModal() {
+  const modal = document.getElementById('cloud-modal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+// Close modals when clicking outside of them
 window.addEventListener('click', (e) => {
-  const modal = document.getElementById('combine-modal');
-  if (e.target === modal) {
+  const combineModal = document.getElementById('combine-modal');
+  if (e.target === combineModal) {
     closeCombineModal();
+  }
+  const cloudModal = document.getElementById('cloud-modal');
+  if (e.target === cloudModal) {
+    closeCloudModal();
   }
 });
 
