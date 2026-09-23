@@ -52,7 +52,8 @@ jobs:
           mkdir -p release_assets
           ISO_FILE=$(ls out-arm64-pc/*.iso | head -n 1)
           ISO_SIZE=$(stat -c%s "$ISO_FILE" 2>/dev/null || stat -f%z "$ISO_FILE")
-          echo "Processing ISO: $ISO_FILE ($ISO_SIZE bytes)..."
+          ISO_SIZE_HR=$(ls -lh "$ISO_FILE" | awk '{print $5}')
+          echo "Processing ISO: $ISO_FILE ($ISO_SIZE bytes, $ISO_SIZE_HR)..."
 
           # 1. Canonical ISO copy
           cp "$ISO_FILE" "release_assets/caelaris-arm64-pc.iso"
@@ -66,6 +67,7 @@ jobs:
           if [ "$ISO_SIZE" -gt 1992294400 ]; then
             echo "ISO exceeds 1.9GB. Generating multi-part split for GitHub Release..."
             split -b 1900M -d caelaris-arm64-pc.iso "caelaris-arm64-pc.iso.part-"
+            rm -f caelaris-arm64-pc.iso
             cat << 'EOF' > combine.bat
           @echo off
           echo ========================================================
@@ -92,7 +94,7 @@ jobs:
 
           1. APPLE SILICON (M1 / M2 / M3 / M4):
              a. UTM Virtualization (100% Native CPU speed & VirtIO-GPU):
-                - Download 'caelaris-arm64-pc.iso'
+                - Download and combine (if split) 'caelaris-arm64-pc.iso'
                 - In UTM (https://mac.getutm.app/), click Create -> Virtualize -> Linux
                 - Select the ISO, allocate 4-8 GB RAM and 4+ CPU cores
                 - In Display, enable VirtIO-GPU Metal acceleration
@@ -115,6 +117,49 @@ jobs:
           EOF
 
           cd ..
+
+          # 5. Build dynamic release body with exact computed size
+          ASSET_DESC="1. **\`caelaris-arm64-pc.iso\` ($ISO_SIZE_HR)**: Universal single-file bootable hybrid UEFI ARM64 ISO image. Instant 1-click download."
+          if [ "$ISO_SIZE" -gt 1992294400 ]; then
+            ASSET_DESC="1. **\`caelaris-arm64-pc.iso.part-*\` ($ISO_SIZE_HR total)**: Multi-part bootable hybrid UEFI ARM64 ISO archive (split for GitHub upload limits). Run \`combine.bat\` to instantly merge back to \`caelaris-arm64-pc.iso\`."
+          fi
+
+          cat << EOF > release_body.md
+          ## 💻 Caelaris Linux ARM64 Laptop & PC Edition
+
+          Official 64-bit ARM (AArch64) operating system engineered for modern ARM laptops, workstations, and Apple Silicon computers.
+
+          ---
+
+          ### 🖥️ Dedicated Hardware Support:
+          1. **Apple Silicon Macs (M1 / M2 / M3 / M4)**:
+             - Run bare-metal via standard Asahi U-Boot integration with hardware-accelerated Mesa Apple AGX graphics.
+             - Run inside **UTM** on macOS with 100% native Apple Silicon CPU execution speed and VirtIO-GPU acceleration.
+          2. **Qualcomm Snapdragon X Elite & X Plus Laptops**:
+             - Copilot+ PCs (Microsoft Surface Laptop 7, Lenovo Yoga Slim 7x, Dell XPS 13 ARM 9345, ASUS Vivobook S 15) with standard AArch64 UEFI booting (\`BOOTAA64.EFI\`) and Mesa Freedreno Adreno 3D acceleration.
+          3. **ARM64 Workstations & Cloud PCs**:
+             - Lenovo ThinkPad X13s, Ampere Altra workstations, and standard ARM64 cloud hypervisors.
+
+          ---
+
+          ### 📦 Available Release Assets:
+          ${ASSET_DESC}
+          2. **\`caelaris-arm64-pc.iso.sha256\`**: Cryptographic integrity checksum.
+          3. **\`SHA256SUMS.txt\`**: Consolidated release checksums.
+          4. **\`QUICKSTART_ARM64_PC.txt\`**: Standalone step-by-step setup guide for UTM and Snapdragon laptops.
+
+          ---
+
+          ### ⚡ Edition Features & Optimizations:
+          - **Live Graphical Desktop Preview**: Interactive KDE Plasma Wayland live preview session with auto-login (\`liveuser\`).
+          - **Guided System Installer**: One-click graphical system installer (\`caelaris-installer-gui\`) to deploy Caelaris directly to internal NVMe/SSD storage.
+          - **Hybrid UEFI AArch64 Bootloader**: Native EFI booting with GPT partition table support on Apple Silicon & Copilot+ laptops.
+          - **Hardware-Specific Graphic Drivers**: Mesa Freedreno for Snapdragon Adreno GPUs and Apple AGX driver compatibility.
+          - **Performance & Latency Tuning**: Custom sysctl presets (\`vm.max_map_count=2147483642\`), BBR congestion control, and zstd ZRAM memory compression.
+          - **Arch Linux ARM Baseline**: Rolling-release foundation with pacman package manager.
+          EOF
+
+          sed -i 's/^          //' release_body.md
           ls -lh release_assets/
 
       - name: Publish GitHub Release (ARM64 Laptops & PCs)
@@ -124,39 +169,7 @@ jobs:
           tag_name: arm64-pc-release
           name: Caelaris Linux ARM64 Laptop & PC Edition (Apple Silicon & Snapdragon)
           make_latest: false
-          body: |
-            ## 💻 Caelaris Linux ARM64 Laptop & PC Edition
-
-            Official 64-bit ARM (AArch64) operating system engineered for modern ARM laptops, workstations, and Apple Silicon computers.
-
-            ---
-
-            ### 🖥️ Dedicated Hardware Support:
-            1. **Apple Silicon Macs (M1 / M2 / M3 / M4)**:
-               - Run bare-metal via standard Asahi U-Boot integration with hardware-accelerated Mesa Apple AGX graphics.
-               - Run inside **UTM** on macOS with 100% native Apple Silicon CPU execution speed and VirtIO-GPU acceleration.
-            2. **Qualcomm Snapdragon X Elite & X Plus Laptops**:
-               - Copilot+ PCs (Microsoft Surface Laptop 7, Lenovo Yoga Slim 7x, Dell XPS 13 ARM 9345, ASUS Vivobook S 15) with standard AArch64 UEFI booting (`BOOTAA64.EFI`) and Mesa Freedreno Adreno 3D acceleration.
-            3. **ARM64 Workstations & Cloud PCs**:
-               - Lenovo ThinkPad X13s, Ampere Altra workstations, and standard ARM64 cloud hypervisors.
-
-            ---
-
-            ### 📦 Available Release Assets:
-            1. **`caelaris-arm64-pc.iso` (~907 MB)**: Universal single-file bootable hybrid UEFI ARM64 ISO image. Instant 1-click download.
-            2. **`caelaris-arm64-pc.iso.sha256`**: Cryptographic integrity checksum.
-            3. **`SHA256SUMS.txt`**: Consolidated release checksums.
-            4. **`QUICKSTART_ARM64_PC.txt`**: Standalone step-by-step setup guide for UTM and Snapdragon laptops.
-
-            ---
-
-            ### ⚡ Edition Features & Optimizations:
-            - **Live Graphical Desktop Preview**: Interactive KDE Plasma Wayland live preview session with auto-login (`liveuser`).
-            - **Guided System Installer**: One-click graphical system installer (`caelaris-installer-gui`) to deploy Caelaris directly to internal NVMe/SSD storage.
-            - **Hybrid UEFI AArch64 Bootloader**: Native EFI booting with GPT partition table support on Apple Silicon & Copilot+ laptops.
-            - **Hardware-Specific Graphic Drivers**: Mesa Freedreno for Snapdragon Adreno GPUs and Apple AGX driver compatibility.
-            - **Performance & Latency Tuning**: Custom sysctl presets (`vm.max_map_count=2147483642`), BBR congestion control, and zstd ZRAM memory compression.
-            - **Arch Linux ARM Baseline**: Rolling-release foundation with pacman package manager.
+          body_path: release_body.md
           files: release_assets/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

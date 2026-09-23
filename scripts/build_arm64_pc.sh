@@ -49,7 +49,6 @@ fi
 if [ -n "$QEMU_BIN" ]; then
     echo "Found QEMU emulator: $QEMU_BIN. Setting up chroot environment..."
     cp "$QEMU_BIN" "${ROOTFS_DIR}/usr/bin/"
-    cp /etc/resolv.conf "${ROOTFS_DIR}/etc/resolv.conf"
 
     # Set up bind mounts for chroot execution
     mount --bind /dev "${ROOTFS_DIR}/dev" || true
@@ -66,10 +65,24 @@ if [ -n "$QEMU_BIN" ]; then
     }
     trap cleanup_chroot EXIT INT TERM
 
-    # Prioritize fastest mirrors
-    if [ -f "${ROOTFS_DIR}/etc/pacman.d/mirrorlist" ]; then
-        sed -i '1i Server = http://de3.mirror.archlinuxarm.org/$arch/$repo\nServer = http://fl.us.mirror.archlinuxarm.org/$arch/$repo' "${ROOTFS_DIR}/etc/pacman.d/mirrorlist" 2>/dev/null || true
-    fi
+    # Ensure robust DNS inside chroot by replacing any dangling symlinks with authoritative public DNS
+    rm -f "${ROOTFS_DIR}/etc/resolv.conf"
+    cat << 'EOF' > "${ROOTFS_DIR}/etc/resolv.conf"
+nameserver 1.1.1.1
+nameserver 8.8.8.8
+nameserver 8.8.4.4
+nameserver 9.9.9.9
+EOF
+
+    # Configure multiple high-speed, reliable mirrors
+    mkdir -p "${ROOTFS_DIR}/etc/pacman.d"
+    cat << 'EOF' > "${ROOTFS_DIR}/etc/pacman.d/mirrorlist"
+Server = http://fl.us.mirror.archlinuxarm.org/$arch/$repo
+Server = http://nj.us.mirror.archlinuxarm.org/$arch/$repo
+Server = http://mirror.archlinuxarm.org/$arch/$repo
+Server = http://de3.mirror.archlinuxarm.org/$arch/$repo
+Server = http://dk.mirror.archlinuxarm.org/$arch/$repo
+EOF
 
     # Optimize pacman config for speed and reliability during image build (disable CheckSpace & Landlock/seccomp sandbox under QEMU)
     sed -i 's/^#ParallelDownloads = .*/ParallelDownloads = 5/' "${ROOTFS_DIR}/etc/pacman.conf" 2>/dev/null || true
@@ -81,9 +94,17 @@ if [ -n "$QEMU_BIN" ]; then
     echo "Initializing Arch Linux ARM pacman keyring..."
     chroot "$ROOTFS_DIR" /bin/bash -c "pacman-key --init && pacman-key --populate archlinuxarm" || true
 
-    # Sync package databases
+    # Verify DNS inside chroot
+    echo "Testing DNS resolution inside ARM64 chroot..."
+    chroot "$ROOTFS_DIR" /bin/bash -c "getent hosts mirror.archlinuxarm.org || true"
+
+    # Sync package databases with retry
     echo "Updating package databases..."
-    chroot "$ROOTFS_DIR" /bin/bash -c "pacman -Sy --noconfirm" || true
+    chroot "$ROOTFS_DIR" /bin/bash -c "pacman -Sy --noconfirm" || {
+        echo "Retrying pacman database sync..."
+        sleep 2
+        chroot "$ROOTFS_DIR" /bin/bash -c "pacman -Sy --noconfirm"
+    }
 
     # Desktop packages for live preview & installer
     DESKTOP_PKGS=(
@@ -153,10 +174,36 @@ if [ -n "$QEMU_BIN" ]; then
     fi
 
     echo "Installing live preview desktop & installer packages..."
-    # Tier 1: Core System, GUI Installer, and Bootloader essentials
-    chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm python python-pyqt6 sudo bash networkmanager sddm mesa grub efibootmgr parted dosfstools e2fsprogs btrfs-progs rsync squashfs-tools noto-fonts" || true
+    # Tier 1: Core System, Kernel, GUI Installer, and Bootloader essentials
+    chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm linux-aarch64 mkinitcpio mkinitcpio-archiso python python-pyqt6 sudo bash networkmanager sddm mesa grub efibootmgr parted dosfstools e2fsprogs btrfs-progs rsync squashfs-tools noto-fonts" || {
+        echo "Retrying Tier 1 package installation..."
+        sleep 3
+        chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm linux-aarch64 mkinitcpio mkinitcpio-archiso python python-pyqt6 sudo bash networkmanager sddm mesa grub efibootmgr parted dosfstools e2fsprogs btrfs-progs rsync squashfs-tools noto-fonts"
+    }
+
     # Tier 2: Complete Desktop Preview Suite & Graphics
-    chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm pipewire-jack qt6-multimedia-ffmpeg ${DESKTOP_PKGS[*]}" || true
+    chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm pipewire-jack qt6-multimedia-ffmpeg ${DESKTOP_PKGS[*]}" || {
+        echo "Retrying Tier 2 package installation..."
+        sleep 3
+        chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm pipewire-jack qt6-multimedia-ffmpeg ${DESKTOP_PKGS[*]}"
+    }
+
+    # Verify installation of core desktop and installer packages
+    if [ ! -f "${ROOTFS_DIR}/usr/bin/python" ] || [ ! -f "${ROOTFS_DIR}/usr/bin/sddm" ]; then
+        echo "CRITICAL ERROR: Desktop packages failed to install inside ARM64 rootfs."
+        exit 1
+    fi
+
+    # Configure mkinitcpio for live ISO booting
+    cat << 'EOF' > "${ROOTFS_DIR}/etc/mkinitcpio.conf"
+MODULES=()
+BINARIES=()
+FILES=()
+HOOKS=(base udev archiso archiso_loop_mnt block filesystems keyboard)
+COMPRESSION="zstd"
+EOF
+    echo "Generating bootable live initramfs..."
+    chroot "$ROOTFS_DIR" /bin/bash -c "mkinitcpio -P" || true
 
     # Ensure liveuser exists inside rootfs
     chroot "$ROOTFS_DIR" /bin/bash -c "
@@ -306,11 +353,14 @@ elif [ -f "${ROOTFS_DIR}/boot/initramfs-linux-fallback.img" ]; then
     cp "${ROOTFS_DIR}/boot/initramfs-linux-fallback.img" "${ISO_STAGING}/live/initrd.img"
 fi
 
-# Fallback kernel/initrd creation if minimal rootfs has none
-if [ ! -f "${ISO_STAGING}/live/vmlinuz" ]; then
-    echo "Using generic kernel stub from package..."
-    touch "${ISO_STAGING}/live/vmlinuz"
-    touch "${ISO_STAGING}/live/initrd.img"
+# Ensure kernel and initramfs are non-empty
+if [ ! -s "${ISO_STAGING}/live/vmlinuz" ]; then
+    echo "CRITICAL ERROR: ARM64 kernel image (/boot/Image) missing or 0 bytes!"
+    exit 1
+fi
+if [ ! -s "${ISO_STAGING}/live/initrd.img" ]; then
+    echo "CRITICAL ERROR: ARM64 initramfs image (/boot/initramfs-linux.img) missing or 0 bytes!"
+    exit 1
 fi
 
 # Create GRUB EFI configuration for ARM64 PCs & Apple Silicon
@@ -322,17 +372,17 @@ set color_normal=light-gray/black
 set color_highlight=white/magenta
 
 menuentry "Caelaris Linux ARM64 (KDE Plasma 6 - Default)" --class caelaris --class gnu-linux {
-    linux /live/vmlinuz boot=live quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 splash session=plasma
+    linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 splash session=plasma
     initrd /live/initrd.img
 }
 
 menuentry "Caelaris Linux ARM64 (GNOME Desktop)" --class caelaris --class gnu-linux {
-    linux /live/vmlinuz boot=live quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 splash session=gnome
+    linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 splash session=gnome
     initrd /live/initrd.img
 }
 
 menuentry "Caelaris Linux ARM64 (Safe Graphics / Fallback)" --class caelaris --class gnu-linux {
-    linux /live/vmlinuz boot=live nomodeset
+    linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live nomodeset
     initrd /live/initrd.img
 }
 EOF

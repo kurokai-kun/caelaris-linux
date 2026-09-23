@@ -186,5 +186,5 @@
   - **Qualcomm Snapdragon X Elite & Plus Laptops:** Copilot+ ARM laptops (Surface Laptop 7, Lenovo Yoga Slim 7x, Dell XPS 13 ARM, ASUS Vivobook S 15) using standard AArch64 UEFI booting (`BOOTAA64.EFI`).
   - **ARM64 Workstations & Cloud:** Lenovo ThinkPad X13s, Ampere Altra workstations, and standard ARM64 hypervisors.
 - **Kernel & GPU Stack:** Standard AArch64 Linux kernel with Mesa Freedreno (Qualcomm Adreno) and Mesa Apple AGX drivers under Wayland.
-- **Distribution Format:** Bootable Hybrid UEFI ARM64 ISO (`caelaris-arm64-pc.iso`, ~907 MB) as a single-file direct download on dedicated `arm64-pc-release`.
+- **Distribution Format:** Bootable Hybrid UEFI ARM64 ISO (`caelaris-arm64-pc.iso`) with full live graphical desktop preview and installer on dedicated `arm64-pc-release`.
 - **Desktop & Gaming:** Dual KDE Plasma 6 & GNOME 4x Wayland sessions, native PyQt6 graphical installer, zstd ZRAM memory compression, and Box64 / FEX-Emu x86 emulation.
