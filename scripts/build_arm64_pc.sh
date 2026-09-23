@@ -175,17 +175,17 @@ EOF
 
     echo "Installing live preview desktop & installer packages..."
     # Tier 1: Core System, Kernel, GUI Installer, and Bootloader essentials
-    chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm linux-aarch64 mkinitcpio mkinitcpio-archiso python python-pyqt6 sudo bash networkmanager sddm mesa grub efibootmgr parted dosfstools e2fsprogs btrfs-progs rsync squashfs-tools noto-fonts" || {
+    chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm --overwrite='*' linux-aarch64 mkinitcpio mkinitcpio-archiso python python-pyqt6 sudo bash networkmanager sddm mesa grub efibootmgr parted dosfstools e2fsprogs btrfs-progs rsync squashfs-tools noto-fonts" || {
         echo "Retrying Tier 1 package installation..."
         sleep 3
-        chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm linux-aarch64 mkinitcpio mkinitcpio-archiso python python-pyqt6 sudo bash networkmanager sddm mesa grub efibootmgr parted dosfstools e2fsprogs btrfs-progs rsync squashfs-tools noto-fonts"
+        chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm --overwrite='*' linux-aarch64 mkinitcpio mkinitcpio-archiso python python-pyqt6 sudo bash networkmanager sddm mesa grub efibootmgr parted dosfstools e2fsprogs btrfs-progs rsync squashfs-tools noto-fonts"
     }
 
     # Tier 2: Complete Desktop Preview Suite & Graphics
-    chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm pipewire-jack qt6-multimedia-ffmpeg ${DESKTOP_PKGS[*]}" || {
+    chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm --overwrite='*' pipewire-jack qt6-multimedia-ffmpeg ${DESKTOP_PKGS[*]}" || {
         echo "Retrying Tier 2 package installation..."
         sleep 3
-        chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm pipewire-jack qt6-multimedia-ffmpeg ${DESKTOP_PKGS[*]}"
+        chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm --overwrite='*' pipewire-jack qt6-multimedia-ffmpeg ${DESKTOP_PKGS[*]}"
     }
 
     # Verify installation of core desktop and installer packages
