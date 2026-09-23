@@ -363,17 +363,12 @@ set timeout=3
 set color_normal=light-gray/black
 set color_highlight=white/magenta
 
-menuentry "Caelaris Linux ARM64 (KDE Plasma 6 - Default)" --class caelaris --class gnu-linux {
+menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --class gnu --class os {
     linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 splash session=plasma
     initrd /live/initrd.img
 }
 
-menuentry "Caelaris Linux ARM64 (GNOME Desktop)" --class caelaris --class gnu-linux {
-    linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 splash session=gnome
-    initrd /live/initrd.img
-}
-
-menuentry "Caelaris Linux ARM64 (Safe Graphics / Fallback)" --class caelaris --class gnu-linux {
+menuentry "Caelaris Linux (Safe Graphics / Fallback)" --class caelaris --class gnu-linux {
     linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live nomodeset
     initrd /live/initrd.img
 }
