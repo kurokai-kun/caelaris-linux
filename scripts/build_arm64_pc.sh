@@ -151,10 +151,10 @@ if [ -n "$QEMU_BIN" ]; then
     fi
 
     echo "Installing live preview desktop & installer packages..."
-    chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm ${DESKTOP_PKGS[*]}" || {
-        echo "Warning: Full package bundle had warnings; ensuring core desktop & installer packages..."
-        chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm python python-pyqt6 sudo bash networkmanager sddm mesa grub efibootmgr" || true
-    }
+    # Tier 1: Core System, GUI Installer, and Bootloader essentials
+    chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm python python-pyqt6 sudo bash networkmanager sddm mesa grub efibootmgr parted dosfstools e2fsprogs btrfs-progs rsync squashfs-tools" || true
+    # Tier 2: Complete Desktop Preview Suite & Graphics
+    chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm ${DESKTOP_PKGS[*]}" || true
 
     # Ensure liveuser exists inside rootfs
     chroot "$ROOTFS_DIR" /bin/bash -c "
