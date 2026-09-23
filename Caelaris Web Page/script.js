@@ -8,16 +8,18 @@ document.addEventListener('DOMContentLoaded', () => {
   initFaqAccordion();
   initCopyButtons();
   initInstallGuideTabs();
+  initServerTabs();
 });
 
 // 1. Interactive Desktop Showcase Switcher (KDE vs GNOME)
 function initDesktopSwitcher() {
-  const tabs = document.querySelectorAll('.de-tab');
+  const tabs = document.querySelectorAll('.de-tab[data-de]');
   const previews = document.querySelectorAll('.desktop-preview');
 
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
       const targetDe = tab.getAttribute('data-de');
+      if (!targetDe) return;
 
       tabs.forEach(t => t.classList.remove('active'));
       previews.forEach(p => p.classList.remove('active'));
@@ -140,3 +142,25 @@ function initArchSwitcher() {
     });
   });
 }
+
+// 7. Server & Headless Installation Tabs
+function initServerTabs() {
+  const serverTabs = document.querySelectorAll('.server-tab');
+  const serverPanels = document.querySelectorAll('.server-panel');
+
+  serverTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const target = tab.getAttribute('data-server');
+
+      serverTabs.forEach(t => t.classList.remove('active'));
+      serverPanels.forEach(p => p.classList.remove('active'));
+
+      tab.classList.add('active');
+      const activePanel = document.getElementById(`server-${target}`);
+      if (activePanel) {
+        activePanel.classList.add('active');
+      }
+    });
+  });
+}
+

@@ -23,6 +23,7 @@
         <li><a href="#desktops" class="nav-link">Dual Desktops</a></li>
         <li><a href="#gaming" class="nav-link">Gaming</a></li>
         <li><a href="#install" class="nav-link">Install Guide</a></li>
+        <li><a href="#server-install" class="nav-link">Server Edition</a></li>
         <li><a href="#documentation" class="nav-link">Docs</a></li>
         <li><a href="#faq" class="nav-link">FAQ</a></li>
       </ul>
@@ -632,6 +633,7 @@
         <!-- Tabs -->
         <div style="display: flex; gap: 10px; margin-bottom: 24px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 14px; flex-wrap: wrap;">
           <button class="de-tab guide-tab active" data-guide="baremetal">Physical PC (USB)</button>
+          <button class="de-tab guide-tab" data-guide="server">🖥️ Headless Server &amp; Homelab</button>
           <button class="de-tab guide-tab" data-guide="arm-laptop">ARM64 Laptop / Snapdragon</button>
           <button class="de-tab guide-tab" data-guide="utm">Apple Silicon / UTM (Mac)</button>
           <button class="de-tab guide-tab" data-guide="vmware">VMware Workstation</button>
@@ -648,6 +650,23 @@
             <li>In the live desktop preview, double-click the <strong>Install Caelaris Linux</strong> icon.</li>
             <li>Follow the guided PyQt6 wizard to partition (Btrfs recommended), configure your user account, and install!</li>
           </ol>
+        </div>
+
+        <!-- Panel: Server Quickstart -->
+        <div class="guide-panel" id="guide-server">
+          <h4 style="font-size: 1.15rem; color: #fff; margin-bottom: 12px;">Headless Server &amp; Homelab Quick Deployment</h4>
+          <ol style="padding-left: 20px; color: var(--text-muted); display: flex; flex-direction: column; gap: 10px; font-size: 0.95rem;">
+            <li>Flash any Caelaris ISO (x86_64, ARM64 PC, or Raspberry Pi) to a USB drive or boot inside your hypervisor (Proxmox, KVM, ESXi).</li>
+            <li>At the bootloader, highlight <strong>Caelaris Linux (Headless Server / Minimal CLI)</strong> or boot with <code>systemd.unit=multi-user.target</code>.</li>
+            <li>Run the high-speed server installer: <code>sudo caelaris-installer-cli</code>.</li>
+            <li>Select automated Btrfs subvolumes (<code>@server</code>, <code>@var_lib_docker</code>, <code>@var_log</code>) and set network / root credentials.</li>
+            <li>Access Cockpit web management console at <code>https://&lt;server-ip&gt;:9090</code> or administer via OpenSSH!</li>
+          </ol>
+          <div style="margin-top: 18px;">
+            <a href="#server-install" class="btn btn-secondary" style="border-color: rgba(16, 185, 129, 0.4); color: #34d399;">
+              📖 Jump to Full Server ISO Architecture &amp; Deployment Guide &darr;
+            </a>
+          </div>
         </div>
 
         <!-- Panel 2: ARM64 Laptop / Snapdragon -->
@@ -694,6 +713,187 @@
             <li>Boot the VM: <code>spice-vdagentd</code> automatically synchronizes clipboard, audio, and dynamic retina display scaling!</li>
             <li><strong>Bare Metal Dual Boot (Asahi U-Boot):</strong> You can also install directly to an APFS container using the standard Asahi Linux installer environment pointing to the Caelaris ARM64 rootfs.</li>
           </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SERVER ISO & HEADLESS DEPLOYMENT ================= -->
+  <section id="server-install" style="background: rgba(8, 14, 26, 0.65); border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle); padding: 80px 0;">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag" style="background: rgba(16, 185, 129, 0.12); color: #34d399; border-color: rgba(16, 185, 129, 0.3);">Enterprise &amp; Homelab Infrastructure</span>
+        <h2 class="section-title">Caelaris Server &amp; Headless ISO Installation</h2>
+        <p class="section-subtitle">
+          Transform physical bare-metal hardware, Proxmox/KVM hypervisors, and edge nodes into high-performance, low-latency servers with sub-150 MB idle RAM, native container engines, and out-of-the-box web management.
+        </p>
+      </div>
+
+      <!-- Server Feature Cards Grid -->
+      <div class="server-grid">
+        <div class="server-feature-card">
+          <h4>⚡ Sub-150 MB Idle Footprint</h4>
+          <p>Completely free of display server overhead (no X11/Wayland background daemons). 100% of CPU cycles and memory are reserved for your microservices, databases, and Docker pods.</p>
+        </div>
+
+        <div class="server-feature-card">
+          <h4>🌐 Cockpit Web Administration</h4>
+          <p>Instant browser-based management dashboard accessible at <code>https://&lt;server-ip&gt;:9090</code>. Inspect CPU metrics, RAID pools, systemd services, firewall rules, and container logs with ease.</p>
+        </div>
+
+        <div class="server-feature-card">
+          <h4>🐳 Native Container &amp; VM Stack</h4>
+          <p>Docker engine, rootless Podman, and KVM/QEMU hypervisor with VirtIO-net and VirtIO-scsi kernel acceleration pre-configured for bare-metal virtualization throughput.</p>
+        </div>
+
+        <div class="server-feature-card">
+          <h4>🛡️ Automated Btrfs RAID &amp; Snapshots</h4>
+          <p>Optimized subvolumes (<code>@server</code>, <code>@var_log</code>, <code>@docker</code>) formatted with transparent zstd compression, providing 0.05-second atomic rollbacks and multi-drive storage pools.</p>
+        </div>
+
+        <div class="server-feature-card">
+          <h4>⚡ BBR &amp; CAKE Low-Latency Network</h4>
+          <p>Pre-tuned TCP BBR congestion control and CAKE packet scheduling for maximum server throughput and zero bufferbloat during heavy ingress/egress load.</p>
+        </div>
+
+        <div class="server-feature-card">
+          <h4>🔐 Hardened OpenSSH &amp; Zero Tracking</h4>
+          <p>Pre-configured OpenSSH server using modern Ed25519 elliptic curve keys, fail2ban compatibility, and absolute immunity from corporate telemetry or cloud reporting.</p>
+        </div>
+      </div>
+
+      <!-- Interactive Server Deployment Tabs -->
+      <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 32px; backdrop-filter: blur(12px); box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);">
+        <!-- Tabs Nav -->
+        <div style="display: flex; gap: 10px; margin-bottom: 24px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 14px; flex-wrap: wrap;">
+          <button class="server-tab active" data-server="baremetal">🖥️ Physical Bare Metal Server</button>
+          <button class="server-tab" data-server="remote">🌐 Headless Unattended SSH Install</button>
+          <button class="server-tab" data-server="proxmox">☁️ Proxmox VE &amp; KVM Hypervisor</button>
+          <button class="server-tab" data-server="arm-edge">🍓 Raspberry Pi &amp; ARM64 Edge Server</button>
+        </div>
+
+        <!-- Panel 1: Physical Bare Metal Server -->
+        <div class="server-panel active" id="server-baremetal">
+          <h4 style="font-size: 1.2rem; color: #fff; margin-bottom: 12px;">Deploying on Physical Server / Mini-PC / Workstation</h4>
+          <p style="color: var(--text-muted); margin-bottom: 16px;">Ideal for dedicated homelab servers, NAS storage rigs, local build agents, and Intel NUC / AMD Mini-PCs.</p>
+          <ol style="padding-left: 20px; color: var(--text-muted); display: flex; flex-direction: column; gap: 12px; font-size: 0.95rem;">
+            <li><strong>Flash the ISO:</strong> Flash <code>caelaris-kde.iso</code> (or ARM64 ISO) to a USB 3.0+ flash drive using Rufus (DD mode), Ventoy, or balenaEtcher.</li>
+            <li><strong>Boot to Minimal / Headless Mode:</strong> Plug into your server node, power on, and at the GRUB bootloader, highlight <strong>Caelaris Linux (Headless Server / Minimal CLI)</strong> or press <code>e</code> and append <code>systemd.unit=multi-user.target</code>.</li>
+            <li><strong>Launch the High-Speed TUI Installer:</strong>
+              <div class="server-code-box">
+                <code>sudo caelaris-installer-cli</code>
+                <button class="copy-btn copy-trigger" data-copy="sudo caelaris-installer-cli">Copy</button>
+              </div>
+            </li>
+            <li><strong>Storage &amp; Subvolumes:</strong> The installer automatically configures Btrfs with dedicated subvolumes for root (<code>@server</code>), container storage (<code>@var_lib_docker</code>), and system logs (<code>@var_log</code>).</li>
+            <li><strong>Reboot to Production:</strong> Remove USB and reboot. Your headless server reaches a login prompt in under 3 seconds with OpenSSH and network interfaces automatically enabled!</li>
+          </ol>
+        </div>
+
+        <!-- Panel 2: Remote Unattended SSH Install -->
+        <div class="server-panel" id="server-remote">
+          <h4 style="font-size: 1.2rem; color: #fff; margin-bottom: 12px;">Unattended Remote SSH Installation (No Monitor / No Keyboard Needed)</h4>
+          <p style="color: var(--text-muted); margin-bottom: 16px;">Designed for rackmount servers, headless nodes in server closets, and remote homelabs without physical peripherals.</p>
+          <ol style="padding-left: 20px; color: var(--text-muted); display: flex; flex-direction: column; gap: 12px; font-size: 0.95rem;">
+            <li><strong>Plug in Ethernet &amp; USB:</strong> Connect your server node to your local gigabit LAN via Ethernet and insert the bootable Caelaris USB.</li>
+            <li><strong>Power On:</strong> The live ISO automatically requests a DHCP lease, establishes IPv4/IPv6 connectivity, and brings up the live SSH installer daemon.</li>
+            <li><strong>Connect Remotely from your Laptop / Desktop:</strong>
+              <div class="server-code-box">
+                <code>ssh root@caelaris-live.local</code>
+                <button class="copy-btn copy-trigger" data-copy="ssh root@caelaris-live.local">Copy</button>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 4px;">(Or find the IP address via your router dashboard or <code>arp -a</code> / <code>nmap -sn 192.168.1.0/24</code>)</p>
+            </li>
+            <li><strong>Run Installation Over SSH:</strong>
+              <div class="server-code-box">
+                <code>caelaris-installer-cli --headless --disk /dev/nvme0n1</code>
+                <button class="copy-btn copy-trigger" data-copy="caelaris-installer-cli --headless --disk /dev/nvme0n1">Copy</button>
+              </div>
+            </li>
+            <li>Type <code>reboot</code>. The installation completes without ever needing a physical monitor, keyboard, or mouse!</li>
+          </ol>
+        </div>
+
+        <!-- Panel 3: Proxmox VE & KVM Hypervisor -->
+        <div class="server-panel" id="server-proxmox">
+          <h4 style="font-size: 1.2rem; color: #fff; margin-bottom: 12px;">Virtual Server on Proxmox VE, KVM / QEMU, or ESXi</h4>
+          <p style="color: var(--text-muted); margin-bottom: 16px;">Maximum I/O performance and minimal hypervisor memory footprint for container hosts and virtual microservices.</p>
+          <ol style="padding-left: 20px; color: var(--text-muted); display: flex; flex-direction: column; gap: 12px; font-size: 0.95rem;">
+            <li><strong>Create Virtual Machine:</strong>
+              <ul style="list-style: disc; padding-left: 20px; margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
+                <li>OS: Linux 6.x / 5.x / 2.6 Kernel (64-bit)</li>
+                <li>System: Machine <code>q35</code>, BIOS <code>OVMF (UEFI)</code>, QEMU Guest Agent checked</li>
+                <li>Disks: Bus/Device <code>VirtIO Block</code> or <code>SCSI (VirtIO SCSI Single)</code> with Discard enabled</li>
+                <li>CPU: <code>host</code> type for maximum instruction set passthrough (AES-NI, AVX2)</li>
+                <li>Memory: 1024 MB – 2048 MB (Caelaris server runs smoothly on 512 MB)</li>
+                <li>Network: Model <code>VirtIO (paravirtualized)</code></li>
+              </ul>
+            </li>
+            <li><strong>Attach ISO &amp; Start:</strong> Boot the VM and execute <code>sudo caelaris-installer-cli</code>.</li>
+            <li><strong>Built-In Hypervisor Integration:</strong> <code>qemu-guest-agent</code> and <code>virtio</code> drivers initialize automatically, enabling clean host ACPI shutdown, instantaneous Proxmox live backups, and dynamic memory ballooning.</li>
+          </ol>
+        </div>
+
+        <!-- Panel 4: Raspberry Pi & ARM64 Edge Server -->
+        <div class="server-panel" id="server-arm-edge">
+          <h4 style="font-size: 1.2rem; color: #fff; margin-bottom: 12px;">Raspberry Pi 5/4 &amp; ARM64 Edge Server (Low-Power 24/7 Homelab)</h4>
+          <p style="color: var(--text-muted); margin-bottom: 16px;">Perfect for energy-efficient home servers drawing under 5W—ideal for Pi-hole, Nextcloud, Home Assistant, WireGuard, and media servers.</p>
+          <ol style="padding-left: 20px; color: var(--text-muted); display: flex; flex-direction: column; gap: 12px; font-size: 0.95rem;">
+            <li><strong>Download ARM64 Server Image:</strong> Grab <code>caelaris-rpi-arm64.img.xz</code> from the Raspberry Pi release.</li>
+            <li><strong>Flash to MicroSD or NVMe SSD:</strong> Use Raspberry Pi Imager or balenaEtcher to flash the image.</li>
+            <li><strong>Headless First Boot:</strong> Insert card/drive, connect Ethernet, and power on. No HDMI monitor required.</li>
+            <li><strong>Connect via SSH:</strong>
+              <div class="server-code-box">
+                <code>ssh caelaris@caelaris-rpi.local</code>
+                <button class="copy-btn copy-trigger" data-copy="ssh caelaris@caelaris-rpi.local">Copy</button>
+              </div>
+            </li>
+            <li><strong>Integrated ZRAM:</strong> Zstandard-compressed ZRAM ensures seamless operation of multiple Docker containers even on 1 GB or 2 GB Raspberry Pi models.</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Server Admin Quick Cheatsheet -->
+      <div style="margin-top: 36px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 28px;">
+        <h4 style="font-size: 1.15rem; color: #fff; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+          <span>🛠️ Post-Install Server Administration Cheatsheet</span>
+        </h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px;">
+          <div>
+            <span style="font-size: 0.85rem; color: #34d399; font-weight: 600;">Enable Cockpit Web Dashboard:</span>
+            <div class="server-code-box">
+              <code>sudo systemctl enable --now cockpit.socket</code>
+              <button class="copy-btn copy-trigger" data-copy="sudo systemctl enable --now cockpit.socket">Copy</button>
+            </div>
+            <p style="font-size: 0.82rem; color: var(--text-dim);">Navigate to <code>https://your-server-ip:9090</code> in any web browser.</p>
+          </div>
+
+          <div>
+            <span style="font-size: 0.85rem; color: #38bdf8; font-weight: 600;">Enable Docker Engine &amp; Container Pods:</span>
+            <div class="server-code-box">
+              <code>sudo systemctl enable --now docker</code>
+              <button class="copy-btn copy-trigger" data-copy="sudo systemctl enable --now docker">Copy</button>
+            </div>
+            <p style="font-size: 0.82rem; color: var(--text-dim);">Runs with native Btrfs snapshotting driver for zero-copy layer staging.</p>
+          </div>
+
+          <div>
+            <span style="font-size: 0.85rem; color: #fbbf24; font-weight: 600;">Configure Uncomplicated Firewall (UFW):</span>
+            <div class="server-code-box">
+              <code>sudo ufw allow 22/tcp && sudo ufw allow 9090/tcp && sudo ufw enable</code>
+              <button class="copy-btn copy-trigger" data-copy="sudo ufw allow 22/tcp &amp;&amp; sudo ufw allow 9090/tcp &amp;&amp; sudo ufw enable">Copy</button>
+            </div>
+            <p style="font-size: 0.82rem; color: var(--text-dim);">Enables SSH and Cockpit while securing all unexposed ports.</p>
+          </div>
+
+          <div>
+            <span style="font-size: 0.85rem; color: #c084fc; font-weight: 600;">Non-Blocking Server Package Update:</span>
+            <div class="server-code-box">
+              <code>yay -Syu --noconfirm</code>
+              <button class="copy-btn copy-trigger" data-copy="yay -Syu --noconfirm">Copy</button>
+            </div>
+            <p style="font-size: 0.82rem; color: var(--text-dim);">Rolling updates execute in background without reboot locks or library crashes.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -895,6 +1095,7 @@
             <li><a href="#features" class="footer-link">Features</a></li>
             <li><a href="#desktops" class="footer-link">Dual Wayland Desktops</a></li>
             <li><a href="#gaming" class="footer-link">Gaming Optimizations</a></li>
+            <li><a href="#server-install" class="footer-link">Server Edition</a></li>
             <li><a href="#download" class="footer-link">Download ISO</a></li>
           </ul>
         </div>
@@ -906,7 +1107,8 @@
             <li><a href="docs/Caelaris_Linux_Architecture.pdf" target="_blank" class="footer-link">System Architecture</a></li>
             <li><a href="docs/Caelaris_Linux_Product_Features.pdf" target="_blank" class="footer-link">Product Features</a></li>
             <li><a href="docs/Caelaris_Linux_The_Superior_OS.pdf" target="_blank" class="footer-link">The Superior OS Guide</a></li>
-            <li><a href="#install" class="footer-link">Installation Guide</a></li>
+            <li><a href="#install" class="footer-link">Desktop Installation Guide</a></li>
+            <li><a href="#server-install" class="footer-link">Server Installation Guide</a></li>
           </ul>
         </div>
 
