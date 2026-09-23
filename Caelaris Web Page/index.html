@@ -757,6 +757,25 @@
           </div>
         </div>
 
+        <!-- Dedicated Cloud-Init Appliance Banner -->
+        <div style="margin-top: 24px; background: linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(15, 23, 42, 0.9) 100%); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: var(--radius-md); padding: 22px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+          <div>
+            <span class="cloud-badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;">New GitHub Release</span>
+            <h4 style="font-size: 1.25rem; color: #fff; margin: 4px 0 6px 0;">☁️ Caelaris Linux Cloud &amp; Cloud-Init Edition (~950 MB)</h4>
+            <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0; max-width: 650px;">
+              Pre-built virtual appliance ISO for OpenStack, Proxmox VE, KVM, and AWS EC2 with automated cloud-init provisioning, VirtIO drivers, and sub-120MB idle RAM.
+            </p>
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/cloud-release/caelaris-cloud-x86_64.iso" class="btn btn-primary" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
+              Download Cloud ISO (950 MB)
+            </a>
+            <a href="https://github.com/kurokai-kun/caelaris-linux/releases/tag/cloud-release" target="_blank" class="btn btn-secondary">
+              View Cloud Release
+            </a>
+          </div>
+        </div>
+
         <!-- CLI Cloud Download Command Box -->
         <div style="margin-top: 24px; background: #020617; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 16px 20px;">
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 8px;">
@@ -1319,6 +1338,7 @@
           <ul class="footer-links">
             <li><a href="https://github.com/kurokai-kun/caelaris-linux" target="_blank" class="footer-link">GitHub Repository</a></li>
             <li><a href="https://github.com/kurokai-kun/caelaris-linux/releases" target="_blank" class="footer-link">Release Notes</a></li>
+            <li><a href="https://github.com/kurokai-kun/caelaris-linux/releases/tag/cloud-release" target="_blank" class="footer-link">Cloud Edition Release</a></li>
             <li><a href="https://github.com/kurokai-kun/caelaris-linux/issues" target="_blank" class="footer-link">Issue Tracker</a></li>
             <li><a href="https://archlinux.org" target="_blank" class="footer-link">Arch Linux Base</a></li>
           </ul>
@@ -1384,6 +1404,10 @@
           <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/server-release/caelaris-server-x86_64.iso" class="btn btn-secondary" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-color: rgba(16, 185, 129, 0.35);">
             <span><strong>🖥️ Server &amp; Headless ISO</strong> (Direct GitHub Cloud CDN)</span>
             <span>1.1 GB &rarr;</span>
+          </a>
+          <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/cloud-release/caelaris-cloud-x86_64.iso" class="btn btn-secondary" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-color: rgba(56, 189, 248, 0.45); background: rgba(56, 189, 248, 0.08);">
+            <span><strong>☁️ Cloud &amp; Cloud-Init Appliance ISO</strong> (AWS / OpenStack / Proxmox)</span>
+            <span>950 MB &rarr;</span>
           </a>
         </div>
 

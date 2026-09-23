@@ -1,0 +1,39 @@
+========================================================================
+ Caelaris Linux - Cloud & Cloud-Init Edition Quickstart Guide
+ Target: OpenStack, Proxmox VE, KVM/QEMU, AWS EC2, Hetzner & Cloud VPS
+========================================================================
+
+1. OVERVIEW:
+   Caelaris Linux Cloud Edition is an ultra-lean (<120 MB RAM) virtual appliance
+   optimized for automated cloud instances, microservices, and container clusters.
+   It comes pre-configured with cloud-init for zero-touch instance provisioning.
+
+2. CLOUD-INIT AUTOMATION:
+   On first boot, cloud-init automatically queries the cloud metadata service:
+   - Injects authorized SSH keys into the default 'caelaris' user
+   - Sets instance hostname and domain
+   - Automatically expands root partition to disk size (growpart)
+   - Executes user-data scripts (#cloud-config or bash scripts)
+
+3. PROXMOX VE CLOUD-INIT DEPLOYMENT:
+   a. Create a new VM:
+      qm create 9000 --name "caelaris-cloud-template" --memory 2048 --cores 2 --net0 virtio,bridge=vmbr0
+   b. Add Cloud-Init drive:
+      qm set 9000 --ide2 local-lvm:cloudinit
+   c. Attach Caelaris Cloud ISO:
+      qm set 9000 --cdrom local:iso/caelaris-cloud-x86_64.iso
+   d. Set Cloud-Init user & SSH key:
+      qm set 9000 --ciuser caelaris --sshkeys ~/.ssh/id_ed25519.pub
+      qm set 9000 --ipconfig0 ip=dhcp
+   e. Start VM: Caelaris boots, applies cloud-init, and is ready for SSH in seconds!
+
+4. KVM / QEMU COMMAND LINE:
+   qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 \
+     -drive file=caelaris-cloud.qcow2,if=virtio \
+     -cdrom caelaris-cloud-x86_64.iso \
+     -net nic,model=virtio -net user,hostfwd=tcp::2222-:22 \
+     -nographic -serial mon:stdio
+
+5. VERIFICATION:
+   sha256sum -c SHA256SUMS.txt
+========================================================================

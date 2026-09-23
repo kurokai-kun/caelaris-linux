@@ -1,0 +1,12 @@
+NAME="Caelaris Linux"
+PRETTY_NAME="Caelaris Linux Cloud & Cloud-Init Edition"
+ID=caelaris
+ID_LIKE=arch
+BUILD_ID=rolling
+ANSI_COLOR="38;2;14;165;233"
+HOME_URL="https://github.com/kurokai-kun/caelaris-linux"
+DOCUMENTATION_URL="https://github.com/kurokai-kun/caelaris-linux"
+SUPPORT_URL="https://github.com/kurokai-kun/caelaris-linux/issues"
+LOGO=caelaris
+VARIANT="Cloud Edition"
+VARIANT_ID=cloud

@@ -1,0 +1,66 @@
+# ==========================================================
+# Caelaris Linux Cloud & Cloud-Init Edition Package List
+# Architecture: x86_64
+# Focus: Cloud Instances, OpenStack, AWS, Proxmox & KVM
+# ==========================================================
+
+# Core Linux Base & Kernel
+base
+base-devel
+linux
+linux-headers
+linux-firmware
+amd-ucode
+intel-ucode
+efibootmgr
+grub
+sysfsutils
+pciutils
+
+# Cloud Provisioning & Metadata Automation
+cloud-init
+cloud-guest-utils
+growpart
+
+# Hypervisor Drivers & Guest Agents
+qemu-guest-agent
+open-vm-tools-nox
+
+# Storage, Filesystems & Compression
+btrfs-progs
+e2fsprogs
+xfsprogs
+dosfstools
+parted
+gptfdisk
+zram-generator
+
+# High-Performance Cloud Networking
+systemd-resolvconf
+iproute2
+iptables-nft
+nftables
+ufw
+wireguard-tools
+curl
+wget
+rsync
+openssh
+
+# Container Runtimes
+docker
+docker-compose
+podman
+
+# Cloud Diagnostics & Admin Tools
+htop
+btop
+tmux
+git
+neovim
+sudo
+which
+tar
+gzip
+xz
+unzip

@@ -1,0 +1,116 @@
+name: Build Caelaris Linux Cloud & Cloud-Init ISO
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'cloud-*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-cloud:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Free Runner Disk Space
+        run: |
+          echo "Freeing up runner disk space..."
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache
+          sudo rm -rf /usr/share/swift
+          df -h
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build Caelaris Cloud ISO in Arch Linux Container
+        run: |
+          docker run --privileged --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace \
+            archlinux:latest \
+            bash -c "
+              chmod +x scripts/*.sh &&
+              ./scripts/setup_build_env.sh &&
+              ./scripts/build_cloud.sh
+            "
+
+      - name: Prepare Release Assets
+        id: prep
+        run: |
+          mkdir -p release_assets
+          cp out-cloud/caelaris-cloud-x86_64.iso release_assets/
+          cd release_assets
+          sha256sum caelaris-cloud-x86_64.iso > caelaris-cloud-x86_64.iso.sha256
+          sha256sum caelaris-cloud-x86_64.iso > SHA256SUMS.txt
+
+          cat << 'EOF' > QUICKSTART_CLOUD.txt
+          ========================================================================
+           Caelaris Linux - Cloud & Cloud-Init Edition Quickstart Guide
+           Target: OpenStack, Proxmox VE, KVM/QEMU, AWS EC2, Hetzner & Cloud VPS
+          ========================================================================
+
+          1. OVERVIEW:
+             Caelaris Linux Cloud Edition is an ultra-lean (<120 MB RAM) virtual appliance
+             optimized for automated cloud instances, microservices, and container clusters.
+             It comes pre-configured with cloud-init for zero-touch instance provisioning.
+
+          2. CLOUD-INIT AUTOMATION:
+             On first boot, cloud-init automatically queries the cloud metadata service:
+             - Injects authorized SSH keys into the default 'caelaris' user
+             - Sets instance hostname and domain
+             - Automatically expands root partition to disk size (growpart)
+             - Executes user-data scripts (#cloud-config or bash scripts)
+
+          3. PROXMOX VE CLOUD-INIT DEPLOYMENT:
+             a. Create a new VM:
+                qm create 9000 --name "caelaris-cloud-template" --memory 2048 --cores 2 --net0 virtio,bridge=vmbr0
+             b. Add Cloud-Init drive:
+                qm set 9000 --ide2 local-lvm:cloudinit
+             c. Attach Caelaris Cloud ISO:
+                qm set 9000 --cdrom local:iso/caelaris-cloud-x86_64.iso
+             d. Set Cloud-Init user & SSH key:
+                qm set 9000 --ciuser caelaris --sshkeys ~/.ssh/id_ed25519.pub
+                qm set 9000 --ipconfig0 ip=dhcp
+             e. Start VM: Caelaris boots, applies cloud-init, and is ready for SSH in seconds!
+          ========================================================================
+          EOF
+
+          cd ..
+          ls -lh release_assets/
+
+      - name: Publish GitHub Release (Cloud Edition)
+        uses: softprops/action-gh-release@v2
+        if: success()
+        with:
+          tag_name: cloud-release
+          name: Caelaris Linux Cloud & Cloud-Init Edition (x86_64 & Universal)
+          make_latest: false
+          body: |
+            ## ☁️ Caelaris Linux Cloud & Cloud-Init Edition
+
+            Official cloud-optimized virtual appliance and ISO for **OpenStack**, **Proxmox VE Cloud-Init**, **KVM/QEMU**, **AWS EC2**, **Hetzner Cloud**, and **Cloud VPS Providers**.
+
+            ---
+
+            ### ⚡ Cloud Architecture Features:
+            - **Zero-Touch Cloud-Init Provisioning**: Full support for metadata services (NoCloud, ConfigDrive, OpenStack, EC2, Azure, Hetzner). Injects SSH keys, sets hostnames, runs user-data startup scripts, and resizes disk partitions automatically via `growpart`.
+            - **Ultra-Lean Footprint (< 120 MB RAM)**: Stripped of graphical subsystems, freeing up maximum memory for database nodes, Kubernetes pods, and containerized workloads.
+            - **VirtIO & Cloud Hypervisor Drivers**: Pre-compiled with `virtio-scsi`, `virtio-net`, and `virtio-blk` drivers, alongside `qemu-guest-agent` for live hypervisor metrics and snapshot coordination.
+            - **BBR & CAKE Network Congestion Tuning**: Optimized TCP stacks for high-throughput cloud networking and low-latency API microservices.
+            - **Btrfs Transparent Compression**: Root filesystem formatted with zstandard compression, saving up to 40% cloud block storage costs.
+
+            ---
+
+            ### 📦 Available Release Assets:
+            1. **`caelaris-cloud-x86_64.iso`**: Standalone bootable hybrid UEFI/BIOS cloud ISO (~950 MB). Single-file 1-click download.
+            2. **`caelaris-cloud-x86_64.iso.sha256`**: Cryptographic SHA256 integrity checksum.
+            3. **`SHA256SUMS.txt`**: Consolidated verification file.
+            4. **`QUICKSTART_CLOUD.txt`**: Complete setup guide for Proxmox Cloud-Init, OpenStack, and QEMU.
+          files: release_assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

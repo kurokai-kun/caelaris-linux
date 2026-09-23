@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# ==========================================================
+# Caelaris Linux Cloud First-Boot Provisioning Helper
+# ==========================================================
+set -euo pipefail
+
+echo "Initializing Caelaris Linux Cloud Appliance..."
+
+# Enable cloud-init services
+systemctl enable cloud-init-local.service || true
+systemctl enable cloud-init.service || true
+systemctl enable cloud-config.service || true
+systemctl enable cloud-final.service || true
+
+# Enable hypervisor guest agents
+systemctl enable qemu-guest-agent.service 2>/dev/null || true
+systemctl enable vmtoolsd.service 2>/dev/null || true
+
+# Enable networking & SSH
+systemctl enable systemd-networkd.service || true
+systemctl enable systemd-resolved.service || true
+systemctl enable sshd.service || true
+
+echo "Caelaris Cloud Appliance successfully configured."

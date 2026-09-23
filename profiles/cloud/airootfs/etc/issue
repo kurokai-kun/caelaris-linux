@@ -1,0 +1,9 @@
+========================================================================
+  Caelaris Linux Cloud & Cloud-Init Appliance (\r) (\l)
+  High-Performance Automated Infrastructure (OpenStack / AWS / Proxmox)
+========================================================================
+  * Cloud-Init:        Active (Waiting for cloud metadata datasource)
+  * QEMU Guest Agent:  Active (VirtIO Hypervisor sync enabled)
+  * SSH Daemon:        Active on port 22
+========================================================================
+
