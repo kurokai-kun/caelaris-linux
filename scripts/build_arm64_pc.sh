@@ -264,8 +264,14 @@ swap-priority = 100
 fs-type = swap
 EOF
 
-# Configure SDDM display manager with autologin to live user
+# Configure SDDM display manager with modern theme and autologin to live user
 mkdir -p "${ROOTFS_DIR}/etc/sddm.conf.d"
+cat << 'EOF' > "${ROOTFS_DIR}/etc/sddm.conf.d/10-caelaris.conf"
+[Theme]
+Current=breeze
+CursorTheme=breeze_cursors
+EOF
+
 SESSION_NAME="plasma"
 if [ "$EDITION" = "gnome" ]; then
     SESSION_NAME="gnome"
@@ -316,6 +322,21 @@ fi
 chmod +x "${ROOTFS_DIR}/home/liveuser/Desktop/"*.desktop 2>/dev/null || true
 chmod +x "${ROOTFS_DIR}/usr/bin/caelaris-"* 2>/dev/null || true
 chown -R 1000:100 "${ROOTFS_DIR}/home/liveuser" 2>/dev/null || true
+
+# Isolate KDE and GNOME application menus to avoid clutter in both environments
+for kapp in org.kde.dolphin dolphin org.kde.konsole konsole org.kde.kate kate org.kde.kwrite kwrite org.kde.ark ark org.kde.spectacle spectacle org.kde.gwenview gwenview systemsettings kinfocenter org.kde.discover; do
+    df="${ROOTFS_DIR}/usr/share/applications/${kapp}.desktop"
+    if [ -f "$df" ]; then
+        grep -q "NotShowIn=" "$df" && sed -i 's/^NotShowIn=.*/&GNOME;/' "$df" || echo "NotShowIn=GNOME;" >> "$df"
+    fi
+done
+
+for gapp in org.gnome.Nautilus nautilus org.gnome.Ptyxis ptyxis org.gnome.TextEditor gnome-text-editor org.gnome.Calculator gnome-calculator org.gnome.SystemMonitor gnome-system-monitor gnome-control-center; do
+    df="${ROOTFS_DIR}/usr/share/applications/${gapp}.desktop"
+    if [ -f "$df" ]; then
+        grep -q "NotShowIn=" "$df" && sed -i 's/^NotShowIn=.*/&KDE;/' "$df" || echo "NotShowIn=KDE;" >> "$df"
+    fi
+done
 
 # 4. Generate Uncompromised Full Desktop Hybrid ARM64 ISO
 echo "[4/5] Generating Full ARM64 UEFI Desktop ISO..."
