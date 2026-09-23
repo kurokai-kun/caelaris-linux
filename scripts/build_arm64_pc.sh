@@ -36,6 +36,137 @@ fi
 echo "[2/5] Extracting ARM64 root filesystem..."
 bsdtar -xpf "${WORK_DIR}/${ARCH_ARM_TAR}" -C "$ROOTFS_DIR"
 
+# 2.5. Provision Live Desktop Preview & Graphical Installer Packages via QEMU
+echo "[2.5/5] Provisioning Live Desktop (KDE Plasma Wayland) and Installer Packages via QEMU..."
+
+QEMU_BIN=""
+if [ -f /usr/bin/qemu-aarch64-static ]; then
+    QEMU_BIN="/usr/bin/qemu-aarch64-static"
+elif [ -f /usr/bin/qemu-arm64-static ]; then
+    QEMU_BIN="/usr/bin/qemu-arm64-static"
+fi
+
+if [ -n "$QEMU_BIN" ]; then
+    echo "Found QEMU emulator: $QEMU_BIN. Setting up chroot environment..."
+    cp "$QEMU_BIN" "${ROOTFS_DIR}/usr/bin/"
+    cp /etc/resolv.conf "${ROOTFS_DIR}/etc/resolv.conf"
+
+    # Set up bind mounts for chroot execution
+    mount --bind /dev "${ROOTFS_DIR}/dev" || true
+    mount --bind /dev/pts "${ROOTFS_DIR}/dev/pts" || true
+    mount -t proc proc "${ROOTFS_DIR}/proc" || true
+    mount -t sysfs sysfs "${ROOTFS_DIR}/sys" || true
+
+    cleanup_chroot() {
+        umount -l "${ROOTFS_DIR}/dev/pts" 2>/dev/null || true
+        umount -l "${ROOTFS_DIR}/dev" 2>/dev/null || true
+        umount -l "${ROOTFS_DIR}/proc" 2>/dev/null || true
+        umount -l "${ROOTFS_DIR}/sys" 2>/dev/null || true
+        rm -f "${ROOTFS_DIR}/usr/bin/qemu-aarch64-static" "${ROOTFS_DIR}/usr/bin/qemu-arm64-static" 2>/dev/null || true
+    }
+    trap cleanup_chroot EXIT INT TERM
+
+    # Optimize pacman config for speed
+    sed -i 's/^#ParallelDownloads = .*/ParallelDownloads = 5/' "${ROOTFS_DIR}/etc/pacman.conf" 2>/dev/null || true
+
+    # Initialize pacman keyring
+    echo "Initializing Arch Linux ARM pacman keyring..."
+    chroot "$ROOTFS_DIR" /bin/bash -c "pacman-key --init && pacman-key --populate archlinuxarm" || true
+
+    # Sync package databases
+    echo "Updating package databases..."
+    chroot "$ROOTFS_DIR" /bin/bash -c "pacman -Sy --noconfirm" || true
+
+    # Desktop packages for live preview & installer
+    DESKTOP_PKGS=(
+        plasma-desktop
+        kwin
+        sddm
+        wayland
+        qt6-wayland
+        xorg-xwayland
+        konsole
+        dolphin
+        breeze
+        breeze-gtk
+        mesa
+        vulkan-freedreno
+        vulkan-panfrost
+        linux-firmware
+        pipewire
+        wireplumber
+        networkmanager
+        network-manager-applet
+        python
+        python-pyqt6
+        python-psutil
+        parted
+        dosfstools
+        e2fsprogs
+        btrfs-progs
+        arch-install-scripts
+        rsync
+        squashfs-tools
+        grub
+        efibootmgr
+        sudo
+        bash
+    )
+
+    if [ "$EDITION" = "gnome" ]; then
+        DESKTOP_PKGS=(
+            gnome-shell
+            mutter
+            gdm
+            ptyxis
+            nautilus
+            mesa
+            vulkan-freedreno
+            vulkan-panfrost
+            linux-firmware
+            pipewire
+            wireplumber
+            networkmanager
+            python
+            python-pyqt6
+            python-psutil
+            parted
+            dosfstools
+            e2fsprogs
+            btrfs-progs
+            arch-install-scripts
+            rsync
+            squashfs-tools
+            grub
+            efibootmgr
+            sudo
+            bash
+        )
+    fi
+
+    echo "Installing live preview desktop & installer packages..."
+    chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm ${DESKTOP_PKGS[*]}" || {
+        echo "Warning: Full package bundle had warnings; ensuring core desktop & installer packages..."
+        chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm python python-pyqt6 sudo bash networkmanager sddm mesa grub efibootmgr" || true
+    }
+
+    # Ensure liveuser exists inside rootfs
+    chroot "$ROOTFS_DIR" /bin/bash -c "
+        if ! id -u liveuser >/dev/null 2>&1; then
+            useradd -m -c 'Caelaris Live' -g users -G wheel,video,audio,storage,input,power -s /bin/bash liveuser
+        fi
+        passwd -d liveuser
+    " || true
+
+    # Clean package cache
+    chroot "$ROOTFS_DIR" /bin/bash -c "pacman -Scc --noconfirm" || true
+
+    cleanup_chroot
+    trap - EXIT INT TERM
+else
+    echo "Notice: QEMU aarch64 emulator not found on host. Continuing with baseline rootfs."
+fi
+
 # 3. Apply Complete Caelaris Flagship Customizations (Matching x86_64)
 echo "[3/5] Applying full Caelaris desktop customizations and configurations..."
 
@@ -108,6 +239,16 @@ mkdir -p "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants"
 mkdir -p "${ROOTFS_DIR}/etc/systemd/system/display-manager.service.wants"
 ln -sf /usr/lib/systemd/system/systemd-resolved.service "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/" || true
 ln -sf /usr/lib/systemd/system/NetworkManager.service "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/" || true
+ln -sf /usr/lib/systemd/system/sddm.service "${ROOTFS_DIR}/etc/systemd/system/display-manager.service" || true
+
+# Place and make executable "Install Caelaris Linux" desktop launcher for liveuser
+mkdir -p "${ROOTFS_DIR}/home/liveuser/Desktop"
+if [ -f "${ROOTFS_DIR}/etc/skel/Desktop/install-caelaris.desktop" ]; then
+    cp -f "${ROOTFS_DIR}/etc/skel/Desktop/install-caelaris.desktop" "${ROOTFS_DIR}/home/liveuser/Desktop/"
+fi
+chmod +x "${ROOTFS_DIR}/home/liveuser/Desktop/"*.desktop 2>/dev/null || true
+chmod +x "${ROOTFS_DIR}/usr/bin/caelaris-"* 2>/dev/null || true
+chown -R 1000:100 "${ROOTFS_DIR}/home/liveuser" 2>/dev/null || true
 
 # 4. Generate Uncompromised Full Desktop Hybrid ARM64 ISO
 echo "[4/5] Generating Full ARM64 UEFI Desktop ISO..."

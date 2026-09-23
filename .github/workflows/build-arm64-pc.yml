@@ -151,6 +151,8 @@ jobs:
             ---
 
             ### ⚡ Edition Features & Optimizations:
+            - **Live Graphical Desktop Preview**: Interactive KDE Plasma Wayland live preview session with auto-login (`liveuser`).
+            - **Guided System Installer**: One-click graphical system installer (`caelaris-installer-gui`) to deploy Caelaris directly to internal NVMe/SSD storage.
             - **Hybrid UEFI AArch64 Bootloader**: Native EFI booting with GPT partition table support on Apple Silicon & Copilot+ laptops.
             - **Hardware-Specific Graphic Drivers**: Mesa Freedreno for Snapdragon Adreno GPUs and Apple AGX driver compatibility.
             - **Performance & Latency Tuning**: Custom sysctl presets (`vm.max_map_count=2147483642`), BBR congestion control, and zstd ZRAM memory compression.

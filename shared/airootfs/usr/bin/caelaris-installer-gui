@@ -103,6 +103,8 @@ class InstallWorker(QThread):
             hostname = cfg['hostname']
             autologin = cfg['autologin']
             desktop = cfg['desktop']
+            import platform
+            is_aarch64 = platform.machine().lower() in ["aarch64", "arm64"]
 
             self.progress_changed.emit(5, f"Preparing target disk {disk}...")
             self.run_cmd("umount -R /mnt 2>/dev/null || true", check=False)
@@ -150,7 +152,12 @@ class InstallWorker(QThread):
 
             self.progress_changed.emit(45, "Extracting Caelaris Linux system files...")
             sfs = None
-            for cand in ["/run/archiso/bootmnt/arch/x86_64/airootfs.sfs", "/run/archiso/airootfs.sfs"]:
+            for cand in [
+                "/run/archiso/bootmnt/arch/x86_64/airootfs.sfs",
+                "/run/archiso/airootfs.sfs",
+                "/run/archiso/bootmnt/live/filesystem.squashfs",
+                "/live/filesystem.squashfs"
+            ] + glob.glob("/run/archiso/**/filesystem.squashfs", recursive=True) + glob.glob("/run/archiso/**/airootfs.sfs", recursive=True):
                 if os.path.isfile(cand):
                     sfs = cand
                     break
@@ -222,9 +229,9 @@ class InstallWorker(QThread):
             os.makedirs("/mnt/boot", exist_ok=True)
             import glob, shutil
 
-            # 1. Locate and copy kernel vmlinuz-linux
+            # 1. Locate and copy kernel vmlinuz-linux or Image
             k_copied = False
-            k_modules = glob.glob("/mnt/usr/lib/modules/*/vmlinuz")
+            k_modules = glob.glob("/mnt/usr/lib/modules/*/vmlinuz") + glob.glob("/mnt/usr/lib/modules/*/vmlinuz*") + glob.glob("/mnt/usr/lib/modules/*/Image*")
             if k_modules and os.path.isfile(k_modules[0]):
                 self.log(f"Copying kernel from {k_modules[0]} to /mnt/boot/vmlinuz-linux...")
                 shutil.copy2(k_modules[0], "/mnt/boot/vmlinuz-linux")
@@ -233,8 +240,12 @@ class InstallWorker(QThread):
             if not k_copied:
                 for cand in [
                     "/run/archiso/bootmnt/arch/boot/x86_64/vmlinuz-linux",
+                    "/run/archiso/bootmnt/live/vmlinuz",
+                    "/live/vmlinuz",
+                    "/boot/Image",
                     "/boot/vmlinuz-linux",
-                ] + glob.glob("/run/archiso/bootmnt/**/vmlinuz*", recursive=True):
+                    "/boot/vmlinuz-linux-aarch64",
+                ] + glob.glob("/run/archiso/bootmnt/**/vmlinuz*", recursive=True) + glob.glob("/run/archiso/bootmnt/**/Image*", recursive=True):
                     if os.path.isfile(cand):
                         self.log(f"Copying kernel from {cand} to /mnt/boot/vmlinuz-linux...")
                         shutil.copy2(cand, "/mnt/boot/vmlinuz-linux")
@@ -344,13 +355,20 @@ class InstallWorker(QThread):
             os.makedirs("/mnt/boot/grub", exist_ok=True)
 
             if is_efi:
-                self.log("UEFI detected — installing GRUB EFI with removable fallback...")
                 os.makedirs("/mnt/boot/efi", exist_ok=True)
                 self.run_cmd(f"mountpoint -q /mnt/boot/efi || mount {p1} /mnt/boot/efi", check=False)
-                # Primary NVRAM EFI entry
-                self.run_cmd("arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Caelaris --recheck", check=False)
-                # Universal Removable fallback EFI entry (EFI/BOOT/BOOTX64.EFI for VMware/VirtualBox/UTM)
-                self.run_cmd("arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Caelaris --removable --no-nvram --recheck", check=False)
+                if is_aarch64:
+                    self.log("ARM64 UEFI detected — installing GRUB ARM64 EFI with removable fallback...")
+                    # Primary NVRAM EFI entry
+                    self.run_cmd("arch-chroot /mnt grub-install --target=arm64-efi --efi-directory=/boot/efi --bootloader-id=Caelaris --recheck", check=False)
+                    # Universal Removable fallback EFI entry (EFI/BOOT/BOOTAA64.EFI for Apple Silicon UTM & Snapdragon laptops)
+                    self.run_cmd("arch-chroot /mnt grub-install --target=arm64-efi --efi-directory=/boot/efi --bootloader-id=Caelaris --removable --no-nvram --recheck", check=False)
+                else:
+                    self.log("x86_64 UEFI detected — installing GRUB EFI with removable fallback...")
+                    # Primary NVRAM EFI entry
+                    self.run_cmd("arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Caelaris --recheck", check=False)
+                    # Universal Removable fallback EFI entry (EFI/BOOT/BOOTX64.EFI for VMware/VirtualBox/UTM)
+                    self.run_cmd("arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Caelaris --removable --no-nvram --recheck", check=False)
             else:
                 self.log(f"BIOS detected — installing GRUB MBR on {disk}...")
                 self.run_cmd(f"arch-chroot /mnt grub-install --target=i386-pc --recheck {disk}", check=False)
@@ -419,7 +437,8 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
 
             # ── Step 4: Enable pacman keys for online use ─────────────────────
             self.run_cmd("arch-chroot /mnt pacman-key --init 2>/dev/null || true", check=False)
-            self.run_cmd("arch-chroot /mnt pacman-key --populate archlinux 2>/dev/null || true", check=False)
+            pop_key = "archlinuxarm" if is_aarch64 else "archlinux"
+            self.run_cmd(f"arch-chroot /mnt pacman-key --populate {pop_key} 2>/dev/null || true", check=False)
 
             # ── Step 5: Install & Enable All Hardware & Virtualization Drivers ───
             self.progress_changed.emit(96, "Installing and enabling hardware drivers & guest tools...")
