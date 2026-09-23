@@ -42,10 +42,14 @@ sed -i '/^[[:space:]]*#/d; /^[[:space:]]*$/d' "${BUILD_PROFILE}/packages.x86_64"
 # 4. Copy shared pacman.conf
 cp "${ROOT_DIR}/shared/pacman.conf" "${BUILD_PROFILE}/pacman.conf" 2>/dev/null || true
 
-# 5. Overlay shared airootfs files and cloud specific airootfs
-if [ -d "${ROOT_DIR}/shared/airootfs" ]; then
-    mkdir -p "${BUILD_PROFILE}/airootfs"
-    cp -r "${ROOT_DIR}/shared/airootfs/." "${BUILD_PROFILE}/airootfs/"
+# 5. Overlay performance configs and cloud specific airootfs
+if [ -f "${ROOT_DIR}/shared/airootfs/etc/systemd/zram-generator.conf" ]; then
+    mkdir -p "${BUILD_PROFILE}/airootfs/etc/systemd"
+    cp "${ROOT_DIR}/shared/airootfs/etc/systemd/zram-generator.conf" "${BUILD_PROFILE}/airootfs/etc/systemd/"
+fi
+if [ -f "${ROOT_DIR}/shared/airootfs/etc/udev/rules.d/60-ioschedulers.rules" ]; then
+    mkdir -p "${BUILD_PROFILE}/airootfs/etc/udev/rules.d"
+    cp "${ROOT_DIR}/shared/airootfs/etc/udev/rules.d/60-ioschedulers.rules" "${BUILD_PROFILE}/airootfs/etc/udev/rules.d/"
 fi
 if [ -d "${PROFILE_SRC}/airootfs" ]; then
     mkdir -p "${BUILD_PROFILE}/airootfs"

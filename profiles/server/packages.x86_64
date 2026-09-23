@@ -71,7 +71,7 @@ podman
 buildah
 skopeo
 qemu-guest-agent
-open-vm-tools-nox
+open-vm-tools
 
 # Administration, Performance & Troubleshooting
 htop

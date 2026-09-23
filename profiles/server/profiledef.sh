@@ -20,5 +20,4 @@ file_permissions=(
   ["/etc/sudoers.d/g_wheel"]="0:0:440"
   ["/root"]="0:0:750"
   ["/usr/local/bin/caelaris-installer-cli"]="0:0:755"
-  ["/usr/local/bin/caelaris-server-quickstart"]="0:0:755"
 )

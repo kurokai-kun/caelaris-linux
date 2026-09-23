@@ -28,11 +28,10 @@ edk2-shell
 # Cloud Provisioning & Metadata Automation
 cloud-init
 cloud-guest-utils
-growpart
 
 # Hypervisor Drivers & Guest Agents
 qemu-guest-agent
-open-vm-tools-nox
+open-vm-tools
 
 # Storage, Filesystems & Compression
 btrfs-progs
