@@ -212,15 +212,16 @@ class InstallWorker(QThread):
                 elif os.path.exists(stale_live):
                     os.remove(stale_live)
 
+            sess_name = "gnome" if "gnome" in str(desktop).lower() else "plasma"
             os.makedirs("/mnt/var/lib/AccountsService/users", exist_ok=True)
             with open(f"/mnt/var/lib/AccountsService/users/{user}", "w") as f:
-                f.write(f"[User]\nLanguage=en_US.UTF-8\nSession=plasma\nXSession=plasma\nSystemAccount=false\nRealName={realname}\nIcon=/usr/share/pixmaps/caelaris-logo.png\n")
+                f.write(f"[User]\nLanguage=en_US.UTF-8\nSession={sess_name}\nXSession={sess_name}\nSystemAccount=false\nRealName={realname}\nIcon=/usr/share/pixmaps/caelaris-logo.png\n")
 
 
             os.makedirs("/mnt/etc/sddm.conf.d", exist_ok=True)
             sddm_cfg = f"[Theme]\nCurrent=breeze\nCursorTheme=breeze_cursors\n"
             if autologin:
-                sddm_cfg += f"\n[Autologin]\nUser={user}\nSession=plasma\nRelogin=false\n"
+                sddm_cfg += f"\n[Autologin]\nUser={user}\nSession={sess_name}\nRelogin=false\n"
             with open("/mnt/etc/sddm.conf.d/10-caelaris.conf", "w") as f:
                 f.write(sddm_cfg)
 
@@ -235,6 +236,11 @@ class InstallWorker(QThread):
             if k_modules and os.path.isfile(k_modules[0]):
                 self.log(f"Copying kernel from {k_modules[0]} to /mnt/boot/vmlinuz-linux...")
                 shutil.copy2(k_modules[0], "/mnt/boot/vmlinuz-linux")
+                k_copied = True
+
+            if not k_copied and os.path.isfile("/mnt/boot/Image"):
+                self.log("Copying kernel from /mnt/boot/Image to /mnt/boot/vmlinuz-linux...")
+                shutil.copy2("/mnt/boot/Image", "/mnt/boot/vmlinuz-linux")
                 k_copied = True
 
             if not k_copied:
@@ -254,20 +260,27 @@ class InstallWorker(QThread):
 
             if k_copied:
                 os.chmod("/mnt/boot/vmlinuz-linux", 0o755)
+                if is_aarch64 and not os.path.isfile("/mnt/boot/Image"):
+                    try:
+                        shutil.copy2("/mnt/boot/vmlinuz-linux", "/mnt/boot/Image")
+                        os.chmod("/mnt/boot/Image", 0o755)
+                    except Exception:
+                        pass
                 self.log(f"[OK] Kernel placed: /mnt/boot/vmlinuz-linux ({os.path.getsize('/mnt/boot/vmlinuz-linux')} bytes)")
             else:
                 self.log("[ERROR] Could not find vmlinuz kernel binary to copy into /mnt/boot!")
 
             # 2. Copy CPU microcodes (intel-ucode.img, amd-ucode.img)
-            for ucode_name in ["intel-ucode.img", "amd-ucode.img"]:
-                for u_cand in [
-                    f"/run/archiso/bootmnt/arch/boot/{ucode_name}",
-                    f"/boot/{ucode_name}",
-                ] + glob.glob(f"/run/archiso/bootmnt/**/{ucode_name}", recursive=True):
-                    if os.path.isfile(u_cand):
-                        self.log(f"Copying microcode {ucode_name} from {u_cand}...")
-                        shutil.copy2(u_cand, f"/mnt/boot/{ucode_name}")
-                        break
+            if not is_aarch64:
+                for ucode_name in ["intel-ucode.img", "amd-ucode.img"]:
+                    for u_cand in [
+                        f"/run/archiso/bootmnt/arch/boot/{ucode_name}",
+                        f"/boot/{ucode_name}",
+                    ] + glob.glob(f"/run/archiso/bootmnt/**/{ucode_name}", recursive=True):
+                        if os.path.isfile(u_cand):
+                            self.log(f"Copying microcode {ucode_name} from {u_cand}...")
+                            shutil.copy2(u_cand, f"/mnt/boot/{ucode_name}")
+                            break
 
             # 3. Clean mkinitcpio configuration for installed system
             if os.path.exists("/mnt/etc/mkinitcpio.conf.d/archiso.conf"):

@@ -107,6 +107,7 @@ EOF
     }
 
     # Desktop packages for live preview & installer
+    # Unified Dual Desktop Suite: Pre-installs BOTH KDE Plasma 6 and GNOME Desktop
     DESKTOP_PKGS=(
         plasma-desktop
         kwin
@@ -118,6 +119,10 @@ EOF
         dolphin
         breeze
         breeze-gtk
+        gnome-shell
+        mutter
+        ptyxis
+        nautilus
         mesa
         vulkan-freedreno
         vulkan-panfrost
@@ -141,37 +146,6 @@ EOF
         sudo
         bash
     )
-
-    if [ "$EDITION" = "gnome" ]; then
-        DESKTOP_PKGS=(
-            gnome-shell
-            mutter
-            gdm
-            ptyxis
-            nautilus
-            mesa
-            vulkan-freedreno
-            vulkan-panfrost
-            linux-firmware
-            pipewire
-            wireplumber
-            networkmanager
-            python
-            python-pyqt6
-            python-psutil
-            parted
-            dosfstools
-            e2fsprogs
-            btrfs-progs
-            arch-install-scripts
-            rsync
-            squashfs-tools
-            grub
-            efibootmgr
-            sudo
-            bash
-        )
-    fi
 
     echo "Installing live preview desktop & installer packages..."
     # Tier 1: Core System, Kernel, GUI Installer, and Bootloader essentials
@@ -309,12 +283,30 @@ mkdir -p "${ROOTFS_DIR}/etc/sudoers.d"
 echo "%wheel ALL=(ALL:ALL) NOPASSWD: ALL" > "${ROOTFS_DIR}/etc/sudoers.d/wheel"
 chmod 440 "${ROOTFS_DIR}/etc/sudoers.d/wheel"
 
+# Configure dynamic session selection service based on bootloader session= cmdline parameter
+mkdir -p "${ROOTFS_DIR}/usr/lib/systemd/system"
+cat << 'EOF' > "${ROOTFS_DIR}/usr/lib/systemd/system/caelaris-session-select.service"
+[Unit]
+Description=Select Caelaris Live Desktop Session from Boot Argument
+Before=sddm.service display-manager.service
+ConditionPathExists=/etc/sddm.conf.d/autologin.conf
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'if grep -qw "session=gnome" /proc/cmdline; then sed -i "s/Session=.*/Session=gnome.desktop/" /etc/sddm.conf.d/autologin.conf; else sed -i "s/Session=.*/Session=plasma.desktop/" /etc/sddm.conf.d/autologin.conf; fi'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
 # Enable system services
 mkdir -p "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants"
 mkdir -p "${ROOTFS_DIR}/etc/systemd/system/display-manager.service.wants"
 ln -sf /usr/lib/systemd/system/systemd-resolved.service "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/" || true
 ln -sf /usr/lib/systemd/system/NetworkManager.service "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/" || true
 ln -sf /usr/lib/systemd/system/sddm.service "${ROOTFS_DIR}/etc/systemd/system/display-manager.service" || true
+ln -sf /usr/lib/systemd/system/caelaris-session-select.service "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/" || true
 
 # Place and make executable "Install Caelaris Linux" desktop launcher for liveuser
 mkdir -p "${ROOTFS_DIR}/home/liveuser/Desktop"

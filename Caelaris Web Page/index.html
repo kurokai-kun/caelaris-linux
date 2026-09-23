@@ -526,12 +526,12 @@
             <!-- Option 1: Direct ARM64 UEFI Laptop ISO -->
             <div class="download-tile">
               <div>
-                <h4>💿 Direct ARM64 Desktop & Laptop ISO</h4>
-                <p>Universal bootable hybrid UEFI ARM64 ISO with interactive KDE Plasma 6 Wayland desktop and graphical system installer for Apple Silicon (UTM / Asahi), Qualcomm Snapdragon X Elite/Plus laptops, and ARM64 workstations.</p>
+                <h4>💿 Direct ARM64 Desktop & Laptop ISO (~2.2 GB)</h4>
+                <p>Universal bootable hybrid UEFI ARM64 ISO with interactive dual KDE Plasma 6 &amp; GNOME 4x Wayland desktop environments and graphical system installer for Apple Silicon (UTM / Asahi), Qualcomm Snapdragon X Elite/Plus laptops, and ARM64 workstations.</p>
               </div>
               <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
                 <a href="https://github.com/kurokai-kun/caelaris-linux/releases/tag/arm64-pc-release" class="btn btn-primary" style="background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); width: 100%;">
-                  Download ARM64 Laptop & PC ISO
+                  Download ARM64 Laptop & PC ISO (2.2 GB)
                 </a>
               </div>
             </div>
@@ -867,11 +867,13 @@
         <div class="guide-panel" id="guide-arm-laptop">
           <h4 style="font-size: 1.15rem; color: #fff; margin-bottom: 12px;">Installing on ARM64 Laptop (Snapdragon X Elite / Copilot+ PC)</h4>
           <ol style="padding-left: 20px; color: var(--text-muted); display: flex; flex-direction: column; gap: 10px; font-size: 0.95rem;">
-            <li>Download the <strong>ARM64 UEFI ISO</strong> from the <em>ARM64 Laptops &amp; PCs</em> tab above.</li>
-            <li>Flash the ISO to a USB 3.0+ flash drive using <strong>Rufus</strong> (select <em>DD Image Mode</em>) or <strong>balenaEtcher</strong>.</li>
+            <li>Download <code>caelaris-arm64-pc.iso.part-00</code>, <code>caelaris-arm64-pc.iso.part-01</code>, and <code>combine.bat</code> from <a href="https://github.com/kurokai-kun/caelaris-linux/releases/tag/arm64-pc-release" target="_blank" style="color: var(--primary);">arm64-pc-release</a>.</li>
+            <li>Double-click <code>combine.bat</code> to instantly merge the parts into the full 2.2 GB <code>caelaris-arm64-pc.iso</code>. (On Linux/macOS run: <code>cat caelaris-arm64-pc.iso.part-* &gt; caelaris-arm64-pc.iso</code>).</li>
+            <li>Flash <code>caelaris-arm64-pc.iso</code> to a USB 3.0+ flash drive using <strong>Rufus</strong> (select <em>DD Image Mode</em>) or <strong>balenaEtcher</strong>.</li>
             <li>In Windows on your Snapdragon laptop, disable BitLocker Device Encryption and reboot into UEFI BIOS firmware (hold Shift + Restart &rarr; Troubleshoot &rarr; Advanced &rarr; UEFI Firmware Settings).</li>
             <li>In UEFI Settings, temporarily disable <strong>Secure Boot</strong> (or allow Microsoft 3rd Party UEFI CA).</li>
-            <li>Press F12 / Boot Menu key to select your USB drive. Caelaris Linux GRUB AArch64 bootloader will initialize and boot directly into KDE Plasma 6 or GNOME on Wayland!</li>
+            <li>Press F12 / Boot Menu key to boot from USB. The GRUB AArch64 bootloader will display options for both <strong>KDE Plasma 6</strong> and <strong>GNOME Desktop</strong> on Wayland!</li>
+            <li>Launch <strong>Install Caelaris Linux</strong> from the desktop to deploy permanently to internal NVMe/SSD storage.</li>
           </ol>
         </div>
 
@@ -901,10 +903,11 @@
         <div class="guide-panel" id="guide-utm">
           <h4 style="font-size: 1.15rem; color: #fff; margin-bottom: 12px;">Running on Apple Silicon (M1 / M2 / M3 / M4) via UTM or Bare Metal</h4>
           <ol style="padding-left: 20px; color: var(--text-muted); display: flex; flex-direction: column; gap: 10px; font-size: 0.95rem;">
-            <li><strong>UTM Hypervisor (Instant &amp; 100% Native CPU Speed):</strong> Download the ARM64 ISO. In <a href="https://mac.getutm.app/" target="_blank" style="color: var(--primary);">UTM</a>, click <strong>Create a New Virtual Machine</strong> &rarr; <strong>Virtualize</strong> &rarr; <strong>Linux</strong>.</li>
-            <li>Browse and select <code>caelaris-rpi-arm64.iso</code>. Allocate 4–8 GB RAM and at least 4 CPU cores.</li>
+            <li><strong>Download &amp; Assemble:</strong> Download <code>caelaris-arm64-pc.iso.part-00</code> and <code>caelaris-arm64-pc.iso.part-01</code> from <a href="https://github.com/kurokai-kun/caelaris-linux/releases/tag/arm64-pc-release" target="_blank" style="color: var(--primary);">arm64-pc-release</a>. In macOS Terminal, run: <code>cat caelaris-arm64-pc.iso.part-* &gt; caelaris-arm64-pc.iso</code>.</li>
+            <li><strong>UTM Hypervisor (100% Native CPU Speed):</strong> In <a href="https://mac.getutm.app/" target="_blank" style="color: var(--primary);">UTM</a>, click <strong>Create a New Virtual Machine</strong> &rarr; <strong>Virtualize</strong> &rarr; <strong>Linux</strong>.</li>
+            <li>Browse and select <code>caelaris-arm64-pc.iso</code>. Allocate 4–8 GB RAM and at least 4 CPU cores.</li>
             <li>Enable <strong>UEFI Boot</strong> and <strong>VirtIO-GPU (Metal OpenGL/Vulkan acceleration)</strong> in VM Display settings.</li>
-            <li>Boot the VM: <code>spice-vdagentd</code> automatically synchronizes clipboard, audio, and dynamic retina display scaling!</li>
+            <li>Boot the VM: Enjoy interactive KDE Plasma 6 or GNOME on Wayland with native clipboard and display synchronization!</li>
             <li><strong>Bare Metal Dual Boot (Asahi U-Boot):</strong> You can also install directly to an APFS container using the standard Asahi Linux installer environment pointing to the Caelaris ARM64 rootfs.</li>
           </ol>
         </div>
