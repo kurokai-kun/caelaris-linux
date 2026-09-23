@@ -3,6 +3,7 @@
 // ==========================================================
 
 document.addEventListener('DOMContentLoaded', () => {
+  initMobileMenu();
   initDesktopSwitcher();
   initArchSwitcher();
   initFaqAccordion();
@@ -180,6 +181,35 @@ function initServerTabs() {
         activePanel.classList.add('active');
       }
     });
+  });
+}
+
+// 8. Mobile Navigation Drawer Toggle
+function initMobileMenu() {
+  const toggle = document.getElementById('nav-toggle');
+  const navLinks = document.getElementById('nav-links');
+  if (!toggle || !navLinks) return;
+
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggle.classList.toggle('open');
+    navLinks.classList.toggle('open');
+  });
+
+  // Close menu when clicking any nav link
+  navLinks.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', () => {
+      toggle.classList.remove('open');
+      navLinks.classList.remove('open');
+    });
+  });
+
+  // Close menu when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!navLinks.contains(e.target) && !toggle.contains(e.target)) {
+      toggle.classList.remove('open');
+      navLinks.classList.remove('open');
+    }
   });
 }
 
