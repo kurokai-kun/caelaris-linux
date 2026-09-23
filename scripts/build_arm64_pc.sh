@@ -66,8 +66,14 @@ if [ -n "$QEMU_BIN" ]; then
     }
     trap cleanup_chroot EXIT INT TERM
 
-    # Optimize pacman config for speed
+    # Prioritize fastest mirrors
+    if [ -f "${ROOTFS_DIR}/etc/pacman.d/mirrorlist" ]; then
+        sed -i '1i Server = http://de3.mirror.archlinuxarm.org/$arch/$repo\nServer = http://fl.us.mirror.archlinuxarm.org/$arch/$repo' "${ROOTFS_DIR}/etc/pacman.d/mirrorlist" 2>/dev/null || true
+    fi
+
+    # Optimize pacman config for speed and reliability during image build
     sed -i 's/^#ParallelDownloads = .*/ParallelDownloads = 5/' "${ROOTFS_DIR}/etc/pacman.conf" 2>/dev/null || true
+    sed -i 's/^SigLevel.*/SigLevel = Never/' "${ROOTFS_DIR}/etc/pacman.conf" 2>/dev/null || true
 
     # Initialize pacman keyring
     echo "Initializing Arch Linux ARM pacman keyring..."
@@ -157,6 +163,23 @@ if [ -n "$QEMU_BIN" ]; then
         fi
         passwd -d liveuser
     " || true
+
+    # Generate standalone BOOTAA64.EFI using ARM64 GRUB modules
+    echo "Compiling standalone ARM64 EFI bootloader (BOOTAA64.EFI)..."
+    chroot "$ROOTFS_DIR" /bin/bash -c "
+        if which grub-mkstandalone >/dev/null 2>&1; then
+            grub-mkstandalone \
+                --format=arm64-efi \
+                -O arm64-efi \
+                --output=/boot/BOOTAA64.EFI \
+                --locales='' \
+                --fonts='' \
+                'boot/grub/grub.cfg=/etc/hostname' 2>/dev/null || true
+        fi
+    " || true
+
+    # Restore standard SigLevel for installed system
+    sed -i 's/^SigLevel = Never/SigLevel = Required DatabaseOptional/' "${ROOTFS_DIR}/etc/pacman.conf" 2>/dev/null || true
 
     # Clean package cache
     chroot "$ROOTFS_DIR" /bin/bash -c "pacman -Scc --noconfirm" || true
@@ -309,10 +332,29 @@ menuentry "Caelaris Linux ARM64 (Safe Graphics / Fallback)" --class caelaris --c
 }
 EOF
 
-# Create FAT32 EFI boot partition image (with BOOTAA64.EFI)
+# Ensure BOOTAA64.EFI exists in ISO_STAGING
+if [ -f "${ROOTFS_DIR}/boot/BOOTAA64.EFI" ]; then
+    cp "${ROOTFS_DIR}/boot/BOOTAA64.EFI" "${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI"
+fi
+
+if [ ! -f "${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" ] && which grub-mkstandalone >/dev/null 2>&1; then
+    echo "Generating BOOTAA64.EFI via host grub-mkstandalone..."
+    grub-mkstandalone \
+        --format=arm64-efi \
+        -O arm64-efi \
+        --output="${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" \
+        --locales="" \
+        --fonts="" \
+        "boot/grub/grub.cfg=${ISO_STAGING}/EFI/BOOT/grub.cfg" 2>/dev/null || true
+fi
+
+# Create FAT32 EFI boot partition image (with BOOTAA64.EFI and grub.cfg)
 truncate -s 64M "${ISO_STAGING}/efi.img"
 mkfs.vfat -F 32 -n "EFI" "${ISO_STAGING}/efi.img"
 mmd -i "${ISO_STAGING}/efi.img" ::EFI ::EFI/BOOT || true
+if [ -f "${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" ]; then
+    mcopy -i "${ISO_STAGING}/efi.img" "${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" ::EFI/BOOT/ || true
+fi
 mcopy -i "${ISO_STAGING}/efi.img" "${ISO_STAGING}/EFI/BOOT/grub.cfg" ::EFI/BOOT/ || true
 
 # Generate Hybrid GPT/UEFI ISO

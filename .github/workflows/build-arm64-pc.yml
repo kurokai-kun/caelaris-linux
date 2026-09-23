@@ -39,7 +39,7 @@ jobs:
       - name: Install ARM64 & Image Building Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y qemu-user-static binfmt-support parted dosfstools e2fsprogs xorriso xz-utils libarchive-tools squashfs-tools curl mtools
+          sudo apt-get install -y qemu-user-static binfmt-support parted dosfstools e2fsprogs xorriso xz-utils libarchive-tools squashfs-tools curl mtools grub-efi-arm64-bin
 
       - name: Build Caelaris Linux ARM64 PC ISO
         run: |
