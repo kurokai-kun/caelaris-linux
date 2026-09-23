@@ -42,19 +42,25 @@ sed -i '/^[[:space:]]*#/d; /^[[:space:]]*$/d' "${BUILD_PROFILE}/packages.x86_64"
 # 4. Copy shared pacman.conf
 cp "${ROOT_DIR}/shared/pacman.conf" "${BUILD_PROFILE}/pacman.conf" 2>/dev/null || true
 
-# 5. Overlay performance configs and server specific airootfs
-if [ -f "${ROOT_DIR}/shared/airootfs/etc/systemd/zram-generator.conf" ]; then
-    mkdir -p "${BUILD_PROFILE}/airootfs/etc/systemd"
-    cp "${ROOT_DIR}/shared/airootfs/etc/systemd/zram-generator.conf" "${BUILD_PROFILE}/airootfs/etc/systemd/"
-fi
-if [ -f "${ROOT_DIR}/shared/airootfs/etc/udev/rules.d/60-ioschedulers.rules" ]; then
-    mkdir -p "${BUILD_PROFILE}/airootfs/etc/udev/rules.d"
-    cp "${ROOT_DIR}/shared/airootfs/etc/udev/rules.d/60-ioschedulers.rules" "${BUILD_PROFILE}/airootfs/etc/udev/rules.d/"
+# 5. Overlay shared airootfs and server specific airootfs
+if [ -d "${ROOT_DIR}/shared/airootfs" ]; then
+    mkdir -p "${BUILD_PROFILE}/airootfs"
+    cp -r "${ROOT_DIR}/shared/airootfs/." "${BUILD_PROFILE}/airootfs/"
 fi
 if [ -d "${PROFILE_SRC}/airootfs" ]; then
     mkdir -p "${BUILD_PROFILE}/airootfs"
     cp -r "${PROFILE_SRC}/airootfs/." "${BUILD_PROFILE}/airootfs/"
 fi
+
+# Ensure all files defined in file_permissions exist in airootfs
+mkdir -p "${BUILD_PROFILE}/airootfs/etc/sudoers.d"
+if [ ! -f "${BUILD_PROFILE}/airootfs/etc/sudoers.d/g_wheel" ]; then
+    echo "%wheel ALL=(ALL:ALL) NOPASSWD: ALL" > "${BUILD_PROFILE}/airootfs/etc/sudoers.d/g_wheel"
+fi
+mkdir -p "${BUILD_PROFILE}/airootfs/root"
+[ -f "${BUILD_PROFILE}/airootfs/etc/shadow" ] || touch "${BUILD_PROFILE}/airootfs/etc/shadow"
+[ -f "${BUILD_PROFILE}/airootfs/etc/gshadow" ] || touch "${BUILD_PROFILE}/airootfs/etc/gshadow"
+chmod +x "${BUILD_PROFILE}/airootfs/usr/local/bin/caelaris-installer-cli" 2>/dev/null || true
 
 # Privacy & Security: Ensure clean machine-id and no SSH keys in build profile
 mkdir -p "${BUILD_PROFILE}/airootfs/etc"
