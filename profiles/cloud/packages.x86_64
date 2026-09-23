@@ -17,6 +17,14 @@ grub
 sysfsutils
 pciutils
 
+# Live Bootloader & Archiso Tools
+archiso
+mkinitcpio
+mkinitcpio-archiso
+arch-install-scripts
+syslinux
+edk2-shell
+
 # Cloud Provisioning & Metadata Automation
 cloud-init
 cloud-guest-utils

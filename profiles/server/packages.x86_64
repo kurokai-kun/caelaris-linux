@@ -19,6 +19,14 @@ usbutils
 pciutils
 inxi
 
+# Live Bootloader & Archiso Tools
+archiso
+mkinitcpio
+mkinitcpio-archiso
+arch-install-scripts
+syslinux
+edk2-shell
+
 # Filesystems, RAID & Storage
 btrfs-progs
 e2fsprogs

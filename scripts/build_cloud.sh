@@ -32,7 +32,10 @@ fi
 cp -r "${PROFILE_SRC}/." "$BUILD_PROFILE/"
 
 # 3. Consolidate packages
-cat "${PROFILE_SRC}/packages.x86_64" > "${BUILD_PROFILE}/packages.x86_64"
+if [ -f "/usr/share/archiso/configs/releng/packages.x86_64" ]; then
+    cat "/usr/share/archiso/configs/releng/packages.x86_64" >> "${BUILD_PROFILE}/packages.x86_64"
+fi
+cat "${PROFILE_SRC}/packages.x86_64" >> "${BUILD_PROFILE}/packages.x86_64"
 sort -u "${BUILD_PROFILE}/packages.x86_64" -o "${BUILD_PROFILE}/packages.x86_64"
 sed -i '/^[[:space:]]*#/d; /^[[:space:]]*$/d' "${BUILD_PROFILE}/packages.x86_64"
 
