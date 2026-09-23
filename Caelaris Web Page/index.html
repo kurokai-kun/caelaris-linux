@@ -24,7 +24,7 @@
         <li><a href="#gaming" class="nav-link">Gaming</a></li>
         <li><a href="#install" class="nav-link">Install</a></li>
         <li><a href="#server-install" class="nav-link">Server</a></li>
-        <li><a href="#cloud-download" class="nav-link" onclick="openCloudModal(); return false;">Cloud</a></li>
+        <li><a href="#download" class="nav-link" onclick="document.querySelector('[data-arch=\'cloud\']').click(); document.getElementById('download').scrollIntoView({behavior: 'smooth'}); return false;">Cloud</a></li>
         <li><a href="#documentation" class="nav-link">Docs</a></li>
         <li><a href="#faq" class="nav-link">FAQ</a></li>
       </ul>
@@ -407,9 +407,6 @@
                 <button onclick="openCloudModal()" class="btn btn-primary" style="width: 100%; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
                   ☁️ Choose Cloud Mirror (Single 4GB ISO)
                 </button>
-                <a href="#cloud-download" class="btn btn-secondary" style="width: 100%; font-size: 0.85rem;">
-                  View All Cloud Download Mirrors &darr;
-                </a>
               </div>
             </div>
           </div>
@@ -766,123 +763,6 @@
               </svg>
               Copy Verification Command
             </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- ================= CLOUD MIRRORS & DIRECT ISO DOWNLOADS ================= -->
-      <div class="cloud-download-card" id="cloud-download">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 18px;">
-          <div>
-            <span class="cloud-badge">Global High-Speed CDN &amp; P2P</span>
-            <h3 style="font-size: 1.8rem; font-weight: 800; color: #fff; margin: 4px 0 6px 0;">☁️ Cloud ISO Download Mirrors</h3>
-            <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">
-              Download uncompressed, single-file Caelaris Linux ISOs directly without splitting. Hosted across high-bandwidth global cloud infrastructure.
-            </p>
-          </div>
-          <button onclick="openCloudModal()" class="btn btn-secondary">
-            ⚡ Quick Mirror Selector
-          </button>
-        </div>
-
-        <div class="cloud-grid">
-          <!-- Cloud Option 1: Pixeldrain Global CDN -->
-          <div class="cloud-item">
-            <div>
-              <span class="cloud-badge" style="background: rgba(14, 165, 233, 0.15); color: #38bdf8;">Global CDN Mirror</span>
-              <h5>Pixeldrain Direct Cloud Mirror</h5>
-              <p>Ultra-fast multi-gigabit cloud CDN mirror. Supports browser download accelerators and pause/resume.</p>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: auto;">
-              <a href="https://pixeldrain.com/u/caelaris" target="_blank" class="btn btn-primary" style="width: 100%; font-size: 0.9rem;">
-                Download Desktop ISO (4.0 GB)
-              </a>
-              <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/server-release/caelaris-server-x86_64.iso" class="btn btn-secondary" style="width: 100%; font-size: 0.85rem;">
-                Download Server ISO (1.1 GB)
-              </a>
-            </div>
-          </div>
-
-          <!-- Cloud Option 2: Google Drive Mirror -->
-          <div class="cloud-item">
-            <div>
-              <span class="cloud-badge" style="background: rgba(34, 197, 94, 0.15); color: #4ade80;">Google Edge Cache</span>
-              <h5>Google Drive Cloud Mirror</h5>
-              <p>Mirrored across Google Cloud global datacenters. Maximum download speed and reliability across all regions.</p>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: auto;">
-              <a href="https://drive.google.com/drive/folders/caelaris-linux" target="_blank" class="btn btn-secondary" style="width: 100%; font-size: 0.9rem; border-color: rgba(74, 222, 128, 0.35);">
-                Access Google Drive Mirror ↗
-              </a>
-              <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/arm64-pc-release/caelaris-arm64-pc.iso" class="btn btn-secondary" style="width: 100%; font-size: 0.85rem;">
-                Download ARM64 PC ISO (951 MB)
-              </a>
-            </div>
-          </div>
-
-          <!-- Cloud Option 3: Mega.nz Encrypted Cloud -->
-          <div class="cloud-item">
-            <div>
-              <span class="cloud-badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">Encrypted Cloud</span>
-              <h5>Mega.nz Cloud Storage Mirror</h5>
-              <p>End-to-end encrypted cloud mirror with built-in multi-connection file transfers and browser integrity check.</p>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: auto;">
-              <a href="https://mega.nz/folder/caelaris-linux" target="_blank" class="btn btn-secondary" style="width: 100%; font-size: 0.9rem; border-color: rgba(248, 113, 113, 0.35);">
-                Open Mega.nz Cloud Mirror ↗
-              </a>
-              <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rpi-arm64-release/caelaris-rpi-arm64.iso" class="btn btn-secondary" style="width: 100%; font-size: 0.85rem;">
-                Download Raspberry Pi ISO (967 MB)
-              </a>
-            </div>
-          </div>
-
-          <!-- Cloud Option 4: BitTorrent & Magnet Link -->
-          <div class="cloud-item">
-            <div>
-              <span class="cloud-badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc;">P2P Swarm</span>
-              <h5>BitTorrent &amp; Magnet Swarm</h5>
-              <p>Decentralized peer-to-peer downloading. Self-healing chunks, cryptographic hash validation, and uncapped speed.</p>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: auto;">
-              <button class="btn btn-secondary copy-trigger" data-copy="magnet:?xt=urn:btih:caelaris-linux-2026-rolling-x86_64&dn=caelaris-kde.iso" style="width: 100%; font-size: 0.85rem; border-color: rgba(168, 85, 247, 0.35);">
-                🧲 Copy P2P Magnet URI
-              </button>
-              <a href="https://github.com/kurokai-kun/caelaris-linux/releases/tag/rolling-release" target="_blank" class="btn btn-secondary" style="width: 100%; font-size: 0.85rem;">
-                View Torrent Trackers
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <!-- Dedicated Cloud-Init Appliance Banner -->
-        <div style="margin-top: 24px; background: linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(15, 23, 42, 0.9) 100%); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: var(--radius-md); padding: 22px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-          <div>
-            <span class="cloud-badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;">New GitHub Release</span>
-            <h4 style="font-size: 1.25rem; color: #fff; margin: 4px 0 6px 0;">☁️ Caelaris Linux Cloud &amp; Cloud-Init Edition (~950 MB)</h4>
-            <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0; max-width: 650px;">
-              Pre-built virtual appliance ISO for OpenStack, Proxmox VE, KVM, and AWS EC2 with automated cloud-init provisioning, VirtIO drivers, and sub-120MB idle RAM.
-            </p>
-          </div>
-          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/cloud-release/caelaris-cloud-x86_64.iso" class="btn btn-primary" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
-              Download Cloud ISO (950 MB)
-            </a>
-            <a href="https://github.com/kurokai-kun/caelaris-linux/releases/tag/cloud-release" target="_blank" class="btn btn-secondary">
-              View Cloud Release
-            </a>
-          </div>
-        </div>
-
-        <!-- CLI Cloud Download Command Box -->
-        <div style="margin-top: 24px; background: #020617; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 16px 20px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 8px;">
-            <span style="font-size: 0.85rem; color: #38bdf8; font-weight: 700;">Direct Terminal Download (Resumable Single-File):</span>
-            <span style="font-size: 0.8rem; color: var(--text-dim);">Works on Linux, macOS, and Windows PowerShell</span>
-          </div>
-          <div class="server-code-box" style="margin: 0;">
-            <code>curl -L -C - -O "https://github.com/kurokai-kun/caelaris-linux/releases/download/server-release/caelaris-server-x86_64.iso"</code>
-            <button class="copy-btn copy-trigger" data-copy='curl -L -C - -O "https://github.com/kurokai-kun/caelaris-linux/releases/download/server-release/caelaris-server-x86_64.iso"'>Copy Command</button>
           </div>
         </div>
       </div>
