@@ -80,12 +80,6 @@
           </svg>
           Get Caelaris Linux
         </a>
-        <button onclick="openCloudModal()" class="btn btn-secondary btn-lg" style="border-color: rgba(56, 189, 248, 0.4);">
-          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
-          </svg>
-          Cloud Mirrors
-        </button>
         <a href="#features" class="btn btn-secondary btn-lg">
           Explore Features
         </a>
@@ -379,34 +373,23 @@
             </div>
           </div>
 
-          <div class="download-options-grid">
-            <!-- Option A: GitHub Releases Parts -->
+          <div class="download-options-grid" style="grid-template-columns: 1fr;">
+            <!-- Official Release ISO Assets -->
             <div class="download-tile">
-              <div>
-                <h4>📦 GitHub Release Assets (High Speed)</h4>
-                <p>Due to GitHub's 2GB per-asset limit, download the parts below and run `combine.bat` (or use copy command) to assemble.</p>
-              </div>
-              <div style="display: flex; flex-direction: column; gap: 8px;">
-                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/caelaris-kde-2026.09.20-x86_64.iso.part-00" class="btn btn-secondary" style="font-size: 0.85rem; padding: 8px 14px;">Download Part 00 (1.9 GB)</a>
-                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/caelaris-kde-2026.09.20-x86_64.iso.part-01" class="btn btn-secondary" style="font-size: 0.85rem; padding: 8px 14px;">Download Part 01 (1.9 GB)</a>
-                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/caelaris-kde-2026.09.20-x86_64.iso.part-02" class="btn btn-secondary" style="font-size: 0.85rem; padding: 8px 14px;">Download Part 02 (251 MB)</a>
-                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/combine.bat" class="btn btn-primary" style="font-size: 0.85rem; padding: 8px 14px;">Download combine.bat (1-Click Reassembly)</a>
-              </div>
-              <button onclick="openCombineModal()" class="btn btn-secondary" style="font-size: 0.8rem; margin-top: 4px;">
-                📖 How to Reassemble (Windows / Linux / Mac)
-              </button>
-            </div>
-
-            <!-- Option B: Direct Mirror -->
-            <div class="download-tile">
-              <div>
-                <h4>⚡ Fast Cloud Mirrors (Single 4.0GB File)</h4>
-                <p>Download the complete, non-split ISO file directly from our fast cloud mirrors (Pixeldrain CDN, Google Drive, Mega, or BitTorrent).</p>
-              </div>
-              <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
-                <button onclick="openCloudModal()" class="btn btn-primary" style="width: 100%; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
-                  ☁️ Choose Cloud Mirror (Single 4GB ISO)
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
+                <div>
+                  <h4 style="font-size: 1.25rem; margin-bottom: 6px;">📦 GitHub Release ISO Assets (High Speed)</h4>
+                  <p style="margin: 0; max-width: 680px;">Due to GitHub's 2GB asset limit, the 4.0GB hybrid desktop ISO is provided in 3 parts. Download all parts into the same folder and run <code>combine.bat</code> (Windows) or use <code>cat</code> (Linux/Mac) to assemble.</p>
+                </div>
+                <button onclick="openCombineModal()" class="btn btn-secondary" style="font-size: 0.85rem; padding: 8px 16px;">
+                  📖 Reassembly Guide (Win / Linux / Mac)
                 </button>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 10px;">
+                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/caelaris-kde-2026.09.20-x86_64.iso.part-00" class="btn btn-secondary" style="font-size: 0.85rem; padding: 10px 14px; text-align: center;">Download Part 00 (1.9 GB)</a>
+                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/caelaris-kde-2026.09.20-x86_64.iso.part-01" class="btn btn-secondary" style="font-size: 0.85rem; padding: 10px 14px; text-align: center;">Download Part 01 (1.9 GB)</a>
+                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/caelaris-kde-2026.09.20-x86_64.iso.part-02" class="btn btn-secondary" style="font-size: 0.85rem; padding: 10px 14px; text-align: center;">Download Part 02 (251 MB)</a>
+                <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/rolling-release/combine.bat" class="btn btn-primary" style="font-size: 0.85rem; padding: 10px 14px; text-align: center;">⚡ combine.bat (1-Click Reassembly)</a>
               </div>
             </div>
           </div>
@@ -1308,7 +1291,6 @@
             <li><a href="#gaming" class="footer-link">Gaming Optimizations</a></li>
             <li><a href="#server-install" class="footer-link">Server Edition</a></li>
             <li><a href="#download" class="footer-link">Download ISO</a></li>
-            <li><a href="#cloud-download" onclick="openCloudModal(); return false;" class="footer-link">Cloud ISO Mirrors</a></li>
           </ul>
         </div>
 
@@ -1363,51 +1345,6 @@
       </div>
       <div style="margin-top: 24px; text-align: right;">
         <button onclick="closeCombineModal()" class="btn btn-primary">Got it, thanks!</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ================= MODAL FOR CLOUD MIRRORS ================= -->
-  <div id="cloud-modal" style="display: none; position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); align-items: center; justify-content: center; padding: 20px;">
-    <div style="background: #0f172a; border: 1px solid var(--border-glow); border-radius: var(--radius-lg); max-width: 680px; width: 100%; padding: 32px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8);">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 14px;">
-        <h3 style="font-size: 1.4rem; color: #fff; margin: 0; display: flex; align-items: center; gap: 8px;">
-          <span>☁️ Choose Your Cloud Download Mirror</span>
-        </h3>
-        <button onclick="closeCloudModal()" style="background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
-      </div>
-      <div style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; display: flex; flex-direction: column; gap: 14px;">
-        <p>Select your preferred high-speed cloud download provider for the complete, non-split Caelaris Linux ISO (~4.0 GB):</p>
-        
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-          <a href="https://pixeldrain.com/u/caelaris" target="_blank" class="btn btn-primary" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px;">
-            <span><strong>⚡ Pixeldrain Global CDN</strong> (Direct single file, uncapped)</span>
-            <span>4.0 GB &rarr;</span>
-          </a>
-          <a href="https://drive.google.com/drive/folders/caelaris-linux" target="_blank" class="btn btn-secondary" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-color: rgba(74, 222, 128, 0.35);">
-            <span><strong>🍏 Google Drive Cloud Mirror</strong> (Fast edge cache)</span>
-            <span>4.0 GB &rarr;</span>
-          </a>
-          <a href="https://mega.nz/folder/caelaris-linux" target="_blank" class="btn btn-secondary" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-color: rgba(248, 113, 113, 0.35);">
-            <span><strong>🔒 Mega.nz Encrypted Cloud</strong> (Multi-threaded transfer)</span>
-            <span>4.0 GB &rarr;</span>
-          </a>
-          <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/server-release/caelaris-server-x86_64.iso" class="btn btn-secondary" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-color: rgba(16, 185, 129, 0.35);">
-            <span><strong>🖥️ Server &amp; Headless ISO</strong> (Direct GitHub Cloud CDN)</span>
-            <span>1.1 GB &rarr;</span>
-          </a>
-          <a href="https://github.com/kurokai-kun/caelaris-linux/releases/download/cloud-release/caelaris-cloud-x86_64.iso" class="btn btn-secondary" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-color: rgba(56, 189, 248, 0.45); background: rgba(56, 189, 248, 0.08);">
-            <span><strong>☁️ Cloud &amp; Cloud-Init Appliance ISO</strong> (AWS / OpenStack / Proxmox)</span>
-            <span>950 MB &rarr;</span>
-          </a>
-        </div>
-
-        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 6px;">
-          All cloud downloads provide the identical bit-for-bit ISO image matching the official cryptographic SHA256 checksums.
-        </p>
-      </div>
-      <div style="margin-top: 20px; text-align: right;">
-        <button onclick="closeCloudModal()" class="btn btn-secondary">Close</button>
       </div>
     </div>
   </div>
