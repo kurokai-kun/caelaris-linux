@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+WORK_DIR="/tmp/caelaris-work-server"
+OUT_DIR="${ROOT_DIR}/out-server"
+BUILD_PROFILE="/tmp/caelaris-profile-server"
+PROFILE_SRC="${ROOT_DIR}/profiles/server"
+BUILD_DATE=$(date +%Y.%m.%d)
+
+if [[ $EUID -ne 0 ]]; then
+    echo "Error: Building the server ISO requires root privileges. Please run with sudo."
+    exit 1
+fi
+
+echo "=========================================================="
+echo " Building Caelaris Linux Server & Headless Edition        "
+echo " Date: ${BUILD_DATE} | Target: x86_64 Headless / Cloud     "
+echo "=========================================================="
+
+rm -rf "$BUILD_PROFILE" "$WORK_DIR"
+mkdir -p "$BUILD_PROFILE" "$OUT_DIR"
+
+# 1. Base archiso profile copy
+if [ -d "/usr/share/archiso/configs/releng" ]; then
+    echo "Copying baseline archiso releng profile..."
+    cp -r /usr/share/archiso/configs/releng/. "$BUILD_PROFILE/"
+fi
+
+# 2. Overlay server profile definition & packages
+cp -r "${PROFILE_SRC}/." "$BUILD_PROFILE/"
+
+# 3. Consolidate packages
+cat "${PROFILE_SRC}/packages.x86_64" > "${BUILD_PROFILE}/packages.x86_64"
+sort -u "${BUILD_PROFILE}/packages.x86_64" -o "${BUILD_PROFILE}/packages.x86_64"
+sed -i '/^[[:space:]]*#/d; /^[[:space:]]*$/d' "${BUILD_PROFILE}/packages.x86_64"
+
+# 4. Copy shared pacman.conf
+cp "${ROOT_DIR}/shared/pacman.conf" "${BUILD_PROFILE}/pacman.conf" 2>/dev/null || true
+
+# 5. Overlay shared airootfs files and server specific airootfs
+if [ -d "${ROOT_DIR}/shared/airootfs" ]; then
+    mkdir -p "${BUILD_PROFILE}/airootfs"
+    cp -r "${ROOT_DIR}/shared/airootfs/." "${BUILD_PROFILE}/airootfs/"
+fi
+if [ -d "${PROFILE_SRC}/airootfs" ]; then
+    mkdir -p "${BUILD_PROFILE}/airootfs"
+    cp -r "${PROFILE_SRC}/airootfs/." "${BUILD_PROFILE}/airootfs/"
+fi
+
+# 6. Build the ISO using mkarchiso
+echo "Running mkarchiso to build Caelaris Server Edition..."
+mkarchiso -v -w "$WORK_DIR" -o "$OUT_DIR" "$BUILD_PROFILE"
+
+# Normalize output filename
+find "$OUT_DIR" -name "*.iso" -exec mv {} "${OUT_DIR}/caelaris-server-x86_64.iso" \;
+
+# Generate SHA256 checksum
+cd "$OUT_DIR"
+sha256sum "caelaris-server-x86_64.iso" > "caelaris-server-x86_64.iso.sha256"
+sha256sum "caelaris-server-x86_64.iso" > "SHA256SUMS.txt"
+cd "$ROOT_DIR"
+
+echo "=========================================================="
+echo " Server ISO Built Successfully:                           "
+echo " ${OUT_DIR}/caelaris-server-x86_64.iso                    "
+echo "=========================================================="

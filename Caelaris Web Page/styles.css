@@ -543,6 +543,12 @@ section {
   box-shadow: 0 4px 20px rgba(168, 85, 247, 0.28);
 }
 
+.arch-tab.active[data-arch="server"] {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(15, 23, 42, 0.9) 100%);
+  border-color: #10b981;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.28);
+}
+
 .arch-tab-icon {
   font-size: 1.8rem;
 }

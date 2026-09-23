@@ -1,0 +1,9 @@
+========================================================================
+  Caelaris Linux Server & Headless Edition (\r) (\l)
+  High-Performance Cloud, Virtualization & Homelab Infrastructure
+========================================================================
+  * Web Console:       https://\4:9090 or https://\6:9090
+  * SSH Daemon:        Active on port 22 (ssh root@\4)
+  * Quick Installer:   Run 'sudo caelaris-installer-cli' to install to disk
+========================================================================
+

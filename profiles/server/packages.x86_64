@@ -1,0 +1,85 @@
+# ==========================================================
+# Caelaris Linux Server & Headless Edition Package List
+# Architecture: x86_64
+# Focus: Minimal Headless Infrastructure, Containers & Homelabs
+# ==========================================================
+
+# Core System & Hardware Base
+base
+base-devel
+linux
+linux-headers
+linux-firmware
+amd-ucode
+intel-ucode
+efibootmgr
+grub
+sysfsutils
+usbutils
+pciutils
+inxi
+
+# Filesystems, RAID & Storage
+btrfs-progs
+e2fsprogs
+xfsprogs
+dosfstools
+parted
+gptfdisk
+smartmontools
+mdadm
+snapper
+snap-pac
+zram-generator
+
+# Server Networking & High-Throughput I/O
+networkmanager
+ethtool
+iproute2
+iptables-nft
+nftables
+ufw
+wireguard-tools
+curl
+wget
+rsync
+openssh
+nfs-utils
+bind
+
+# Web Management Console (Cockpit)
+cockpit
+cockpit-bridge
+cockpit-storaged
+cockpit-networkmanager
+cockpit-packagekit
+cockpit-podman
+packagekit
+
+# Containerization & Virtualization
+docker
+docker-compose
+podman
+buildah
+skopeo
+qemu-guest-agent
+open-vm-tools-nox
+
+# Administration, Performance & Troubleshooting
+htop
+btop
+iotop
+iftop
+tmux
+git
+neovim
+nano
+zsh
+sudo
+which
+tar
+gzip
+bzip2
+xz
+unzip
+zip

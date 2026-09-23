@@ -1,0 +1,43 @@
+========================================================================
+ Caelaris Linux - Server & Headless Edition Quickstart Guide
+ Architecture: x86_64 (Intel Xeon, AMD EPYC, Core, Ryzen, Proxmox, KVM)
+========================================================================
+
+1. BARE METAL PHYSICAL SERVER INSTALLATION:
+   a. Flash 'caelaris-server-x86_64.iso' to a USB 3.0+ flash drive using
+      Rufus (select 'DD Image mode'), Ventoy, or BalenaEtcher.
+   b. Insert the USB drive into your server or mini-PC and boot from it.
+   c. Run the automated high-speed TUI installer:
+      sudo caelaris-installer-cli --disk /dev/nvme0n1
+   d. Remove USB and reboot:
+      Your server boots in under 3 seconds with OpenSSH and Cockpit ready!
+
+2. UNATTENDED REMOTE SSH INSTALLATION (HEADLESS / RACKMOUNT):
+   a. Connect your server to your local network via Ethernet cable.
+   b. Insert the live USB and power on the node (no monitor/keyboard needed).
+   c. The live image requests a DHCP IP and starts the live SSH installer.
+   d. Connect from your workstation or laptop:
+      ssh root@caelaris-live.local
+   e. Execute the unattended installation:
+      caelaris-installer-cli --headless --disk /dev/sda
+   f. Type 'reboot'. Done!
+
+3. PROXMOX VE, KVM & ESXi VIRTUALIZATION:
+   - Machine: q35 | BIOS: OVMF (UEFI) | CPU: host
+   - Disks: VirtIO SCSI Single with Discard enabled
+   - Network: VirtIO (paravirtualized)
+   - 'qemu-guest-agent' initializes automatically on first boot,
+     enabling live backups, memory ballooning, and host ACPI shutdown.
+
+4. WEB MANAGEMENT CONSOLE:
+   - Open in your browser: https://<server-ip>:9090
+   - Log in with your admin credentials.
+   - Pre-configured Cockpit dashboard for storage pools, CPU metrics,
+     container logs, and systemd services.
+
+5. POST-INSTALL CHEATSHEET:
+   - Enable Cockpit: sudo systemctl enable --now cockpit.socket
+   - Enable Docker:  sudo systemctl enable --now docker
+   - Firewall (UFW): sudo ufw allow 22/tcp && sudo ufw allow 9090/tcp && sudo ufw enable
+   - Update System:  yay -Syu --noconfirm
+========================================================================

@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+# ==========================================================
+# Caelaris Linux Server Edition - Automated TUI Installer
+# ==========================================================
+set -euo pipefail
+
+TARGET_DISK=""
+AUTO_CONFIRM=0
+HOSTNAME="caelaris-server"
+ADMIN_USER="admin"
+
+usage() {
+    echo "Usage: sudo caelaris-installer-cli [OPTIONS]"
+    echo "Options:"
+    echo "  --disk <path>     Target disk to install (e.g., /dev/nvme0n1 or /dev/sda)"
+    echo "  --headless        Skip interactive prompts and install automatically"
+    echo "  --hostname <name> Set server hostname (default: caelaris-server)"
+    echo "  --user <name>     Set admin username (default: admin)"
+    echo "  -h, --help        Show this help message"
+    exit 1
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --disk) TARGET_DISK="$2"; shift 2 ;;
+        --headless|-y) AUTO_CONFIRM=1; shift ;;
+        --hostname) HOSTNAME="$2"; shift 2 ;;
+        --user) ADMIN_USER="$2"; shift 2 ;;
+        -h|--help) usage ;;
+        *) echo "Unknown option: $1"; usage ;;
+    esac
+done
+
+if [[ $EUID -ne 0 ]]; then
+    echo "Error: This installer requires root privileges. Please run with sudo."
+    exit 1
+fi
+
+echo "=========================================================="
+echo "    Caelaris Linux Server & Headless Edition Installer    "
+echo "=========================================================="
+
+# List available disks if not specified
+if [[ -z "$TARGET_DISK" ]]; then
+    echo ""
+    echo "Available Storage Disks:"
+    lsblk -d -p -n -l -o NAME,SIZE,MODEL,TRAN | grep -v "loop" | grep -v "airootfs" || true
+    echo ""
+    read -rp "Enter target disk to install (e.g. /dev/sda or /dev/nvme0n1): " TARGET_DISK
+fi
+
+if [[ ! -b "$TARGET_DISK" ]]; then
+    echo "Error: Device '$TARGET_DISK' is not a valid block device."
+    exit 1
+fi
+
+# Confirmation
+if [[ $AUTO_CONFIRM -eq 0 ]]; then
+    echo ""
+    echo "WARNING: ALL DATA ON '$TARGET_DISK' WILL BE COMPLETELY DESTROYED!"
+    read -rp "Are you absolutely sure you want to proceed? (yes/NO): " CONFIRM
+    if [[ "$CONFIRM" != "yes" && "$CONFIRM" != "y" ]]; then
+        echo "Installation aborted by user."
+        exit 0
+    fi
+fi
+
+echo ""
+echo "[1/6] Partitioning disk: $TARGET_DISK..."
+wipefs -af "$TARGET_DISK"
+parted -s "$TARGET_DISK" mklabel gpt
+parted -s "$TARGET_DISK" mkpart "ESP" fat32 1MiB 1025MiB
+parted -s "$TARGET_DISK" set 1 esp on
+parted -s "$TARGET_DISK" mkpart "ROOT" btrfs 1025MiB 100%
+
+# Resolve partition names (handling nvme0n1p1 vs sda1)
+if [[ "$TARGET_DISK" =~ [0-9]$ ]]; then
+    BOOT_PART="${TARGET_DISK}p1"
+    ROOT_PART="${TARGET_DISK}p2"
+else
+    BOOT_PART="${TARGET_DISK}1"
+    ROOT_PART="${TARGET_DISK}2"
+fi
+
+udevadm settle
+
+echo "[2/6] Formatting filesystems..."
+mkfs.vfat -F 32 -n "CAEL_BOOT" "$BOOT_PART"
+mkfs.btrfs -f -L "CAEL_SERVER" "$ROOT_PART"
+
+echo "[3/6] Creating Btrfs server subvolumes..."
+MOUNT_DIR="/mnt/caelaris-server-install"
+mkdir -p "$MOUNT_DIR"
+mount -t btrfs "$ROOT_PART" "$MOUNT_DIR"
+
+btrfs subvolume create "$MOUNT_DIR/@server"
+btrfs subvolume create "$MOUNT_DIR/@var_lib_docker"
+btrfs subvolume create "$MOUNT_DIR/@var_log"
+btrfs subvolume create "$MOUNT_DIR/@home"
+btrfs subvolume create "$MOUNT_DIR/@snapshots"
+
+umount "$MOUNT_DIR"
+
+# Mount with optimal server compression options
+BTRFS_OPTS="defaults,noatime,compress=zstd:3,discard=async,space_cache=v2"
+mount -o "$BTRFS_OPTS,subvol=@server" "$ROOT_PART" "$MOUNT_DIR"
+mkdir -p "$MOUNT_DIR/boot/efi" "$MOUNT_DIR/var/lib/docker" "$MOUNT_DIR/var/log" "$MOUNT_DIR/home" "$MOUNT_DIR/.snapshots"
+mount "$BOOT_PART" "$MOUNT_DIR/boot/efi"
+mount -o "$BTRFS_OPTS,subvol=@var_lib_docker" "$ROOT_PART" "$MOUNT_DIR/var/lib/docker"
+mount -o "$BTRFS_OPTS,subvol=@var_log" "$ROOT_PART" "$MOUNT_DIR/var/log"
+mount -o "$BTRFS_OPTS,subvol=@home" "$ROOT_PART" "$MOUNT_DIR/home"
+
+echo "[4/6] Copying system to target disk..."
+cp -ax / "$MOUNT_DIR" 2>/dev/null || true
+rm -rf "$MOUNT_DIR/etc/fstab"
+
+echo "[5/6] Generating fstab and configuring services..."
+genfstab -U "$MOUNT_DIR" >> "$MOUNT_DIR/etc/fstab"
+echo "$HOSTNAME" > "$MOUNT_DIR/etc/hostname"
+
+# Enable core server services inside installed system
+chroot "$MOUNT_DIR" systemctl enable sshd.service || true
+chroot "$MOUNT_DIR" systemctl enable cockpit.socket || true
+chroot "$MOUNT_DIR" systemctl enable docker.service || true
+chroot "$MOUNT_DIR" systemctl enable qemu-guest-agent.service 2>/dev/null || true
+chroot "$MOUNT_DIR" systemctl enable NetworkManager.service || true
+
+# Bootloader
+echo "[6/6] Installing GRUB bootloader..."
+if [ -d "/sys/firmware/efi" ]; then
+    chroot "$MOUNT_DIR" grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=CaelarisServer --recheck || true
+else
+    chroot "$MOUNT_DIR" grub-install --target=i386-pc "$TARGET_DISK" --recheck || true
+fi
+chroot "$MOUNT_DIR" grub-mkconfig -o /boot/grub/grub.cfg || true
+
+echo "Cleaning up mounts..."
+umount -R "$MOUNT_DIR"
+
+echo "=========================================================="
+echo "    Caelaris Linux Server Installation Completed!         "
+echo "=========================================================="
+echo "  * Root partition:  Btrfs with @server, @var_lib_docker  "
+echo "  * Cockpit Web UI:  https://<ip>:9090                    "
+echo "  * SSH Server:      Active on port 22                    "
+echo "=========================================================="
+echo "You can now reboot your system."

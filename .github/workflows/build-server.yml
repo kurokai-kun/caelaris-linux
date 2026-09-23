@@ -1,0 +1,135 @@
+name: Build Caelaris Linux Server & Headless ISO
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'server-*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-server:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Free Runner Disk Space
+        run: |
+          echo "Freeing up runner disk space..."
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache
+          sudo rm -rf /usr/share/swift
+          df -h
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build Caelaris Server ISO in Arch Linux Container
+        run: |
+          docker run --privileged --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace \
+            archlinux:latest \
+            bash -c "
+              chmod +x scripts/*.sh &&
+              ./scripts/setup_build_env.sh &&
+              ./scripts/build_server.sh
+            "
+
+      - name: Prepare Release Assets
+        id: prep
+        run: |
+          mkdir -p release_assets
+          cp out-server/caelaris-server-x86_64.iso release_assets/
+          cd release_assets
+          sha256sum caelaris-server-x86_64.iso > caelaris-server-x86_64.iso.sha256
+          sha256sum caelaris-server-x86_64.iso > SHA256SUMS.txt
+
+          cat << 'EOF' > QUICKSTART_SERVER.txt
+          ========================================================================
+           Caelaris Linux - Server & Headless Edition Quickstart Guide
+           Architecture: x86_64 (Intel Xeon, AMD EPYC, Core, Ryzen, Proxmox, KVM)
+          ========================================================================
+
+          1. BARE METAL SERVER INSTALLATION:
+             a. Flash 'caelaris-server-x86_64.iso' to a USB 3.0+ flash drive using
+                Rufus (select 'DD Image mode') or BalenaEtcher.
+             b. Boot server node from USB.
+             c. Run the automated TUI installer:
+                sudo caelaris-installer-cli --disk /dev/nvme0n1
+             d. Reboot: Server boots in under 3 seconds with OpenSSH active!
+
+          2. UNATTENDED REMOTE SSH INSTALLATION (HEADLESS):
+             a. Connect Ethernet and boot live USB.
+             b. From your workstation terminal:
+                ssh root@caelaris-live.local
+             c. Run:
+                caelaris-installer-cli --headless --disk /dev/sda
+             d. Type 'reboot'. No physical monitor or keyboard required!
+
+          3. PROXMOX VE & KVM VIRTUALIZATION:
+             - Machine: q35 | BIOS: OVMF (UEFI) | CPU: host
+             - Disks: VirtIO SCSI Single with Discard
+             - 'qemu-guest-agent' initializes automatically on first boot.
+
+          4. WEB MANAGEMENT CONSOLE:
+             - Open in browser: https://<server-ip>:9090
+             - Pre-configured Cockpit dashboard for storage, metrics, and Docker.
+
+          5. POST-INSTALL CHEATSHEET:
+             - Enable Cockpit: sudo systemctl enable --now cockpit.socket
+             - Enable Docker:  sudo systemctl enable --now docker
+             - Firewall (UFW): sudo ufw allow 22/tcp && sudo ufw allow 9090/tcp && sudo ufw enable
+          ========================================================================
+          EOF
+
+          cd ..
+          ls -lh release_assets/
+
+      - name: Publish GitHub Release (Server Edition)
+        uses: softprops/action-gh-release@v2
+        if: success()
+        with:
+          tag_name: server-release
+          name: Caelaris Linux Server & Headless Edition (x86_64 & Universal)
+          make_latest: false
+          body: |
+            ## 🖥️ Caelaris Linux Server & Headless Edition
+
+            Official high-performance, minimal server release of Caelaris Linux engineered exclusively for bare-metal servers, homelabs, Proxmox VE, KVM hypervisors, and cloud microservices.
+
+            ---
+
+            ### ⚡ Key Architectural Advantages:
+            - **Sub-150 MB Idle RAM**: Completely stripped of graphical display servers (no X11/Wayland background daemons). 100% of memory and CPU cycles are dedicated to compute, databases, and container pods.
+            - **Cockpit Web Management Console**: Instant web-based management dashboard accessible at `https://<server-ip>:9090` for inspecting CPU metrics, RAID pools, systemd services, firewall rules, and container logs.
+            - **Native Docker & Rootless Podman**: Pre-installed and configured with native Btrfs snapshotting storage driver for zero-copy layer staging and rapid CI/CD builds.
+            - **Automated Btrfs RAID & Snapshots**: Automated subvolumes (`@server`, `@var_lib_docker`, `@var_log`) formatted with transparent zstd compression for 0.05-second atomic rollbacks.
+            - **BBR & CAKE Network Stacks**: Pre-tuned TCP BBR congestion control and CAKE packet scheduling for maximum server throughput and zero bufferbloat during heavy ingress/egress load.
+            - **Hardened OpenSSH & Zero Telemetry**: Pre-configured OpenSSH using Ed25519 elliptic curve keys, fail2ban compatibility, and 100% offline-first privacy.
+
+            ---
+
+            ### 📦 Available Release Assets:
+            1. **`caelaris-server-x86_64.iso`**: Standalone, bootable hybrid UEFI/BIOS server ISO (~1.1 GB). Single-file 1-click download.
+            2. **`caelaris-server-x86_64.iso.sha256`**: Cryptographic SHA256 integrity checksum.
+            3. **`SHA256SUMS.txt`**: Consolidated verification file.
+            4. **`QUICKSTART_SERVER.txt`**: Complete setup guide for physical servers, remote headless SSH, and Proxmox VE.
+
+            ---
+
+            ### 🛠️ Quick Installation:
+            ```bash
+            # Automated TUI Installation
+            sudo caelaris-installer-cli --disk /dev/nvme0n1
+
+            # Headless Unattended Remote Installation (via SSH)
+            ssh root@caelaris-live.local
+            caelaris-installer-cli --headless --disk /dev/sda
+            ```
+          files: release_assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

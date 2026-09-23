@@ -1,0 +1,12 @@
+NAME="Caelaris Linux"
+PRETTY_NAME="Caelaris Linux Server & Headless Edition"
+ID=caelaris
+ID_LIKE=arch
+BUILD_ID=rolling
+ANSI_COLOR="38;2;16;185;129"
+HOME_URL="https://github.com/kurokai-kun/caelaris-linux"
+DOCUMENTATION_URL="https://github.com/kurokai-kun/caelaris-linux"
+SUPPORT_URL="https://github.com/kurokai-kun/caelaris-linux/issues"
+LOGO=caelaris
+VARIANT="Server & Headless Edition"
+VARIANT_ID=server
