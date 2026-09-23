@@ -71,11 +71,11 @@ if [ -n "$QEMU_BIN" ]; then
         sed -i '1i Server = http://de3.mirror.archlinuxarm.org/$arch/$repo\nServer = http://fl.us.mirror.archlinuxarm.org/$arch/$repo' "${ROOTFS_DIR}/etc/pacman.d/mirrorlist" 2>/dev/null || true
     fi
 
-    # Optimize pacman config for speed and reliability during image build (disable CheckSpace & Landlock sandbox under QEMU)
+    # Optimize pacman config for speed and reliability during image build (disable CheckSpace & Landlock/seccomp sandbox under QEMU)
     sed -i 's/^#ParallelDownloads = .*/ParallelDownloads = 5/' "${ROOTFS_DIR}/etc/pacman.conf" 2>/dev/null || true
     sed -i 's/^SigLevel.*/SigLevel = Never/' "${ROOTFS_DIR}/etc/pacman.conf" 2>/dev/null || true
     sed -i 's/^CheckSpace/#CheckSpace/' "${ROOTFS_DIR}/etc/pacman.conf" 2>/dev/null || true
-    grep -q "DisableSandbox" "${ROOTFS_DIR}/etc/pacman.conf" 2>/dev/null || sed -i '/\[options\]/a DisableSandbox' "${ROOTFS_DIR}/etc/pacman.conf" 2>/dev/null || true
+    sed -i '/\[options\]/a DisableSandboxFilesystem\nDisableSandboxSyscalls\nDownloadUser = root' "${ROOTFS_DIR}/etc/pacman.conf" 2>/dev/null || true
 
     # Initialize pacman keyring
     echo "Initializing Arch Linux ARM pacman keyring..."
@@ -154,9 +154,9 @@ if [ -n "$QEMU_BIN" ]; then
 
     echo "Installing live preview desktop & installer packages..."
     # Tier 1: Core System, GUI Installer, and Bootloader essentials
-    chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm python python-pyqt6 sudo bash networkmanager sddm mesa grub efibootmgr parted dosfstools e2fsprogs btrfs-progs rsync squashfs-tools" || true
+    chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm python python-pyqt6 sudo bash networkmanager sddm mesa grub efibootmgr parted dosfstools e2fsprogs btrfs-progs rsync squashfs-tools noto-fonts" || true
     # Tier 2: Complete Desktop Preview Suite & Graphics
-    chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm ${DESKTOP_PKGS[*]}" || true
+    chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm pipewire-jack qt6-multimedia-ffmpeg ${DESKTOP_PKGS[*]}" || true
 
     # Ensure liveuser exists inside rootfs
     chroot "$ROOTFS_DIR" /bin/bash -c "
@@ -184,6 +184,7 @@ if [ -n "$QEMU_BIN" ]; then
     sed -i 's/^SigLevel = Never/SigLevel = Required DatabaseOptional/' "${ROOTFS_DIR}/etc/pacman.conf" 2>/dev/null || true
     sed -i 's/^#CheckSpace/CheckSpace/' "${ROOTFS_DIR}/etc/pacman.conf" 2>/dev/null || true
     sed -i '/^DisableSandbox/d' "${ROOTFS_DIR}/etc/pacman.conf" 2>/dev/null || true
+    sed -i '/^DownloadUser/d' "${ROOTFS_DIR}/etc/pacman.conf" 2>/dev/null || true
 
     # Clean package cache
     chroot "$ROOTFS_DIR" /bin/bash -c "pacman -Scc --noconfirm" || true
