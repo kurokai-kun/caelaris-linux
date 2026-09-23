@@ -193,6 +193,6 @@ caelaris-linux/
   - **Base OS:** Arch Linux ARM (`aarch64` ALARM).
   - **Kernel & GPU:** Generic AArch64 Linux kernel with Mesa Freedreno (Adreno) and Mesa Apple AGX drivers.
   - **Bootloader:** Standard UEFI `BOOTAA64.EFI` bootloader supporting PC firmware and Asahi U-Boot integration.
-  - **Image Format:** Uncompromised Full Desktop Hybrid UEFI ARM64 ISO (`caelaris-arm64-pc.iso`, ~4.0GB) with multi-part split assets, 1-click `combine.bat`, and direct cloud mirror on dedicated `arm64-pc-release`.
+  - **Image Format:** Bootable Hybrid UEFI ARM64 ISO (`caelaris-arm64-pc.iso`, ~907 MB) as a single-file direct download on dedicated `arm64-pc-release`.
   - **Desktop Features:** Dual KDE Plasma 6 &amp; GNOME 4x Wayland sessions, PyQt6 graphical installer, and full hypervisor drivers matching the x86_64 flagship.
   - **Virtualization & Emulation:** UTM native speed virtualization with VirtIO-GPU, alongside Box64 and FEX-Emu x86 game translation.
