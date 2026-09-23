@@ -171,6 +171,10 @@ chmod +x "${BUILD_PROFILE}/airootfs/etc/skel/Desktop/"*.desktop 2>/dev/null || t
 # Remove console autologin on tty1 so graphical display manager takes the screen
 rm -rf "${BUILD_PROFILE}/airootfs/etc/systemd/system/getty@tty1.service.d"
 
+# Privacy & Security: Ensure clean machine-id and no SSH host keys in ISO airootfs
+truncate -s 0 "${BUILD_PROFILE}/airootfs/etc/machine-id" 2>/dev/null || true
+rm -f "${BUILD_PROFILE}/airootfs"/etc/ssh/ssh_host_* 2>/dev/null || true
+
 mkdir -p "$OUT_DIR"
 
 echo "Running mkarchiso validation and build..."

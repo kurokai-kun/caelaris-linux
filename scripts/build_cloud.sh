@@ -52,6 +52,11 @@ if [ -d "${PROFILE_SRC}/airootfs" ]; then
     cp -r "${PROFILE_SRC}/airootfs/." "${BUILD_PROFILE}/airootfs/"
 fi
 
+# Privacy & Security: Ensure clean machine-id and no SSH keys in build profile
+mkdir -p "${BUILD_PROFILE}/airootfs/etc"
+truncate -s 0 "${BUILD_PROFILE}/airootfs/etc/machine-id" 2>/dev/null || true
+rm -f "${BUILD_PROFILE}/airootfs"/etc/ssh/ssh_host_* 2>/dev/null || true
+
 # 6. Build the Cloud ISO using mkarchiso
 echo "Running mkarchiso to build Caelaris Cloud Edition..."
 mkarchiso -v -w "$WORK_DIR" -o "$OUT_DIR" "$BUILD_PROFILE"

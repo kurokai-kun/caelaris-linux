@@ -105,6 +105,10 @@ chmod 440 "${ROOTFS_DIR}/etc/sudoers.d/wheel"
 mkdir -p "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants"
 ln -sf /usr/lib/systemd/system/systemd-resolved.service "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/" || true
 
+# Privacy & Security: Ensure unique machine ID and fresh SSH host keys on first boot
+truncate -s 0 "${ROOTFS_DIR}/etc/machine-id" 2>/dev/null || true
+rm -f "${ROOTFS_DIR}"/etc/ssh/ssh_host_* 2>/dev/null || true
+
 # 4. Generate Flashable Disk Image (.img.xz)
 if [[ "$FORMAT" == "both" || "$FORMAT" == "img" ]]; then
     echo "[4/6] Creating 5GB raw Raspberry Pi disk image..."

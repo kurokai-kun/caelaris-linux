@@ -115,6 +115,10 @@ ISO_STAGING="${WORK_DIR}/iso-staging"
 rm -rf "$ISO_STAGING"
 mkdir -p "${ISO_STAGING}/live" "${ISO_STAGING}/EFI/BOOT"
 
+# Privacy & Security: Ensure unique machine ID and fresh SSH host keys on first boot
+truncate -s 0 "${ROOTFS_DIR}/etc/machine-id" 2>/dev/null || true
+rm -f "${ROOTFS_DIR}"/etc/ssh/ssh_host_* 2>/dev/null || true
+
 echo "Creating SquashFS filesystem for ISO (zstd level 15)..."
 mksquashfs "$ROOTFS_DIR" "${ISO_STAGING}/live/filesystem.squashfs" -comp zstd -Xcompression-level 15 -b 1M
 

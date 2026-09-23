@@ -537,6 +537,15 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
                     except Exception:
                         pass
 
+            # Ensure clean per-device uniqueness: sanitize /etc/machine-id and SSH host keys
+            try:
+                if os.path.exists("/mnt/etc/machine-id"):
+                    open("/mnt/etc/machine-id", "w").close()
+                for hk in glob.glob("/mnt/etc/ssh/ssh_host_*"):
+                    os.remove(hk)
+            except Exception:
+                pass
+
             # Ensure proper ownership of user home directory
             self.run_cmd(f"arch-chroot /mnt chown -R {user}:users /home/{user}", check=False)
 

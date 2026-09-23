@@ -1,5 +1,13 @@
 out/
+out-*/
 *.iso
+*.img
+*.img.xz
 *.zip
 *.tar.zst
 *.reg
+*.log
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db

@@ -134,6 +134,10 @@ else
 fi
 chroot "$MOUNT_DIR" grub-mkconfig -o /boot/grub/grub.cfg || true
 
+# Privacy & Security: Ensure unique machine ID and fresh SSH host keys on first boot
+truncate -s 0 "$MOUNT_DIR/etc/machine-id" 2>/dev/null || true
+rm -f "$MOUNT_DIR"/etc/ssh/ssh_host_* 2>/dev/null || true
+
 echo "Cleaning up mounts..."
 umount -R "$MOUNT_DIR"
 
