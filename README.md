@@ -1,105 +1,127 @@
-# Caelaris Linux (Arch-Based Distribution)
+<p align="center">
+  <img src="assets/logo.svg" alt="Caelaris Linux Logo" width="160">
+</p>
 
-Caelaris is a modern, modular Arch Linux-based distribution featuring dedicated editions for both **KDE Plasma** and **GNOME**, integrated with the **Calamares** graphical system installer.
+<h1 align="center">Caelaris Linux</h1>
 
----
+<p align="center">
+  <strong>Next-Generation Arch-Based Operating System for High-Performance Gaming, Productivity & Modern Hardware</strong>
+</p>
 
-## ?? Project Architecture
-
-```
-custom-arch-distro/
-+-- shared/
-¦   +-- packages.common         # Core packages (kernel, pipewire, networkmanager, drivers)
-¦   +-- pacman.conf             # Repository mirrors & package caching settings
-¦   +-- airootfs/               # Shared filesystem overlays (sudoers, systemd presets)
-¦   +-- branding/               # Distro identity (os-release, logos, banners)
-+-- profiles/
-¦   +-- kde/                    # KDE Plasma 6 + SDDM Live edition
-¦   ¦   +-- packages.x86_64
-¦   ¦   +-- profiledef.sh
-¦   ¦   +-- airootfs/
-¦   +-- gnome/                  # GNOME 4x + GDM Live edition
-¦       +-- packages.x86_64
-¦       +-- profiledef.sh
-¦       +-- airootfs/
-+-- installer/
-¦   +-- calamares/              # Calamares graphical installer configurations
-¦       +-- settings.conf       # Module execution sequence
-¦       +-- branding/           # Caelaris installer branding and slideshow
-¦       +-- modules/            # Partition, user creation, bootloader, desktop selector
-+-- scripts/
-    +-- setup_build_env.sh      # Prepares Arch/WSL build host with dependencies
-    +-- build.sh                # Main automated ISO build orchestrator
-    +-- test_qemu.sh            # Tests generated ISO in QEMU on Linux/WSL
-    +-- test_qemu.bat           # Tests generated ISO in QEMU on Windows
-```
+<p align="center">
+  <a href="https://github.com/kurokai-kun/caelaris-linux/releases"><img src="https://img.shields.io/badge/Architecture-x86__64%20%7C%20AArch64-blue?style=for-the-badge" alt="Architecture"></a>
+  <a href="https://archlinux.org"><img src="https://img.shields.io/badge/Base-Arch%20Linux%20Rolling-1793d1?style=for-the-badge&logo=arch-linux&logoColor=white" alt="Arch Linux Base"></a>
+  <img src="https://img.shields.io/badge/Desktops-KDE%20Plasma%206%20%2B%20GNOME%204x-6366f1?style=for-the-badge" alt="Desktops">
+  <img src="https://img.shields.io/badge/Filesystem-Btrfs%20%7C%20Ext4-10b981?style=for-the-badge" alt="Filesystem">
+  <img src="https://img.shields.io/badge/License-GPL--3.0-orange?style=for-the-badge" alt="License">
+</p>
 
 ---
 
-## ??? Build Environment Setup (Windows)
+## ðŸŒŒ Overview
 
-Because `mkarchiso` relies on Linux kernel primitives (loopback mounts, ext4/squashfs permissions, `chroot`), the build script must run inside an Arch Linux environment.
+**Caelaris Linux** is a modern, rolling-release operating system built upon the rock-solid foundation of Arch Linux. Engineered for enthusiasts, gamers, creators, and developers, Caelaris delivers out-of-the-box hardware acceleration, low-latency responsiveness, and a unified dual-desktop experience across modern x86_64 PCs and ARM64 devices.
 
-### Option 1: ArchWSL (Fastest & Easiest on Windows)
-1. Install WSL from an Administrator PowerShell prompt:
-   ```powershell
-   wsl --install
-   ```
-2. Download and install **ArchWSL** from [ArchWSL GitHub](https://github.com/yuk7/ArchWSL/releases) (or via winget if available).
-3. Open ArchWSL and navigate to your Windows project directory:
-   ```bash
-   cd /mnt/d/"Linux Project"
-   ```
-4. Run the setup script:
-   ```bash
-   sudo chmod +x scripts/*.sh
-   sudo ./scripts/setup_build_env.sh
-   ```
-
-### Option 2: Arch Linux Virtual Machine (VirtualBox / VMware)
-1. Boot a minimal Arch Linux VM.
-2. Share or clone this folder into the VM.
-3. Run `sudo ./scripts/setup_build_env.sh`.
+<p align="center">
+  <img src="assets/preview.png" alt="Caelaris Linux Desktop Preview" width="100%">
+</p>
 
 ---
 
-## ?? Building Your Distro ISOs
+## âš¡ Key Highlights
 
-To build the **KDE Plasma Edition**:
+### ðŸŽ¨ Dual Desktop Experience in One System
+* **KDE Plasma 6 & GNOME 4x Included**: Both premier desktop environments come pre-installed. Select your preferred environment directly from the modern SDDM login screen at any time.
+* **Zero Application Clutter**: Intelligent desktop filtering ensures KDE-specific apps don't clutter your GNOME launcher, and GNOME utilities don't clutter your KDE launcher.
+* **Modern Wayland by Default**: Ultra-smooth animations, fractional scaling, and multi-monitor variable refresh rate (VRR) support.
+
+### ðŸŽ® High-Performance Gaming & Low-Latency Tuning
+* **Low-Latency Scheduling & Responsiveness**: Dynamic kernel preemption and real-time process priority dispatching (`rtkit`) ensure competitive input responsiveness.
+* **Memory & Storage Optimization**: Pre-configured `vm.max_map_count=2147483642` eliminates crashes and allocation bottlenecks in modern DirectX 12, Unreal Engine 5, and Proton/Wine gaming titles.
+* **ZRAM with zstd Compression**: High-speed memory compression prevents out-of-memory slowdowns and eliminates disk-thrashing hitches during heavy gameplay.
+* **GameMode Pre-Integrated**: Automatically sets CPU governors to peak performance, boosts GPU frequencies, and isolates background processes when launching games.
+* **Cutting-Edge Graphics Pipeline**: Ships with the latest Mesa Vulkan drivers (including ACO shader compilation for AMD, Turnip for Snapdragon Adreno, and Apple AGX for Apple Silicon) plus Wayland direct tearing protocol support.
+
+### ðŸ’¿ Custom Graphical Installer (`caelaris-installer-gui`)
+* **Modern Glassmorphic Wizard**: Fast, intuitive installer built with Python 3 and PyQt6.
+* **Smart Btrfs Layout**: One-click automatic partitioning with subvolumes (`@`, `@home`, `@snapshots`) and zstd transparent compression for instant rollbacks and disk savings. Standard Ext4 is also available.
+* **Architecture-Aware Bootloader**: Automatically provisions EFI system partitions for both standard x86_64 UEFI and ARM64 fallback (`BOOTAA64.EFI`).
+
+### ðŸ’» Multi-Architecture Hardware Support
+* **x86_64 Flagship**: Optimized for modern gaming PCs, Intel/AMD custom rigs, and laptops.
+* **ARM64 Laptops & PCs**: Native support for Apple Silicon Macs (M1/M2/M3/M4 via UTM & Asahi) and Qualcomm Snapdragon X Elite Copilot+ laptops.
+* **Raspberry Pi & SBCs**: Dedicated builds for Raspberry Pi 5, 4, and 3B+.
+* **Cloud & Server Editions**: Lean, headless images with Cloud-Init automation for hypervisors, VPS, and homelabs.
+
+---
+
+## ðŸ“¥ Downloads & Official Releases
+
+All release images are generated via automated, transparent GitHub Actions CI workflows.
+
+| Edition | Target Hardware | Format | Download |
+| :--- | :--- | :--- | :--- |
+| **Flagship Edition** | Standard 64-bit PCs & Laptops (Intel / AMD) | Hybrid ISO (UEFI & BIOS) | [Download (x86_64)](https://github.com/kurokai-kun/caelaris-linux/releases/tag/rolling-release) |
+| **ARM64 Laptop & PC** | Snapdragon X Elite Copilot+ PCs & Apple Silicon (UTM / Asahi) | Multi-part Hybrid ISO | [Download (ARM64 PC)](https://github.com/kurokai-kun/caelaris-linux/releases/tag/arm64-pc-release) |
+| **Raspberry Pi** | Raspberry Pi 5, 4, 400 & 3B+ | Raw Disk Image (`.img.xz`) | [Download (RPi)](https://github.com/kurokai-kun/caelaris-linux/releases/tag/rpi-arm64-release) |
+| **Cloud Edition** | Proxmox, OpenStack, KVM/QEMU, AWS EC2, Hetzner | Cloud-Init ISO | [Download (Cloud)](https://github.com/kurokai-kun/caelaris-linux/releases/tag/cloud-release) |
+| **Server Edition** | Bare-metal & Virtualized Headless Servers | Minimal CLI ISO | [Download (Server)](https://github.com/kurokai-kun/caelaris-linux/releases/tag/server-release) |
+
+> [!NOTE]
+> For multi-part ISO releases (e.g. ARM64 Laptop & PC), download all part files and run `combine.bat` on Windows or `cat caelaris-*.iso.part-* > caelaris.iso` on macOS/Linux.
+
+---
+
+## ðŸš€ Quick Installation Guide
+
+### 1. Create a Bootable Drive
+Write the downloaded ISO image to a USB flash drive (minimum 8 GB recommended):
+* **Recommended Utility (Cross-Platform)**: [Ventoy](https://www.ventoy.net/) (simply copy the `.iso` file onto the drive).
+* **Alternative (Windows)**: [Rufus](https://rufus.ie/) (select *DD Image mode* if prompted).
+* **Alternative (Linux / macOS)**:
+  ```bash
+  sudo dd if=caelaris.iso of=/dev/sdX bs=4M status=progress oflag=sync
+  ```
+
+### 2. Boot & Explore
+1. Insert the USB drive and boot your computer (access your BIOS/UEFI boot menu via `F12`, `F11`, `F10`, or `Del`).
+2. Select **Caelaris Linux** from the bootloader menu.
+3. The live environment will load into an interactive live session. Feel free to test your hardware, Wi-Fi, display, and audio.
+
+### 3. Launch the Installer
+1. Click **Install Caelaris Linux** on the desktop.
+2. Follow the setup wizard to choose your storage drive, partition layout (Btrfs or Ext4), username, and primary desktop session.
+3. When the installation finishes, reboot and remove your USB installation drive.
+
+---
+
+## ðŸ”’ Security & Privacy by Design
+
+* **100% Open Source & Auditable**: Built transparently in public GitHub Actions environments.
+* **Zero Telemetry**: No user tracking, behavioral analytics, or background data collection.
+* **Clean State Guarantee**: Live build processes purge machine-specific identifiers (`/etc/machine-id`) and host SSH keys, ensuring unique, secure keys are generated on each user's machine at first boot.
+* **Cryptographic Verification**: Every release includes official SHA256 checksums to verify download integrity before flashing.
+
+---
+
+## ðŸ› ï¸ Building from Source
+
+Caelaris Linux images can be built automatically via GitHub Actions or locally in an Arch Linux environment:
+
 ```bash
-sudo ./scripts/build.sh kde
-```
+# Clone the repository
+git clone https://github.com/kurokai-kun/caelaris-linux.git
+cd caelaris-linux
 
-To build the **GNOME Edition**:
-```bash
-sudo ./scripts/build.sh gnome
-```
+# Make build scripts executable
+chmod +x scripts/*.sh
 
-The output `.iso` files will be placed in the `./out/` directory (e.g. `out/Caelaris-kde-2026.09-x86_64.iso`).
+# Build the Flagship ISO locally (requires Arch Linux with archiso installed)
+sudo ./scripts/build_flagship.sh
+```
 
 ---
 
-## ?? Testing Your ISO
-
-### In QEMU (Instant test)
-```bash
-./scripts/test_qemu.sh
-```
-Or on Windows:
-```cmd
-.\scripts\test_qemu.bat
-```
-
-### In VirtualBox
-1. Create a new VM: Type `Linux`, Version `Arch Linux (64-bit)`.
-2. Allocate 4 GB RAM, 2-4 vCPUs.
-3. Enable **EFI** in VM Settings -> System -> Motherboard -> `Enable EFI`.
-4. Attach the generated ISO to the optical drive and start the VM.
-
----
-
-## ?? Customizing Caelaris
-
-* **Change Distro Name / Metadata:** Edit `shared/branding/os-release` and `installer/calamares/branding/default/branding.desc`.
-* **Add Default Packages:** Add package names to `shared/packages.common` (for all editions) or `profiles/kde/packages.x86_64` / `profiles/gnome/packages.x86_64`.
-* **Custom Wallpapers & Themes:** Place wallpapers in `shared/airootfs/usr/share/backgrounds/` and theme files in `shared/airootfs/usr/share/themes/`.
+<p align="center">
+  <sub>Caelaris Linux is developed and maintained by the Caelaris Community. Built with Arch Linux.</sub>
+</p>
