@@ -3,6 +3,15 @@ name: Build Caelaris Linux ISO
 on:
   push:
     branches: [ main, master ]
+    paths-ignore:
+      - 'README.md'
+      - 'assets/**'
+      - 'docs/**'
+      - '*.md'
+      - '*.txt'
+      - '*.pdf'
+      - '.gitignore'
+      - 'Caelaris Linux Web Page/**'
   workflow_dispatch:
     inputs:
       edition:
@@ -97,27 +106,65 @@ jobs:
         if: github.ref == 'refs/heads/main'
         with:
           tag_name: rolling-release
-          name: Caelaris Linux Latest Rolling ISO
+          name: Caelaris Linux Flagship Edition (x64 / x86_64 PC & Laptop)
           make_latest: true
           body: |
-            ## ✨ Caelaris Linux Latest Rolling ISO
+            <p align="center">
+              <img src="https://raw.githubusercontent.com/kurokai-kun/caelaris-linux/main/assets/logo.png?v=2" alt="Caelaris Linux Logo" width="140">
+            </p>
+
+            # Caelaris Linux Flagship Edition (x64 / x86_64)
+
+            Official rolling-release flagship operating system for modern 64-bit (x86_64 / x64) desktop PCs and laptops, featuring a dual-desktop experience (**KDE Plasma 6** and **GNOME 4x**) and pre-tuned low-latency gaming architecture.
 
             ${{ env.PIXELDRAIN_LINK != '' && format('### ⚡ Direct 1-Click Download (Single 4.2GB ISO):{0}👉 **[Download Caelaris Linux ISO]({1})**{0}{0}---{0}', '\n', env.PIXELDRAIN_LINK) || '' }}
 
-            ### 📦 GitHub Release Assets Download:
-            Because GitHub has a 2GB limit per release asset, the ISO is split into parts under 1.9GB below:
-            1. Download all `.part-*` files and `combine.bat` from **Assets** below into the same folder.
-            2. Double-click **`combine.bat`** (or open CMD and run `copy /b *.part-* caelaris-kde.iso`).
-            3. Attach the resulting `.iso` to VMware or VirtualBox!
+            ---
+
+            ### 📥 How to Download & Assemble Your ISO
+            Because GitHub limits individual asset uploads to under 2.0 GB, this flagship ISO (~4.2 GB) is split into 3 parts below:
+
+            1. **Download all 4 files below into the same directory**:
+               - `caelaris-kde-*.iso.part-00`
+               - `caelaris-kde-*.iso.part-01`
+               - `caelaris-kde-*.iso.part-02`
+               - `combine.bat` (helper script for Windows)
+
+            2. **Assemble the single ISO file**:
+               * **On Windows**:
+                 Double-click **`combine.bat`**
+                 *(Or open Command Prompt in the download folder and run)*:
+                 ```cmd
+                 copy /b caelaris-kde-*.iso.part-* caelaris-flagship-x64.iso
+                 ```
+               * **On macOS / Linux**:
+                 Open Terminal in your download folder and run:
+                 ```bash
+                 cat caelaris-kde-*.iso.part-* > caelaris-flagship-x64.iso
+                 ```
+
+            3. **Verify Integrity (Optional)**:
+               - Check against `caelaris-kde-*.iso.sha256`.
+
+            4. **Flash to USB & Boot**:
+               - Write `caelaris-flagship-x64.iso` to a USB drive using **[Ventoy](https://www.ventoy.net/)** (recommended) or **[Rufus](https://rufus.ie/)** (in DD image mode).
+               - Boot into the live environment and click **Install Caelaris Linux** on the desktop!
 
             ---
-            ### 🛠️ Issues Addressed in this Build:
-            - **Guaranteed Linux Boot Option**: `/boot/vmlinuz-linux` & microcodes copied to disk; `mkinitcpio` and `grub-mkconfig` generate real Linux entries.
-            - **Eliminated UEFI Loop**: Boots directly into KDE Plasma 6.
-            - **Clean Bootloader**: Streamlined single entry with 3-second timeout.
-            - **Clean Desktop**: Switcher icons removed (switch via SDDM login screen).
-            - **Installer Reboot**: Non-blocking restart prevents kernel freeze.
-            - **Online Keys**: Pacman keyring initialized.
+
+            ### 🎨 Dual Desktop Experience
+            * **Both KDE Plasma 6 & GNOME 4x Included**: Choose your preferred desktop session directly from the modern SDDM login screen at any time.
+            * **Separated Application Menus**: Clean environment isolation ensures KDE utilities stay in Plasma and GNOME tools stay in GNOME with zero duplicate app clutter.
+            * **Modern Wayland by Default**: Fractional scaling, smooth animations, and multi-monitor variable refresh rate (VRR).
+
+            ---
+
+            ### ⚡ Ultra-Low Latency & High-Performance Gaming
+            * **Competitive Low-Latency Scheduling**: Real-time process dispatching (`rtkit`) and optimized thread preemption.
+            * **DirectX 12 / Unreal Engine 5 Tuning**: `vm.max_map_count=2147483642` prevents memory allocation bottlenecks and crashes under Steam Proton/Wine.
+            * **Feral GameMode Pre-Integrated**: Automatically boosts CPU and GPU clocks to performance mode when games start.
+            * **zstd ZRAM Memory Compression**: Eliminates disk-thrashing hitches during heavy gameplay.
+            * **Cutting-Edge Mesa Vulkan Drivers**: ACO shader compiler for AMD, latest Nvidia support, and Wayland direct tearing protocol support.
           files: release_assets/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
