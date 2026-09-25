@@ -38,11 +38,122 @@ QLabel#stepItemDone { color: #10b981; font-size: 13px; padding: 8px 12px; }
 QLabel#pageTitle { color: #f8fafc; font-size: 22px; font-weight: bold; }
 QLabel#pageSubtitle { color: #94a3b8; font-size: 13px; margin-bottom: 8px; }
 QFrame#card { background-color: #131b2e; border: 1px solid #1e293b; border-radius: 10px; padding: 14px; }
-QLineEdit, QComboBox {
+QLineEdit {
     background-color: #0f172a; border: 1px solid #334155;
     border-radius: 6px; padding: 7px 10px; color: #f8fafc;
 }
-QLineEdit:focus, QComboBox:focus { border: 1px solid #38bdf8; }
+QLineEdit:focus { border: 1px solid #38bdf8; }
+
+QComboBox {
+    background-color: #0f172a;
+    border: 2px solid #334155;
+    border-radius: 6px;
+    padding: 7px 12px;
+    color: #f8fafc;
+    font-weight: 500;
+}
+QComboBox:hover {
+    border: 2px solid #38bdf8;
+    background-color: #1e293b;
+}
+QComboBox:focus, QComboBox:on {
+    border: 2px solid #38bdf8;
+    background-color: #1e293b;
+}
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 28px;
+    border-left: 1px solid #334155;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    background-color: #1e293b;
+}
+QComboBox::drop-down:hover {
+    background-color: #0284c7;
+}
+QComboBox::down-arrow {
+    image: url(/usr/share/pixmaps/caelaris-arrow-down.svg);
+    width: 12px;
+    height: 12px;
+}
+QComboBox QAbstractItemView {
+    background-color: #0b0f19;
+    border: 2px solid #38bdf8;
+    border-radius: 6px;
+    selection-background-color: #0284c7;
+    selection-color: #ffffff;
+    color: #f8fafc;
+    padding: 4px;
+    outline: none;
+}
+QComboBox QAbstractItemView::item {
+    min-height: 28px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    color: #f8fafc;
+}
+QComboBox QAbstractItemView::item:hover {
+    background-color: #1e293b;
+    color: #38bdf8;
+}
+QComboBox QAbstractItemView::item:selected {
+    background-color: #0284c7;
+    color: #ffffff;
+    font-weight: bold;
+}
+
+QRadioButton, QCheckBox {
+    color: #f8fafc;
+    font-size: 13px;
+    spacing: 12px;
+    padding: 10px 14px;
+    background-color: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    margin-top: 2px;
+    margin-bottom: 4px;
+}
+QRadioButton:hover, QCheckBox:hover {
+    background-color: #1e293b;
+    border: 1px solid #475569;
+}
+QRadioButton:checked, QCheckBox:checked {
+    background-color: rgba(56, 189, 248, 0.14);
+    border: 2px solid #38bdf8;
+    color: #ffffff;
+    font-weight: 600;
+}
+QRadioButton::indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: 11px;
+    border: 2px solid #64748b;
+    background-color: #0b0f19;
+}
+QRadioButton::indicator:hover {
+    border-color: #38bdf8;
+}
+QRadioButton::indicator:checked {
+    border: 2px solid #38bdf8;
+    background-color: #0b0f19;
+    image: url(/usr/share/pixmaps/caelaris-radio-checked.svg);
+}
+QCheckBox::indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    border: 2px solid #64748b;
+    background-color: #0b0f19;
+}
+QCheckBox::indicator:hover {
+    border-color: #38bdf8;
+}
+QCheckBox::indicator:checked {
+    border: 2px solid #38bdf8;
+    background-color: #0284c7;
+    image: url(/usr/share/pixmaps/caelaris-check.svg);
+}
 QPushButton {
     background-color: #1e293b; color: #f8fafc; border: 1px solid #334155;
     border-radius: 6px; padding: 8px 18px; font-weight: 600;
@@ -1095,8 +1206,38 @@ class CaelarisInstaller(QMainWindow):
             subprocess.Popen(["systemctl", "--no-block", "reboot"])
         self.close()
 
+def ensure_ui_assets():
+    assets = {
+        "caelaris-check.svg": (
+            '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">'
+            '<path fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" '
+            'd="M3.5 8.5 L6.5 11.5 L12.5 4.5"/></svg>'
+        ),
+        "caelaris-radio-checked.svg": (
+            '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">'
+            '<circle cx="8" cy="8" r="4.5" fill="#38bdf8"/></svg>'
+        ),
+        "caelaris-arrow-down.svg": (
+            '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">'
+            '<path fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" '
+            'd="M3.5 5.5 L8 10 L12.5 5.5"/></svg>'
+        )
+    }
+    for fname, content in assets.items():
+        for d in ["/usr/share/pixmaps", "/tmp"]:
+            try:
+                os.makedirs(d, exist_ok=True)
+                p = os.path.join(d, fname)
+                if not os.path.exists(p):
+                    with open(p, "w", encoding="utf-8") as f:
+                        f.write(content)
+            except Exception:
+                pass
+
 if __name__ == "__main__":
+    ensure_ui_assets()
     app = QApplication(sys.argv)
     installer = CaelarisInstaller()
     installer.show()
     sys.exit(app.exec())
+
