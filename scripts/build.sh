@@ -65,53 +65,91 @@ cp -r "${ROOT_DIR}/installer/calamares/." "${BUILD_PROFILE}/airootfs/etc/calamar
 mkdir -p "${BUILD_PROFILE}/airootfs/etc"
 cp "${ROOT_DIR}/shared/branding/os-release" "${BUILD_PROFILE}/airootfs/etc/os-release"
 
-# 9. Brand and configure Dual-Desktop Bootloader Menus (KDE & GNOME Preview Options)
-echo "Configuring bootloader entries for Caelaris Linux (KDE & GNOME)..."
+# 9. Configure Silent, Clutter-Free Bootloader Menus (UEFI & BIOS)
+echo "Configuring bootloader entries for Caelaris Linux..."
 
-# Brand global text
-find "${BUILD_PROFILE}/efiboot" "${BUILD_PROFILE}/grub" "${BUILD_PROFILE}/syslinux" -type f \( -name "*.conf" -o -name "*.cfg" \) -exec sed -i \
+# Strip any residual splash, play, or audible beep directives across all bootloader configs
+find "${BUILD_PROFILE}" -type f \( -name "*.conf" -o -name "*.cfg" \) -exec sed -i \
     -e 's/Arch Linux/Caelaris Linux/g' \
-    -e 's/archlinux/caelaris/g' {} + 2>/dev/null || true
+    -e 's/archlinux/caelaris/g' \
+    -e 's/splash//g' \
+    -e '/^[[:space:]]*play /d' \
+    -e 's/beep on/beep no/g' \
+    -e 's/beep 1/beep no/g' {} + 2>/dev/null || true
 
-# Strip any splash references
-find "${BUILD_PROFILE}/efiboot" "${BUILD_PROFILE}/grub" "${BUILD_PROFILE}/syslinux" -type f \( -name "*.conf" -o -name "*.cfg" \) -exec sed -i \
-    -e 's/splash//g' {} + 2>/dev/null || true
+# A. UEFI systemd-boot configuration (handles both modern loader/ and legacy efiboot/loader/)
+for loader_dir in "${BUILD_PROFILE}/loader" "${BUILD_PROFILE}/efiboot/loader"; do
+    if [ -d "$loader_dir" ]; then
+        mkdir -p "${loader_dir}/entries"
+        # Purge upstream archiso clutter (speech, memtest, uefi-shell, copy-to-ram)
+        rm -rf "${loader_dir}/entries/"* 2>/dev/null || true
 
-# A. UEFI systemd-boot configuration
-if [ -d "${BUILD_PROFILE}/efiboot/loader" ]; then
-    mkdir -p "${BUILD_PROFILE}/efiboot/loader/entries"
-    rm -rf "${BUILD_PROFILE}/efiboot/loader/entries/"* 2>/dev/null || true
-
-    cat > "${BUILD_PROFILE}/efiboot/loader/loader.conf" << 'EOF'
-timeout 3
+        cat > "${loader_dir}/loader.conf" << 'EOF'
+timeout 2
 default 01-caelaris.conf
-beep 0
+beep no
+console-mode max
 EOF
 
-    cat > "${BUILD_PROFILE}/efiboot/loader/entries/01-caelaris.conf" << 'EOF'
+        cat > "${loader_dir}/entries/01-caelaris.conf" << 'EOF'
 title   Caelaris Linux
 linux   /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
 initrd  /%INSTALL_DIR%/boot/intel-ucode.img
 initrd  /%INSTALL_DIR%/boot/amd-ucode.img
 initrd  /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-options archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma video=1920x1080 quiet
+options archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma video=1920x1080 quiet loglevel=3 rd.udev.log_level=3
 EOF
-fi
+
+        cat > "${loader_dir}/entries/02-caelaris-safe.conf" << 'EOF'
+title   Caelaris Linux (Safe Graphics / Fallback)
+linux   /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
+initrd  /%INSTALL_DIR%/boot/intel-ucode.img
+initrd  /%INSTALL_DIR%/boot/amd-ucode.img
+initrd  /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
+options archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma nomodeset quiet
+EOF
+    fi
+done
 
 # B. BIOS Syslinux configuration
 if [ -d "${BUILD_PROFILE}/syslinux" ]; then
-    sed -i 's/TIMEOUT .*/TIMEOUT 30/' "${BUILD_PROFILE}/syslinux/archiso_head.cfg" 2>/dev/null || true
-    sed -i 's/DEFAULT .*/DEFAULT caelaris/' "${BUILD_PROFILE}/syslinux/archiso.cfg" 2>/dev/null || true
+    # Overwrite archiso_sys.cfg to exclude memtest, HDT, speech, and copy-to-RAM clutter
+    cat > "${BUILD_PROFILE}/syslinux/archiso_sys.cfg" << 'EOF'
+INCLUDE archiso_head.cfg
+INCLUDE archiso_sys-linux.cfg
+INCLUDE archiso_tail.cfg
+EOF
+
+    # Configure archiso_head.cfg: disable prompt countdown bell, set quiet timeout
+    if [ -f "${BUILD_PROFILE}/syslinux/archiso_head.cfg" ]; then
+        sed -i 's/PROMPT .*/PROMPT 0/' "${BUILD_PROFILE}/syslinux/archiso_head.cfg" 2>/dev/null || true
+        sed -i 's/TIMEOUT .*/TIMEOUT 20/' "${BUILD_PROFILE}/syslinux/archiso_head.cfg" 2>/dev/null || true
+    fi
+    if [ -f "${BUILD_PROFILE}/syslinux/archiso.cfg" ]; then
+        sed -i 's/DEFAULT .*/DEFAULT caelaris/' "${BUILD_PROFILE}/syslinux/archiso.cfg" 2>/dev/null || true
+    fi
+
+    # Strip audible ASCII bell characters (\x07) from all syslinux configs
+    find "${BUILD_PROFILE}/syslinux" -type f -exec sed -i 's/\x07//g' {} + 2>/dev/null || true
 
     cat > "${BUILD_PROFILE}/syslinux/archiso_sys-linux.cfg" << 'EOF'
 LABEL caelaris
 TEXT HELP
-Boot Caelaris Linux live preview with KDE Plasma 6.
+Boot Caelaris Linux live desktop.
 ENDTEXT
 MENU LABEL Caelaris Linux
 LINUX /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
 INITRD /%INSTALL_DIR%/boot/intel-ucode.img,/%INSTALL_DIR%/boot/amd-ucode.img,/%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma video=1920x1080 quiet
+APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma video=1920x1080 quiet loglevel=3 rd.udev.log_level=3
+
+LABEL caelaris_safe
+TEXT HELP
+Boot Caelaris Linux with basic safe graphics mode.
+ENDTEXT
+MENU LABEL Caelaris Linux (Safe Graphics)
+LINUX /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
+INITRD /%INSTALL_DIR%/boot/intel-ucode.img,/%INSTALL_DIR%/boot/amd-ucode.img,/%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
+APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma nomodeset quiet
 
 LABEL boot_hdd
 TEXT HELP
@@ -123,15 +161,21 @@ APPEND -iso- chain.c32 hd0
 EOF
 fi
 
-# C. GRUB configuration
-if [ -f "${BUILD_PROFILE}/grub/grub.cfg" ]; then
-    cat > "${BUILD_PROFILE}/grub/grub.cfg" << 'EOF'
-set timeout=3
+# C. GRUB configuration (UEFI & BIOS)
+find "${BUILD_PROFILE}" -type f -name "grub.cfg" -exec sh -c '
+    cat > "$1" << "EOF"
 set default="0"
+set timeout=2
 
 menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --class gnu --class os {
     set gfxpayload=keep
-    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma video=1920x1080 quiet
+    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma video=1920x1080 quiet loglevel=3 rd.udev.log_level=3
+    initrd /%INSTALL_DIR%/boot/intel-ucode.img /%INSTALL_DIR%/boot/amd-ucode.img /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
+}
+
+menuentry "Caelaris Linux (Safe Graphics / Fallback)" --class caelaris --class gnu-linux {
+    set gfxpayload=keep
+    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma nomodeset quiet
     initrd /%INSTALL_DIR%/boot/intel-ucode.img /%INSTALL_DIR%/boot/amd-ucode.img /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
 }
 
@@ -140,7 +184,7 @@ menuentry "Boot Installed System (Hard Disk)" --class hd --class disk {
     chainloader +1
 }
 EOF
-fi
+' _ {} \;
 
 # 10. Configure Graphical Boot & Display Manager
 mkdir -p "${BUILD_PROFILE}/airootfs/etc/systemd/system/graphical.target.wants"
@@ -148,6 +192,22 @@ ln -sf /usr/lib/systemd/system/graphical.target "${BUILD_PROFILE}/airootfs/etc/s
 ln -sf /etc/systemd/system/caelaris-live-setup.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/graphical.target.wants/caelaris-live-setup.service"
 ln -sf /usr/lib/systemd/system/sddm.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/display-manager.service"
 ln -sf /usr/lib/systemd/system/sddm.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/graphical.target.wants/sddm.service"
+
+# Configure SDDM Wayland & KWin compositor environment to prevent X11 fallback crashes
+mkdir -p "${BUILD_PROFILE}/airootfs/etc/sddm.conf.d"
+cat > "${BUILD_PROFILE}/airootfs/etc/sddm.conf.d/10-wayland.conf" << 'EOF'
+[General]
+DisplayServer=wayland
+GreeterEnvironment=QT_WAYLAND_SHELL_INTEGRATION=layer-shell
+
+[Wayland]
+CompositorCommand=kwin_wayland --no-lockscreen --no-global-shortcuts --locale1
+EOF
+
+# Mask plymouth services so systemd never hangs waiting on non-existent splash daemon
+ln -sf /dev/null "${BUILD_PROFILE}/airootfs/etc/systemd/system/plymouth-start.service" 2>/dev/null || true
+ln -sf /dev/null "${BUILD_PROFILE}/airootfs/etc/systemd/system/plymouth-quit.service" 2>/dev/null || true
+ln -sf /dev/null "${BUILD_PROFILE}/airootfs/etc/systemd/system/plymouth-quit-wait.service" 2>/dev/null || true
 
 # Mask benign systemd-loop@ service on CD-ROM to silence loopback block device log
 ln -sf /dev/null "${BUILD_PROFILE}/airootfs/etc/systemd/system/systemd-loop@.service" 2>/dev/null || true
