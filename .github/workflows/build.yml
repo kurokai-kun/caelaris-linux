@@ -101,6 +101,19 @@ jobs:
 
           ls -lh release_assets/
 
+      - name: Clean Previous Release Assets
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Purging old ISO split assets from rolling-release..."
+          gh release view rolling-release --json assets -q '.assets[] | select(.name | test("caelaris-kde-.*\\.iso")) | .id' 2>/dev/null | while read -r asset_id; do
+            if [ -n "$asset_id" ]; then
+              echo "Deleting old asset ID: $asset_id"
+              gh api -X DELETE "repos/${{ github.repository }}/releases/assets/$asset_id" || true
+            fi
+          done || true
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
