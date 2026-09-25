@@ -80,7 +80,7 @@ class InstallWorker(QThread):
         process = subprocess.Popen(
             cmd, shell=isinstance(cmd, str),
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            text=True, bufsize=1
+            text=True, bufsize=1, encoding='utf-8', errors='replace'
         )
         for line in iter(process.stdout.readline, ''):
             clean = line.strip()
@@ -144,14 +144,8 @@ class InstallWorker(QThread):
                 self.run_cmd(["umount", "/mnt"])
 
                 mount_opts = "noatime,compress=zstd:1,space_cache=v2"
+                # Mount ONLY root subvolume (@) for extraction - child subvolumes will be mounted after extraction
                 self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@", p2, "/mnt"])
-                for d in ["home", ".snapshots", "var/log", "var/cache", "boot"]:
-                    os.makedirs(f"/mnt/{d}", exist_ok=True)
-
-                self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@home", p2, "/mnt/home"])
-                self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@snapshots", p2, "/mnt/.snapshots"])
-                self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@var_log", p2, "/mnt/var/log"])
-                self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@var_cache", p2, "/mnt/var/cache"])
             else:
                 self.progress_changed.emit(32, f"Formatting Ext4 partition ({p2})...")
                 self.run_cmd(["mkfs.ext4", "-F", "-L", "caelaris", p2])
@@ -168,7 +162,7 @@ class InstallWorker(QThread):
                 "/run/archiso/airootfs.sfs",
                 "/live/filesystem.squashfs"
             ]
-            for root_dir in ["/run/archiso", "/run", "/live"]:
+            for root_dir in ["/run/archiso/bootmnt", "/run/archiso", "/live"]:
                 if os.path.exists(root_dir):
                     sfs_candidates.extend(glob.glob(f"{root_dir}/**/*.sfs", recursive=True))
                     sfs_candidates.extend(glob.glob(f"{root_dir}/**/*.squashfs", recursive=True))
@@ -181,8 +175,8 @@ class InstallWorker(QThread):
             extracted = False
             if sfs:
                 self.log(f"Extracting SquashFS image {sfs} to /mnt...")
-                ret = self.run_cmd(f"unsquashfs -f -no-progress -d /mnt {sfs}", check=False)
-                if ret in [0, 2]:
+                ret = self.run_cmd(f'unsquashfs -f -no-progress -d /mnt "{sfs}"', check=False)
+                if ret in [0, 2] and (os.path.exists("/mnt/usr/bin/bash") or os.path.exists("/mnt/bin/bash")):
                     extracted = True
                     self.log("[SUCCESS] SquashFS image extracted successfully to /mnt.")
                 else:
@@ -191,10 +185,25 @@ class InstallWorker(QThread):
             if not extracted:
                 self.log("Syncing system files to /mnt via rsync from live environment...")
                 self.run_cmd(
-                    "rsync -aAXv --exclude=/dev/* --exclude=/proc/* --exclude=/sys/* "
+                    "rsync -aAX --exclude=/dev/* --exclude=/proc/* --exclude=/sys/* "
                     "--exclude=/tmp/* --exclude=/run/* --exclude=/mnt/* --exclude=/lost+found / /mnt/",
                     check=False
                 )
+                if os.path.exists("/mnt/usr/bin/bash") or os.path.exists("/mnt/bin/bash"):
+                    extracted = True
+                    self.log("[SUCCESS] System files synced successfully to /mnt via rsync.")
+
+            if not extracted:
+                raise RuntimeError("Failed to extract or copy Caelaris Linux system files to /mnt.")
+
+            # If Btrfs, now mount the secondary subvolumes
+            if fs_type == "btrfs":
+                for d in ["home", ".snapshots", "var/log", "var/cache", "boot"]:
+                    os.makedirs(f"/mnt/{d}", exist_ok=True)
+                self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@home", p2, "/mnt/home"])
+                self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@snapshots", p2, "/mnt/.snapshots"])
+                self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@var_log", p2, "/mnt/var/log"])
+                self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@var_cache", p2, "/mnt/var/cache"])
 
             # Mount the EFI partition AFTER extraction (unsquashfs would wipe it otherwise)
             self.progress_changed.emit(55, "Mounting EFI System Partition...")

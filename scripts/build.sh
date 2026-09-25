@@ -98,7 +98,7 @@ linux   /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
 initrd  /%INSTALL_DIR%/boot/intel-ucode.img
 initrd  /%INSTALL_DIR%/boot/amd-ucode.img
 initrd  /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-options archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma video=1920x1080 quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
+options archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma video=1920x1080 quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
 EOF
 
         cat > "${loader_dir}/entries/02-caelaris-safe.conf" << 'EOF'
@@ -107,17 +107,30 @@ linux   /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
 initrd  /%INSTALL_DIR%/boot/intel-ucode.img
 initrd  /%INSTALL_DIR%/boot/amd-ucode.img
 initrd  /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-options archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma nomodeset quiet plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
+options archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma nomodeset quiet plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
 EOF
     fi
 done
 
 # B. BIOS Syslinux configuration
 if [ -d "${BUILD_PROFILE}/syslinux" ]; then
-    # Purge upstream archiso clutter (memtest, HDT, speech)
-    rm -f "${BUILD_PROFILE}/syslinux"/*speech* "${BUILD_PROFILE}/syslinux"/*memtest* "${BUILD_PROFILE}/syslinux"/*hdt* 2>/dev/null || true
+    # Purge upstream archiso clutter (memtest, HDT, speech, PXE)
+    rm -f "${BUILD_PROFILE}/syslinux"/*speech* "${BUILD_PROFILE}/syslinux"/*memtest* "${BUILD_PROFILE}/syslinux"/*hdt* "${BUILD_PROFILE}/syslinux"/archiso_pxe* 2>/dev/null || true
 
-    # Overwrite archiso_sys.cfg to exclude memtest, HDT, speech, and copy-to-RAM clutter
+    cat > "${BUILD_PROFILE}/syslinux/syslinux.cfg" << 'EOF'
+DEFAULT loadconfig
+
+LABEL loadconfig
+  CONFIG archiso_sys.cfg
+EOF
+
+    cat > "${BUILD_PROFILE}/syslinux/archiso_head.cfg" << 'EOF'
+DEFAULT caelaris
+PROMPT 0
+TIMEOUT 20
+MENU TITLE Caelaris Linux
+EOF
+
     cat > "${BUILD_PROFILE}/syslinux/archiso_sys.cfg" << 'EOF'
 INCLUDE archiso_head.cfg
 INCLUDE archiso_sys-linux.cfg
@@ -134,16 +147,7 @@ MENU LABEL Power Off
 COM32 poweroff.c32
 EOF
 
-    # Configure archiso_head.cfg: disable prompt countdown bell, set quiet timeout
-    if [ -f "${BUILD_PROFILE}/syslinux/archiso_head.cfg" ]; then
-        sed -i 's/PROMPT .*/PROMPT 0/' "${BUILD_PROFILE}/syslinux/archiso_head.cfg" 2>/dev/null || true
-        sed -i 's/TIMEOUT .*/TIMEOUT 20/' "${BUILD_PROFILE}/syslinux/archiso_head.cfg" 2>/dev/null || true
-    fi
-    if [ -f "${BUILD_PROFILE}/syslinux/archiso.cfg" ]; then
-        sed -i 's/DEFAULT .*/DEFAULT caelaris/' "${BUILD_PROFILE}/syslinux/archiso.cfg" 2>/dev/null || true
-    fi
-
-    # Strip audible ASCII bell characters (\x07) from all syslinux configs
+    # Strip audible ASCII bell characters (\x07) and prompt beeps from all syslinux configs
     find "${BUILD_PROFILE}/syslinux" -type f -exec sed -i 's/\x07//g' {} + 2>/dev/null || true
 
     cat > "${BUILD_PROFILE}/syslinux/archiso_sys-linux.cfg" << 'EOF'
@@ -154,7 +158,7 @@ ENDTEXT
 MENU LABEL Caelaris Linux
 LINUX /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
 INITRD /%INSTALL_DIR%/boot/intel-ucode.img,/%INSTALL_DIR%/boot/amd-ucode.img,/%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma video=1920x1080 quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
+APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma video=1920x1080 quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
 
 LABEL caelaris_safe
 TEXT HELP
@@ -163,7 +167,7 @@ ENDTEXT
 MENU LABEL Caelaris Linux (Safe Graphics)
 LINUX /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
 INITRD /%INSTALL_DIR%/boot/intel-ucode.img,/%INSTALL_DIR%/boot/amd-ucode.img,/%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma nomodeset quiet plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
+APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma nomodeset quiet plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
 
 LABEL boot_hdd
 TEXT HELP
@@ -183,13 +187,13 @@ set timeout=2
 
 menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --class gnu --class os {
     set gfxpayload=keep
-    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma video=1920x1080 quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
+    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma video=1920x1080 quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
     initrd /%INSTALL_DIR%/boot/intel-ucode.img /%INSTALL_DIR%/boot/amd-ucode.img /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
 }
 
 menuentry "Caelaris Linux (Safe Graphics / Fallback)" --class caelaris --class gnu-linux {
     set gfxpayload=keep
-    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma nomodeset quiet plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
+    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma nomodeset quiet plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
     initrd /%INSTALL_DIR%/boot/intel-ucode.img /%INSTALL_DIR%/boot/amd-ucode.img /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
 }
 
@@ -202,10 +206,13 @@ EOF
 
 # 10. Configure Graphical Boot & Display Manager
 mkdir -p "${BUILD_PROFILE}/airootfs/etc/systemd/system/graphical.target.wants"
+mkdir -p "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants"
 ln -sf /usr/lib/systemd/system/graphical.target "${BUILD_PROFILE}/airootfs/etc/systemd/system/default.target"
 ln -sf /etc/systemd/system/caelaris-live-setup.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/graphical.target.wants/caelaris-live-setup.service"
+ln -sf /etc/systemd/system/caelaris-live-setup.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/caelaris-live-setup.service"
 ln -sf /usr/lib/systemd/system/sddm.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/display-manager.service"
 ln -sf /usr/lib/systemd/system/sddm.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/graphical.target.wants/sddm.service"
+ln -sf /usr/lib/systemd/system/sddm.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/sddm.service"
 
 # Configure SDDM with stable display server and pre-configured autologin
 mkdir -p "${BUILD_PROFILE}/airootfs/etc/sddm.conf.d"
