@@ -43,8 +43,8 @@ fi
 cat "${ROOT_DIR}/shared/packages.common" >> "${BUILD_PROFILE}/packages.x86_64"
 cat "${PROFILE_SRC}/packages.x86_64" >> "${BUILD_PROFILE}/packages.x86_64"
 
-# 4. Filter unwanted packages (beeps, accessibility speech clutter, memtest, edk2-shell) and deduplicate
-sed -i -E '/^(livecd-sounds|espeakup|brltty|memtest86\+|memtest86\+-efi|edk2-shell|virtualbox-guest-utils-nox)$/d' "${BUILD_PROFILE}/packages.x86_64"
+# 4. Filter unwanted packages (beeps, accessibility speech clutter, memtest, edk2-shell, plymouth) and deduplicate
+sed -i -E '/^(livecd-sounds|espeakup|brltty|memtest86\+|memtest86\+-efi|edk2-shell|virtualbox-guest-utils-nox|plymouth|breeze-plymouth)$/d' "${BUILD_PROFILE}/packages.x86_64"
 sort -u "${BUILD_PROFILE}/packages.x86_64" -o "${BUILD_PROFILE}/packages.x86_64"
 sed -i '/^[[:space:]]*#/d; /^[[:space:]]*$/d' "${BUILD_PROFILE}/packages.x86_64"
 
@@ -88,7 +88,7 @@ for loader_dir in "${BUILD_PROFILE}/loader" "${BUILD_PROFILE}/efiboot/loader"; d
         cat > "${loader_dir}/loader.conf" << 'EOF'
 timeout 2
 default 01-caelaris.conf
-beep 0
+beep off
 console-mode max
 EOF
 
@@ -125,10 +125,19 @@ LABEL loadconfig
 EOF
 
     cat > "${BUILD_PROFILE}/syslinux/archiso_head.cfg" << 'EOF'
+UI vesamenu.c32
 DEFAULT caelaris
 PROMPT 0
 TIMEOUT 20
 MENU TITLE Caelaris Linux
+MENU BACKGROUND splash.png
+MENU COLOR border       30;44   #40ffffff #a0000000 std
+MENU COLOR title        1;36;44 #9033ccff #a0000000 std
+MENU COLOR sel          7;37;40 #e0ffffff #20ffffff all
+MENU COLOR unsel        37;44   #50ffffff #a0000000 std
+MENU COLOR help         37;40   #c0ffffff #a0000000 std
+MENU COLOR timeout_msg  37;40   #80ffffff #00000000 std
+MENU COLOR timeout      1;37;40 #c0ffffff #00000000 std
 EOF
 
     cat > "${BUILD_PROFILE}/syslinux/archiso_sys.cfg" << 'EOF'
@@ -168,19 +177,11 @@ MENU LABEL Caelaris Linux (Safe Graphics)
 LINUX /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
 INITRD /%INSTALL_DIR%/boot/intel-ucode.img,/%INSTALL_DIR%/boot/amd-ucode.img,/%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
 APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma nomodeset quiet plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
-
-LABEL boot_hdd
-TEXT HELP
-Boot installed operating system from the primary local hard drive.
-ENDTEXT
-MENU LABEL Boot Installed System (Hard Disk)
-COM32 whichsys.c32
-APPEND -iso- chain.c32 hd0
 EOF
 fi
 
 # C. GRUB configuration (UEFI & BIOS)
-find "${BUILD_PROFILE}" -type f -name "grub.cfg" -exec sh -c '
+find "${BUILD_PROFILE}" -type f \( -name "grub.cfg" -o -name "loopback.cfg" \) -exec sh -c '
     cat > "$1" << "EOF"
 set default="0"
 set timeout=2
@@ -195,11 +196,6 @@ menuentry "Caelaris Linux (Safe Graphics / Fallback)" --class caelaris --class g
     set gfxpayload=keep
     linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma nomodeset quiet plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
     initrd /%INSTALL_DIR%/boot/intel-ucode.img /%INSTALL_DIR%/boot/amd-ucode.img /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-}
-
-menuentry "Boot Installed System (Hard Disk)" --class hd --class disk {
-    set root=(hd0)
-    chainloader +1
 }
 EOF
 ' _ {} \;
@@ -225,7 +221,6 @@ EOF
 
 cat > "${BUILD_PROFILE}/airootfs/etc/sddm.conf.d/10-general.conf" << 'EOF'
 [General]
-DisplayServer=x11
 HaltCommand=/usr/bin/systemctl poweroff
 RebootCommand=/usr/bin/systemctl reboot
 

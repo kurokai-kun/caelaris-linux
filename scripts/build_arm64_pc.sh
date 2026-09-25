@@ -271,9 +271,6 @@ cat << 'EOF' > "${ROOTFS_DIR}/etc/sddm.conf.d/10-caelaris.conf"
 [Theme]
 Current=breeze
 CursorTheme=breeze_cursors
-
-[General]
-DisplayServer=x11
 EOF
 
 SESSION_NAME="plasma"

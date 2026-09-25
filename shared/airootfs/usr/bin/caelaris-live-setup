@@ -51,7 +51,6 @@ EOF
 
 cat > /etc/sddm.conf.d/10-general.conf << 'EOF'
 [General]
-DisplayServer=x11
 HaltCommand=/usr/bin/systemctl poweroff
 RebootCommand=/usr/bin/systemctl reboot
 
