@@ -70,7 +70,11 @@ class CaelarisWelcome(Gtk.Window):
             tab_general.pack_start(btn_install, False, False, 0)
 
 
-        btn_update = Gtk.Button(label="Update Package Repositories (pacman -Syu)")
+        btn_caelaris_update = Gtk.Button(label="⚡ Sync Caelaris Linux with GitHub & Update System (caelaris-update)")
+        btn_caelaris_update.connect("clicked", self.run_terminal_command, "caelaris-update")
+        tab_general.pack_start(btn_caelaris_update, False, False, 0)
+
+        btn_update = Gtk.Button(label="Standard Arch Linux Package Update (pacman -Syu)")
         btn_update.connect("clicked", self.run_terminal_command, "sudo pacman -Syu")
         tab_general.pack_start(btn_update, False, False, 0)
 

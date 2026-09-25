@@ -64,6 +64,8 @@ python-pyqt6
 squashfs-tools
 parted
 gptfdisk
+git
+
 
 # ==========================================================
 # Browser & Media
