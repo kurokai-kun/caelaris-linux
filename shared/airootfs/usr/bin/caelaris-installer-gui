@@ -9,6 +9,10 @@ import sys
 import os
 import time
 import subprocess
+import glob
+import shutil
+import platform
+import traceback
 from pathlib import Path
 
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
@@ -103,7 +107,6 @@ class InstallWorker(QThread):
             hostname = cfg['hostname']
             autologin = cfg['autologin']
             desktop = cfg['desktop']
-            import platform
             is_aarch64 = platform.machine().lower() in ["aarch64", "arm64"]
 
             self.progress_changed.emit(5, f"Preparing target disk {disk}...")
@@ -116,11 +119,18 @@ class InstallWorker(QThread):
             self.run_cmd(["sgdisk", "-n", "1:0:+512M", "-t", "1:ef00", "-c", "1:EFI-SP", disk])
             self.run_cmd(["sgdisk", "-n", "2:0:0", "-t", "2:8300", "-c", "2:Caelaris-Root", disk])
             self.run_cmd(["partprobe", disk], check=False)
+            self.run_cmd("udevadm settle", check=False)
             time.sleep(2)
 
-            p_prefix = "p" if ("nvme" in disk or "mmcblk" in disk) else ""
+            p_prefix = "p" if (disk[-1].isdigit()) else ""
             p1 = f"{disk}{p_prefix}1"
             p2 = f"{disk}{p_prefix}2"
+
+            for _ in range(5):
+                if os.path.exists(p1) and os.path.exists(p2):
+                    break
+                self.run_cmd("udevadm settle", check=False)
+                time.sleep(1)
 
             self.progress_changed.emit(25, f"Formatting EFI partition ({p1})...")
             self.run_cmd(["mkfs.fat", "-F32", "-n", "ESP", p1])
@@ -142,38 +152,55 @@ class InstallWorker(QThread):
                 self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@snapshots", p2, "/mnt/.snapshots"])
                 self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@var_log", p2, "/mnt/var/log"])
                 self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@var_cache", p2, "/mnt/var/cache"])
-                # NOTE: ESP is mounted AFTER unsquashfs extraction at step 55 to avoid overwrite
             else:
                 self.progress_changed.emit(32, f"Formatting Ext4 partition ({p2})...")
                 self.run_cmd(["mkfs.ext4", "-F", "-L", "caelaris", p2])
                 self.run_cmd(["mount", p2, "/mnt"])
-                # NOTE: ESP is mounted AFTER unsquashfs extraction at step 55 to avoid overwrite
-
 
             self.progress_changed.emit(45, "Extracting Caelaris Linux system files...")
             sfs = None
-            for cand in [
+            sfs_candidates = [
                 "/run/archiso/bootmnt/arch/x86_64/airootfs.sfs",
-                "/run/archiso/airootfs.sfs",
+                "/run/archiso/bootmnt/arch/airootfs.sfs",
+                "/run/archiso/bootmnt/caelaris/x86_64/airootfs.sfs",
+                "/run/archiso/bootmnt/caelaris/airootfs.sfs",
                 "/run/archiso/bootmnt/live/filesystem.squashfs",
+                "/run/archiso/airootfs.sfs",
                 "/live/filesystem.squashfs"
-            ] + glob.glob("/run/archiso/**/filesystem.squashfs", recursive=True) + glob.glob("/run/archiso/**/airootfs.sfs", recursive=True):
+            ]
+            for root_dir in ["/run/archiso", "/run", "/live"]:
+                if os.path.exists(root_dir):
+                    sfs_candidates.extend(glob.glob(f"{root_dir}/**/*.sfs", recursive=True))
+                    sfs_candidates.extend(glob.glob(f"{root_dir}/**/*.squashfs", recursive=True))
+
+            for cand in sfs_candidates:
                 if os.path.isfile(cand):
                     sfs = cand
                     break
+
+            extracted = False
             if sfs:
                 self.log(f"Extracting SquashFS image {sfs} to /mnt...")
-                self.run_cmd(f"unsquashfs -f -d /mnt {sfs}")
-            else:
-                self.log("Syncing system files to /mnt via rsync...")
-                self.run_cmd("rsync -aAXv --exclude={'/dev/*','/proc/*','/sys/*','/tmp/*','/run/*','/mnt/*','/lost+found'} / /mnt/", check=False)
+                ret = self.run_cmd(f"unsquashfs -f -no-progress -d /mnt {sfs}", check=False)
+                if ret in [0, 2]:
+                    extracted = True
+                    self.log("[SUCCESS] SquashFS image extracted successfully to /mnt.")
+                else:
+                    self.log(f"[WARNING] unsquashfs returned code {ret}, falling back to live root sync via rsync...")
+
+            if not extracted:
+                self.log("Syncing system files to /mnt via rsync from live environment...")
+                self.run_cmd(
+                    "rsync -aAXv --exclude=/dev/* --exclude=/proc/* --exclude=/sys/* "
+                    "--exclude=/tmp/* --exclude=/run/* --exclude=/mnt/* --exclude=/lost+found / /mnt/",
+                    check=False
+                )
 
             # Mount the EFI partition AFTER extraction (unsquashfs would wipe it otherwise)
             self.progress_changed.emit(55, "Mounting EFI System Partition...")
             os.makedirs("/mnt/boot/efi", exist_ok=True)
             self.run_cmd(["umount", "/mnt/boot/efi"], check=False)
             self.run_cmd(["mount", p1, "/mnt/boot/efi"])
-
 
             self.progress_changed.emit(68, "Generating /etc/fstab...")
             self.run_cmd("genfstab -U /mnt >> /mnt/etc/fstab")
@@ -190,7 +217,9 @@ class InstallWorker(QThread):
                 f.write("LANG=en_US.UTF-8\n")
 
             self.progress_changed.emit(82, f"Configuring user '{user}' and desktop sessions...")
-            self.run_cmd(f"arch-chroot /mnt useradd -m -c '{realname}' -g users -G wheel,video,audio,optical,storage,input,power,gamemode -s /bin/bash '{user}'", check=False)
+            self.run_cmd(f"arch-chroot /mnt groupadd -f gamemode 2>/dev/null || true", check=False)
+            self.run_cmd(f"arch-chroot /mnt useradd -m -c '{realname}' -g users -G wheel,video,audio,optical,storage,input,power -s /bin/bash '{user}'", check=False)
+            self.run_cmd(f"arch-chroot /mnt usermod -aG gamemode '{user}' 2>/dev/null || true", check=False)
             self.run_cmd(f"echo '{user}:{password}' | arch-chroot /mnt chpasswd")
             self.run_cmd(f"echo 'root:{password}' | arch-chroot /mnt chpasswd")
             with open("/mnt/etc/sudoers.d/wheel", "w") as f:
@@ -210,25 +239,36 @@ class InstallWorker(QThread):
                 if os.path.isdir(stale_live):
                     shutil.rmtree(stale_live, ignore_errors=True)
                 elif os.path.exists(stale_live):
-                    os.remove(stale_live)
+                    try:
+                        os.remove(stale_live)
+                    except OSError:
+                        pass
 
             sess_name = "gnome" if "gnome" in str(desktop).lower() else "plasma"
+            desktop_session = f"{sess_name}.desktop"
             os.makedirs("/mnt/var/lib/AccountsService/users", exist_ok=True)
             with open(f"/mnt/var/lib/AccountsService/users/{user}", "w") as f:
-                f.write(f"[User]\nLanguage=en_US.UTF-8\nSession={sess_name}\nXSession={sess_name}\nSystemAccount=false\nRealName={realname}\nIcon=/usr/share/pixmaps/caelaris-logo.png\n")
-
+                f.write(f"[User]\nLanguage=en_US.UTF-8\nSession={desktop_session}\nXSession={desktop_session}\nSystemAccount=false\nRealName={realname}\nIcon=/usr/share/pixmaps/caelaris-logo.png\n")
 
             os.makedirs("/mnt/etc/sddm.conf.d", exist_ok=True)
-            sddm_cfg = f"[Theme]\nCurrent=breeze\nCursorTheme=breeze_cursors\n"
+            sddm_cfg = (
+                "[Theme]\n"
+                "Current=breeze\n"
+                "CursorTheme=breeze_cursors\n\n"
+                "[General]\n"
+                "DisplayServer=wayland\n"
+                "GreeterEnvironment=QT_WAYLAND_SHELL_INTEGRATION=layer-shell\n\n"
+                "[Wayland]\n"
+                "CompositorCommand=kwin_wayland --no-lockscreen --no-global-shortcuts --locale1\n"
+            )
             if autologin:
-                sddm_cfg += f"\n[Autologin]\nUser={user}\nSession={sess_name}\nRelogin=false\n"
+                sddm_cfg += f"\n[Autologin]\nUser={user}\nSession={desktop_session}\nRelogin=false\n"
             with open("/mnt/etc/sddm.conf.d/10-caelaris.conf", "w") as f:
                 f.write(sddm_cfg)
 
             # ── Ensure Linux Kernel & Microcodes exist in /mnt/boot ──────────
             self.progress_changed.emit(85, "Installing Linux Kernel & Microcode binaries...")
             os.makedirs("/mnt/boot", exist_ok=True)
-            import glob, shutil
 
             # 1. Locate and copy kernel vmlinuz-linux or Image
             k_copied = False
@@ -500,7 +540,6 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
                         pass
 
             # Remove any stray switch-to-*.desktop
-            import glob
             for shortcut in glob.glob(f"/mnt/home/{user}/Desktop/switch-to-*.desktop") + glob.glob("/mnt/etc/skel/Desktop/switch-to-*.desktop"):
                 try:
                     os.remove(shortcut)
@@ -585,8 +624,9 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
             self.installation_finished.emit(True, "Caelaris Linux installed successfully!")
 
         except Exception as e:
-            self.log(f"[ERROR] {str(e)}")
-            self.installation_finished.emit(False, str(e))
+            tb = traceback.format_exc()
+            self.log(f"[ERROR] {str(e)}\n{tb}")
+            self.installation_finished.emit(False, f"Installation encountered an error:\n\n{str(e)}\n\nDetails:\n{tb}")
 
 class CaelarisInstaller(QMainWindow):
     def __init__(self):
