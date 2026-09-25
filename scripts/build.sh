@@ -43,10 +43,10 @@ fi
 cat "${ROOT_DIR}/shared/packages.common" >> "${BUILD_PROFILE}/packages.x86_64"
 cat "${PROFILE_SRC}/packages.x86_64" >> "${BUILD_PROFILE}/packages.x86_64"
 
-# 4. Sort and deduplicate packages
+# 4. Filter unwanted packages (beeps, accessibility speech clutter, memtest, edk2-shell) and deduplicate
+sed -i -E '/^(livecd-sounds|espeakup|brltty|memtest86\+|memtest86\+-efi|edk2-shell|virtualbox-guest-utils-nox)$/d' "${BUILD_PROFILE}/packages.x86_64"
 sort -u "${BUILD_PROFILE}/packages.x86_64" -o "${BUILD_PROFILE}/packages.x86_64"
 sed -i '/^[[:space:]]*#/d; /^[[:space:]]*$/d' "${BUILD_PROFILE}/packages.x86_64"
-sed -i '/virtualbox-guest-utils-nox/d' "${BUILD_PROFILE}/packages.x86_64"
 
 # 5. Overlay shared pacman.conf
 cp "${ROOT_DIR}/shared/pacman.conf" "${BUILD_PROFILE}/pacman.conf"
@@ -74,8 +74,9 @@ find "${BUILD_PROFILE}" -type f \( -name "*.conf" -o -name "*.cfg" \) -exec sed 
     -e 's/archlinux/caelaris/g' \
     -e 's/splash//g' \
     -e '/^[[:space:]]*play /d' \
-    -e 's/beep on/beep no/g' \
-    -e 's/beep 1/beep no/g' {} + 2>/dev/null || true
+    -e 's/beep on/beep 0/g' \
+    -e 's/beep no/beep 0/g' \
+    -e 's/beep 1/beep 0/g' {} + 2>/dev/null || true
 
 # A. UEFI systemd-boot configuration (handles both modern loader/ and legacy efiboot/loader/)
 for loader_dir in "${BUILD_PROFILE}/loader" "${BUILD_PROFILE}/efiboot/loader"; do
@@ -87,7 +88,7 @@ for loader_dir in "${BUILD_PROFILE}/loader" "${BUILD_PROFILE}/efiboot/loader"; d
         cat > "${loader_dir}/loader.conf" << 'EOF'
 timeout 2
 default 01-caelaris.conf
-beep no
+beep 0
 console-mode max
 EOF
 
@@ -97,7 +98,7 @@ linux   /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
 initrd  /%INSTALL_DIR%/boot/intel-ucode.img
 initrd  /%INSTALL_DIR%/boot/amd-ucode.img
 initrd  /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-options archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma video=1920x1080 quiet loglevel=3 rd.udev.log_level=3
+options archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma video=1920x1080 quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
 EOF
 
         cat > "${loader_dir}/entries/02-caelaris-safe.conf" << 'EOF'
@@ -106,18 +107,31 @@ linux   /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
 initrd  /%INSTALL_DIR%/boot/intel-ucode.img
 initrd  /%INSTALL_DIR%/boot/amd-ucode.img
 initrd  /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-options archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma nomodeset quiet
+options archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma nomodeset quiet plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
 EOF
     fi
 done
 
 # B. BIOS Syslinux configuration
 if [ -d "${BUILD_PROFILE}/syslinux" ]; then
+    # Purge upstream archiso clutter (memtest, HDT, speech)
+    rm -f "${BUILD_PROFILE}/syslinux"/*speech* "${BUILD_PROFILE}/syslinux"/*memtest* "${BUILD_PROFILE}/syslinux"/*hdt* 2>/dev/null || true
+
     # Overwrite archiso_sys.cfg to exclude memtest, HDT, speech, and copy-to-RAM clutter
     cat > "${BUILD_PROFILE}/syslinux/archiso_sys.cfg" << 'EOF'
 INCLUDE archiso_head.cfg
 INCLUDE archiso_sys-linux.cfg
 INCLUDE archiso_tail.cfg
+EOF
+
+    cat > "${BUILD_PROFILE}/syslinux/archiso_tail.cfg" << 'EOF'
+LABEL reboot
+MENU LABEL Reboot
+COM32 reboot.c32
+
+LABEL poweroff
+MENU LABEL Power Off
+COM32 poweroff.c32
 EOF
 
     # Configure archiso_head.cfg: disable prompt countdown bell, set quiet timeout
@@ -140,7 +154,7 @@ ENDTEXT
 MENU LABEL Caelaris Linux
 LINUX /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
 INITRD /%INSTALL_DIR%/boot/intel-ucode.img,/%INSTALL_DIR%/boot/amd-ucode.img,/%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma video=1920x1080 quiet loglevel=3 rd.udev.log_level=3
+APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma video=1920x1080 quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
 
 LABEL caelaris_safe
 TEXT HELP
@@ -149,7 +163,7 @@ ENDTEXT
 MENU LABEL Caelaris Linux (Safe Graphics)
 LINUX /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
 INITRD /%INSTALL_DIR%/boot/intel-ucode.img,/%INSTALL_DIR%/boot/amd-ucode.img,/%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma nomodeset quiet
+APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma nomodeset quiet plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
 
 LABEL boot_hdd
 TEXT HELP
@@ -169,13 +183,13 @@ set timeout=2
 
 menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --class gnu --class os {
     set gfxpayload=keep
-    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma video=1920x1080 quiet loglevel=3 rd.udev.log_level=3
+    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma video=1920x1080 quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
     initrd /%INSTALL_DIR%/boot/intel-ucode.img /%INSTALL_DIR%/boot/amd-ucode.img /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
 }
 
 menuentry "Caelaris Linux (Safe Graphics / Fallback)" --class caelaris --class gnu-linux {
     set gfxpayload=keep
-    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma nomodeset quiet
+    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% desktop=plasma nomodeset quiet plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
     initrd /%INSTALL_DIR%/boot/intel-ucode.img /%INSTALL_DIR%/boot/amd-ucode.img /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
 }
 
@@ -193,21 +207,31 @@ ln -sf /etc/systemd/system/caelaris-live-setup.service "${BUILD_PROFILE}/airootf
 ln -sf /usr/lib/systemd/system/sddm.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/display-manager.service"
 ln -sf /usr/lib/systemd/system/sddm.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/graphical.target.wants/sddm.service"
 
-# Configure SDDM Wayland & KWin compositor environment to prevent X11 fallback crashes
+# Configure SDDM with stable display server and pre-configured autologin
 mkdir -p "${BUILD_PROFILE}/airootfs/etc/sddm.conf.d"
-cat > "${BUILD_PROFILE}/airootfs/etc/sddm.conf.d/10-wayland.conf" << 'EOF'
-[General]
-DisplayServer=wayland
-GreeterEnvironment=QT_WAYLAND_SHELL_INTEGRATION=layer-shell
-
-[Wayland]
-CompositorCommand=kwin_wayland --no-lockscreen --no-global-shortcuts --locale1
+cat > "${BUILD_PROFILE}/airootfs/etc/sddm.conf.d/autologin.conf" << 'EOF'
+[Autologin]
+User=liveuser
+Session=plasma
+Relogin=false
 EOF
 
-# Mask plymouth services so systemd never hangs waiting on non-existent splash daemon
-ln -sf /dev/null "${BUILD_PROFILE}/airootfs/etc/systemd/system/plymouth-start.service" 2>/dev/null || true
-ln -sf /dev/null "${BUILD_PROFILE}/airootfs/etc/systemd/system/plymouth-quit.service" 2>/dev/null || true
-ln -sf /dev/null "${BUILD_PROFILE}/airootfs/etc/systemd/system/plymouth-quit-wait.service" 2>/dev/null || true
+cat > "${BUILD_PROFILE}/airootfs/etc/sddm.conf.d/10-general.conf" << 'EOF'
+[General]
+DisplayServer=x11
+HaltCommand=/usr/bin/systemctl poweroff
+RebootCommand=/usr/bin/systemctl reboot
+
+[Theme]
+Current=breeze
+CursorTheme=breeze_cursors
+EOF
+rm -f "${BUILD_PROFILE}/airootfs/etc/sddm.conf.d/10-wayland.conf" 2>/dev/null || true
+
+# Mask plymouth services completely so systemd never hangs waiting on splash daemon
+for unit in plymouth-start.service plymouth-quit.service plymouth-quit-wait.service plymouth-reboot.service plymouth-poweroff.service plymouth-halt.service plymouth-kexec.service plymouth-switch-root.service; do
+    ln -sf /dev/null "${BUILD_PROFILE}/airootfs/etc/systemd/system/${unit}" 2>/dev/null || true
+done
 
 # Mask benign systemd-loop@ service on CD-ROM to silence loopback block device log
 ln -sf /dev/null "${BUILD_PROFILE}/airootfs/etc/systemd/system/systemd-loop@.service" 2>/dev/null || true

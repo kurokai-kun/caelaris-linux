@@ -6,7 +6,7 @@ if grep -q "desktop=gnome" /proc/cmdline 2>/dev/null || grep -q "session=gnome" 
     DESKTOP_CHOICE="gnome"
 fi
 
-SESSION_NAME="${DESKTOP_CHOICE}.desktop"
+SESSION_NAME="${DESKTOP_CHOICE}"
 
 # 1. Update AccountsService for all regular users (UID >= 1000)
 if [ -d /var/lib/AccountsService/users ]; then

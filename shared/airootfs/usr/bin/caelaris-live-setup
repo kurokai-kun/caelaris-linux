@@ -2,8 +2,9 @@
 # caelaris-live-setup: System initialization for live session
 set +e
 
-# Mask any lingering Plymouth services to prevent boot hang
-systemctl mask plymouth-start.service plymouth-quit.service plymouth-quit-wait.service 2>/dev/null || true
+# Mask and terminate any lingering Plymouth services to prevent boot hang
+systemctl mask --now plymouth-start.service plymouth-quit.service plymouth-quit-wait.service plymouth-reboot.service plymouth-poweroff.service plymouth-halt.service 2>/dev/null || true
+killall -9 plymouth plymouthd 2>/dev/null || true
 
 # 1. Create liveuser if not already created by systemd-sysusers
 if ! id -u liveuser >/dev/null 2>&1; then
@@ -22,21 +23,8 @@ if grep -q "desktop=gnome" /proc/cmdline 2>/dev/null || grep -q "session=gnome" 
     DESKTOP_CHOICE="gnome"
 fi
 
-# Detect exact session name available (SDDM requires exact .desktop filename)
-SESSION_NAME="plasma.desktop"
-if [ "$DESKTOP_CHOICE" = "gnome" ]; then
-    SESSION_NAME="gnome.desktop"
-else
-    if [ -f /usr/share/wayland-sessions/plasma.desktop ]; then
-        SESSION_NAME="plasma.desktop"
-    elif [ -f /usr/share/wayland-sessions/plasmawayland.desktop ]; then
-        SESSION_NAME="plasmawayland.desktop"
-    elif [ -f /usr/share/xsessions/plasma.desktop ]; then
-        SESSION_NAME="plasma.desktop"
-    else
-        SESSION_NAME="plasma.desktop"
-    fi
-fi
+# Set session name without .desktop suffix (SDDM expects "plasma" or "gnome")
+SESSION_NAME="${DESKTOP_CHOICE}"
 
 # Configure AccountsService
 mkdir -p /var/lib/AccountsService/users
@@ -51,7 +39,7 @@ Icon=/usr/share/pixmaps/caelaris-logo.png
 EOF
 chmod 0644 /var/lib/AccountsService/users/liveuser
 
-# 3. Configure SDDM for Wayland & Autologin
+# 3. Configure SDDM for Stable Autologin
 mkdir -p /etc/sddm.conf.d
 
 cat > /etc/sddm.conf.d/autologin.conf << EOF
@@ -63,17 +51,13 @@ EOF
 
 cat > /etc/sddm.conf.d/10-general.conf << 'EOF'
 [General]
-DisplayServer=wayland
-GreeterEnvironment=QT_WAYLAND_SHELL_INTEGRATION=layer-shell
+DisplayServer=x11
 HaltCommand=/usr/bin/systemctl poweroff
 RebootCommand=/usr/bin/systemctl reboot
 
 [Theme]
 Current=breeze
 CursorTheme=breeze_cursors
-
-[Wayland]
-CompositorCommand=kwin_wayland --no-lockscreen --no-global-shortcuts --locale1
 EOF
 
 # 4. Copy skeleton files & desktop shortcuts

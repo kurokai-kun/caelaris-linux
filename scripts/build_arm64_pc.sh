@@ -265,6 +265,7 @@ fs-type = swap
 EOF
 
 # Configure SDDM display manager with modern theme and autologin to live user
+# Configure SDDM display manager with modern theme and autologin to live user
 mkdir -p "${ROOTFS_DIR}/etc/sddm.conf.d"
 cat << 'EOF' > "${ROOTFS_DIR}/etc/sddm.conf.d/10-caelaris.conf"
 [Theme]
@@ -272,11 +273,7 @@ Current=breeze
 CursorTheme=breeze_cursors
 
 [General]
-DisplayServer=wayland
-GreeterEnvironment=QT_WAYLAND_SHELL_INTEGRATION=layer-shell
-
-[Wayland]
-CompositorCommand=kwin_wayland --no-lockscreen --no-global-shortcuts --locale1
+DisplayServer=x11
 EOF
 
 SESSION_NAME="plasma"
@@ -287,7 +284,7 @@ fi
 cat << EOF > "${ROOTFS_DIR}/etc/sddm.conf.d/autologin.conf"
 [Autologin]
 User=liveuser
-Session=${SESSION_NAME}.desktop
+Session=${SESSION_NAME}
 Relogin=false
 EOF
 
@@ -306,7 +303,7 @@ ConditionPathExists=/etc/sddm.conf.d/autologin.conf
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash -c 'if grep -qw "session=gnome" /proc/cmdline; then sed -i "s/Session=.*/Session=gnome.desktop/" /etc/sddm.conf.d/autologin.conf; else sed -i "s/Session=.*/Session=plasma.desktop/" /etc/sddm.conf.d/autologin.conf; fi'
+ExecStart=/bin/bash -c 'if grep -qw "session=gnome" /proc/cmdline; then sed -i "s/Session=.*/Session=gnome/" /etc/sddm.conf.d/autologin.conf; else sed -i "s/Session=.*/Session=plasma/" /etc/sddm.conf.d/autologin.conf; fi'
 RemainAfterExit=yes
 
 [Install]
@@ -322,9 +319,9 @@ ln -sf /usr/lib/systemd/system/sddm.service "${ROOTFS_DIR}/etc/systemd/system/di
 ln -sf /usr/lib/systemd/system/caelaris-session-select.service "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/" || true
 
 # Mask plymouth services so systemd never hangs waiting on non-existent splash daemon
-ln -sf /dev/null "${ROOTFS_DIR}/etc/systemd/system/plymouth-start.service" 2>/dev/null || true
-ln -sf /dev/null "${ROOTFS_DIR}/etc/systemd/system/plymouth-quit.service" 2>/dev/null || true
-ln -sf /dev/null "${ROOTFS_DIR}/etc/systemd/system/plymouth-quit-wait.service" 2>/dev/null || true
+for unit in plymouth-start.service plymouth-quit.service plymouth-quit-wait.service plymouth-reboot.service plymouth-poweroff.service plymouth-halt.service plymouth-kexec.service plymouth-switch-root.service; do
+    ln -sf /dev/null "${ROOTFS_DIR}/etc/systemd/system/${unit}" 2>/dev/null || true
+done
 
 # Place and make executable "Install Caelaris Linux" desktop launcher for liveuser
 mkdir -p "${ROOTFS_DIR}/home/liveuser/Desktop"
@@ -397,12 +394,12 @@ set color_normal=light-gray/black
 set color_highlight=white/magenta
 
 menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --class gnu --class os {
-    linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 session=plasma
+    linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 session=plasma plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
     initrd /live/initrd.img
 }
 
 menuentry "Caelaris Linux (Safe Graphics / Fallback)" --class caelaris --class gnu-linux {
-    linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live nomodeset quiet
+    linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live nomodeset quiet plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
     initrd /live/initrd.img
 }
 EOF
