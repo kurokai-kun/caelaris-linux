@@ -57,6 +57,13 @@ QProgressBar {
     border-radius: 6px; text-align: center; color: #ffffff; height: 20px;
 }
 QProgressBar::chunk { background-color: #0284c7; border-radius: 5px; }
+QDialog, QMessageBox { background-color: #0f172a; color: #f8fafc; }
+QMessageBox QLabel { color: #f8fafc; font-size: 13px; min-width: 380px; }
+QMessageBox QPushButton {
+    background-color: #1e293b; color: #f8fafc; border: 1px solid #334155;
+    border-radius: 6px; padding: 6px 16px; font-weight: 600; min-width: 80px;
+}
+QMessageBox QPushButton:hover { background-color: #334155; }
 QTextEdit#logView {
     background-color: #020617; border: 1px solid #1e293b;
     border-radius: 6px; color: #38bdf8; font-family: monospace; font-size: 11px;
@@ -113,43 +120,45 @@ class InstallWorker(QThread):
             self.run_cmd("umount -R /mnt 2>/dev/null || true", check=False)
             self.run_cmd("swapoff -a 2>/dev/null || true", check=False)
 
-            self.progress_changed.emit(12, "Partitioning disk (GPT + EFI ESP + Root)...")
+            self.progress_changed.emit(12, "Partitioning disk (GPT + Hybrid BIOS/UEFI + Root)...")
             self.run_cmd(f"wipefs -a -f {disk}", check=False)
             self.run_cmd(["sgdisk", "-Z", disk], check=False)
-            self.run_cmd(["sgdisk", "-n", "1:0:+512M", "-t", "1:ef00", "-c", "1:EFI-SP", disk])
-            self.run_cmd(["sgdisk", "-n", "2:0:0", "-t", "2:8300", "-c", "2:Caelaris-Root", disk])
+            self.run_cmd(["sgdisk", "-n", "1:0:+2M", "-t", "1:ef02", "-c", "1:BIOS-Boot", disk])
+            self.run_cmd(["sgdisk", "-n", "2:0:+512M", "-t", "2:ef00", "-c", "2:EFI-SP", disk])
+            self.run_cmd(["sgdisk", "-n", "3:0:0", "-t", "3:8300", "-c", "3:Caelaris-Root", disk])
             self.run_cmd(["partprobe", disk], check=False)
             self.run_cmd("udevadm settle", check=False)
             time.sleep(2)
 
             p_prefix = "p" if (disk[-1].isdigit()) else ""
-            p1 = f"{disk}{p_prefix}1"
-            p2 = f"{disk}{p_prefix}2"
+            p_bios = f"{disk}{p_prefix}1"
+            p_efi = f"{disk}{p_prefix}2"
+            p_root = f"{disk}{p_prefix}3"
 
             for _ in range(5):
-                if os.path.exists(p1) and os.path.exists(p2):
+                if os.path.exists(p_efi) and os.path.exists(p_root):
                     break
                 self.run_cmd("udevadm settle", check=False)
                 time.sleep(1)
 
-            self.progress_changed.emit(25, f"Formatting EFI partition ({p1})...")
-            self.run_cmd(["mkfs.fat", "-F32", "-n", "ESP", p1])
+            self.progress_changed.emit(25, f"Formatting EFI partition ({p_efi})...")
+            self.run_cmd(["mkfs.fat", "-F32", "-n", "ESP", p_efi])
 
             if fs_type == "btrfs":
-                self.progress_changed.emit(32, f"Formatting Btrfs with subvolumes ({p2})...")
-                self.run_cmd(["mkfs.btrfs", "-f", "-L", "caelaris", p2])
-                self.run_cmd(["mount", p2, "/mnt"])
+                self.progress_changed.emit(32, f"Formatting Btrfs with subvolumes ({p_root})...")
+                self.run_cmd(["mkfs.btrfs", "-f", "-L", "caelaris", p_root])
+                self.run_cmd(["mount", p_root, "/mnt"])
                 for sv in ["@", "@home", "@snapshots", "@var_log", "@var_cache"]:
                     self.run_cmd(["btrfs", "subvolume", "create", f"/mnt/{sv}"])
                 self.run_cmd(["umount", "/mnt"])
 
                 mount_opts = "noatime,compress=zstd:1,space_cache=v2"
                 # Mount ONLY root subvolume (@) for extraction - child subvolumes will be mounted after extraction
-                self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@", p2, "/mnt"])
+                self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@", p_root, "/mnt"])
             else:
-                self.progress_changed.emit(32, f"Formatting Ext4 partition ({p2})...")
-                self.run_cmd(["mkfs.ext4", "-F", "-L", "caelaris", p2])
-                self.run_cmd(["mount", p2, "/mnt"])
+                self.progress_changed.emit(32, f"Formatting Ext4 partition ({p_root})...")
+                self.run_cmd(["mkfs.ext4", "-F", "-L", "caelaris", p_root])
+                self.run_cmd(["mount", p_root, "/mnt"])
 
             self.progress_changed.emit(45, "Extracting Caelaris Linux system files...")
             sfs = None
@@ -200,16 +209,16 @@ class InstallWorker(QThread):
             if fs_type == "btrfs":
                 for d in ["home", ".snapshots", "var/log", "var/cache", "boot"]:
                     os.makedirs(f"/mnt/{d}", exist_ok=True)
-                self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@home", p2, "/mnt/home"])
-                self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@snapshots", p2, "/mnt/.snapshots"])
-                self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@var_log", p2, "/mnt/var/log"])
-                self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@var_cache", p2, "/mnt/var/cache"])
+                self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@home", p_root, "/mnt/home"])
+                self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@snapshots", p_root, "/mnt/.snapshots"])
+                self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@var_log", p_root, "/mnt/var/log"])
+                self.run_cmd(["mount", "-o", f"{mount_opts},subvol=@var_cache", p_root, "/mnt/var/cache"])
 
             # Mount the EFI partition AFTER extraction (unsquashfs would wipe it otherwise)
             self.progress_changed.emit(55, "Mounting EFI System Partition...")
             os.makedirs("/mnt/boot/efi", exist_ok=True)
             self.run_cmd(["umount", "/mnt/boot/efi"], check=False)
-            self.run_cmd(["mount", p1, "/mnt/boot/efi"])
+            self.run_cmd(["mount", p_efi, "/mnt/boot/efi"])
 
             self.progress_changed.emit(68, "Generating /etc/fstab...")
             self.run_cmd("genfstab -U /mnt >> /mnt/etc/fstab")
@@ -416,23 +425,22 @@ class InstallWorker(QThread):
             self.progress_changed.emit(92, "Installing GRUB bootloader...")
             os.makedirs("/mnt/boot/grub", exist_ok=True)
 
-            if is_efi:
-                os.makedirs("/mnt/boot/efi", exist_ok=True)
-                self.run_cmd(f"mountpoint -q /mnt/boot/efi || mount {p1} /mnt/boot/efi", check=False)
-                if is_aarch64:
-                    self.log("ARM64 UEFI detected — installing GRUB ARM64 EFI with removable fallback...")
-                    # Primary NVRAM EFI entry
+            os.makedirs("/mnt/boot/efi", exist_ok=True)
+            self.run_cmd(f"mountpoint -q /mnt/boot/efi || mount {p_efi} /mnt/boot/efi", check=False)
+
+            if is_aarch64:
+                self.log("ARM64 UEFI detected — installing GRUB ARM64 EFI with removable fallback...")
+                if is_efi:
                     self.run_cmd("arch-chroot /mnt grub-install --target=arm64-efi --efi-directory=/boot/efi --bootloader-id=Caelaris --recheck", check=False)
-                    # Universal Removable fallback EFI entry (EFI/BOOT/BOOTAA64.EFI for Apple Silicon UTM & Snapdragon laptops)
-                    self.run_cmd("arch-chroot /mnt grub-install --target=arm64-efi --efi-directory=/boot/efi --bootloader-id=Caelaris --removable --no-nvram --recheck", check=False)
-                else:
-                    self.log("x86_64 UEFI detected — installing GRUB EFI with removable fallback...")
-                    # Primary NVRAM EFI entry
-                    self.run_cmd("arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Caelaris --recheck", check=False)
-                    # Universal Removable fallback EFI entry (EFI/BOOT/BOOTX64.EFI for VMware/VirtualBox/UTM)
-                    self.run_cmd("arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Caelaris --removable --no-nvram --recheck", check=False)
+                self.run_cmd("arch-chroot /mnt grub-install --target=arm64-efi --efi-directory=/boot/efi --bootloader-id=Caelaris --removable --no-nvram --recheck", check=False)
             else:
-                self.log(f"BIOS detected — installing GRUB MBR on {disk}...")
+                self.log(f"x86_64 detected — installing universal hybrid bootloader (UEFI + BIOS/MBR) on {disk}...")
+                # 1. Install UEFI GRUB (removable fallback EFI/BOOT/BOOTX64.EFI works without NVRAM on any UEFI system)
+                self.run_cmd("arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Caelaris --removable --no-nvram --recheck", check=False)
+                if is_efi:
+                    self.run_cmd("arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Caelaris --recheck", check=False)
+                # 2. Install BIOS/MBR GRUB (embeds core.img into ef02 BIOS Boot partition and writes MBR sector)
+                self.log(f"Installing GRUB BIOS MBR to {disk}...")
                 self.run_cmd(f"arch-chroot /mnt grub-install --target=i386-pc --recheck {disk}", check=False)
 
             # ── Step 3: Generate grub.cfg ─────────────────────────────────────
@@ -466,7 +474,7 @@ class InstallWorker(QThread):
 
             if not has_linux:
                 self.log("[WARNING] Generating bulletproof Caelaris Linux entry...")
-                root_uuid = subprocess.check_output(f"blkid -s UUID -o value {p2}", shell=True, text=True).strip()
+                root_uuid = subprocess.check_output(f"blkid -s UUID -o value {p_root}", shell=True, text=True).strip()
                 subvol_flag = "rootflags=subvol=@ " if fs_type == "btrfs" else ""
                 k_path = "/@/boot/vmlinuz-linux" if fs_type == "btrfs" else "/boot/vmlinuz-linux"
                 initrd_path = "/@/boot/initramfs-linux.img" if fs_type == "btrfs" else "/boot/initramfs-linux.img"
@@ -1001,16 +1009,29 @@ class CaelarisInstaller(QMainWindow):
             self.update_summary()
         if self.current_step == 7:
             target_disk = self.cb_disks.currentData()
-            confirm = QMessageBox.warning(
-                self, "⚠️ CRITICAL: Confirm Entire Disk Erasure",
-                f"Are you sure you want to install Caelaris Linux to {target_disk}?\n\n"
-                f"🚨 WARNING: This will completely ERASE and REPARTITION the entire drive ({target_disk})!\n"
-                f"All existing operating systems, personal files, and partitions on this drive will be permanently deleted.\n\n"
-                f"Do you wish to proceed?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.No
+            msg = QMessageBox(self)
+            msg.setWindowTitle("Confirm Entire Disk Erasure")
+            msg.setIcon(QMessageBox.Icon.Warning)
+            msg.setText(f"<h3 style='color: #f8fafc; margin: 0;'>Are you sure you want to install Caelaris Linux to {target_disk}?</h3>")
+            msg.setInformativeText(
+                f"<p style='color: #cbd5e1; font-size: 13px; line-height: 1.5;'>"
+                f"<b style='color: #ef4444;'>CRITICAL WARNING:</b> This will completely <b>ERASE</b> and repartition the entire drive (<b>{target_disk}</b>).<br><br>"
+                f"All existing operating systems, personal files, and partitions on this drive will be permanently deleted.<br><br>"
+                f"Do you wish to proceed?"
+                f"</p>"
             )
-            if confirm != QMessageBox.StandardButton.Yes:
+            msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            msg.setDefaultButton(QMessageBox.StandardButton.No)
+            msg.setStyleSheet("""
+                QMessageBox { background-color: #0f172a; }
+                QLabel { color: #f8fafc; font-size: 13px; min-width: 420px; }
+                QPushButton {
+                    background-color: #1e293b; color: #f8fafc; border: 1px solid #334155;
+                    border-radius: 6px; padding: 8px 18px; font-weight: 600; min-width: 80px;
+                }
+                QPushButton:hover { background-color: #334155; }
+            """)
+            if msg.exec() != QMessageBox.StandardButton.Yes:
                 return
             self.start_installation()
             return
