@@ -1,0 +1,32 @@
+========================================================================
+ Caelaris Linux - ARM64 Laptop & PC Edition Quickstart Guide
+ Target Hardware: Apple Silicon (M1-M4), Qualcomm Snapdragon X Elite/Plus
+========================================================================
+
+1. APPLE SILICON (M1 / M2 / M3 / M4):
+   a. VMware Fusion (macOS):
+      - Download parts and run 'combine.command' (or combine in Terminal)
+      - In VMware Fusion: Virtual Machine -> Settings -> CD/DVD (SATA)
+      - IMPORTANT: Ensure "Connect CD/DVD Drive" is CHECKED!
+      - Select 'caelaris-arm64-pc.iso'
+      - Allocate 4-8 GB RAM and 4+ CPU cores, then boot!
+   b. UTM Virtualization (100% Native CPU speed & VirtIO-GPU):
+      - In UTM (https://mac.getutm.app/), click Create -> Virtualize -> Linux
+      - Select the ISO, allocate 4-8 GB RAM and 4+ CPU cores
+      - In Display, enable VirtIO-GPU Metal acceleration
+      - Boot VM directly into KDE Plasma 6 or GNOME on Wayland!
+   c. Bare-Metal Dual Boot (Asahi U-Boot):
+      - Deploy rootfs partition using standard Asahi Linux APFS installer.
+
+2. QUALCOMM SNAPDRAGON X ELITE & X PLUS LAPTOPS:
+   (Surface Laptop 7, Lenovo Yoga Slim 7x, Dell XPS 13 9345, Vivobook S 15)
+   a. Flash 'caelaris-arm64-pc.iso' to a USB 3.0+ flash drive using
+      Rufus (select 'DD Image mode') or BalenaEtcher.
+   b. In Windows, turn off BitLocker Device Encryption.
+   c. Reboot into UEFI BIOS firmware (Shift + Restart -> UEFI Settings).
+   d. Temporarily disable Secure Boot (or enable Microsoft 3rd Party CA).
+   e. Boot from USB drive into KDE Plasma 6 or GNOME with Adreno GPU acceleration!
+
+3. VERIFICATION:
+   sha256sum -c SHA256SUMS.txt
+========================================================================

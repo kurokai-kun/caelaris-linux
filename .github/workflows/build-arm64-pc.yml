@@ -55,209 +55,31 @@ jobs:
           ISO_SIZE_HR=$(ls -lh "$ISO_FILE" | awk '{print $5}')
           echo "Processing ISO: $ISO_FILE ($ISO_SIZE bytes, $ISO_SIZE_HR)..."
 
-          # 1. Canonical ISO copy
+          # 1. Copy release guides and helper scripts directly from repository
+          cp scripts/arm64_release_assets/combine.* release_assets/ 2>/dev/null || true
+          cp scripts/arm64_release_assets/QUICKSTART_ARM64_PC.txt release_assets/
+          chmod +x release_assets/combine.command release_assets/combine.sh 2>/dev/null || true
+          cp scripts/arm64_release_assets/release_notes_arm64.md release_body.md
+
+          # 2. Canonical ISO copy
           cp "$ISO_FILE" "release_assets/caelaris-arm64-pc.iso"
 
-          # 2. Clean relative checksums
+          # 3. Clean relative checksums
           cd release_assets
           sha256sum caelaris-arm64-pc.iso > caelaris-arm64-pc.iso.sha256
           sha256sum caelaris-arm64-pc.iso > SHA256SUMS.txt
 
-          # 3. Only split if file exceeds 1.9GB GitHub asset limit
+          # 4. Only split if file exceeds 1.9GB GitHub asset limit
           if [ "$ISO_SIZE" -gt 1992294400 ]; then
             echo "ISO exceeds 1.9GB. Generating multi-part split for GitHub Release..."
             split -b 1900M -d caelaris-arm64-pc.iso "caelaris-arm64-pc.iso.part-"
             rm -f caelaris-arm64-pc.iso
-
-            # Windows helper
-            cat << 'EOF' | sed 's/^            //' > combine.bat
-            @echo off
-            echo ========================================================
-            echo  Merging Caelaris Linux ARM64 Laptop & PC ISO parts...
-            echo ========================================================
-            copy /b "caelaris-arm64-pc.iso.part-*" "caelaris-arm64-pc.iso"
-            echo.
-            echo Verifying SHA256 checksum...
-            certutil -hashfile "caelaris-arm64-pc.iso" SHA256
-            echo.
-            echo Done! You can now use caelaris-arm64-pc.iso.
-            pause
-            EOF
-
-            # macOS double-clickable Finder script (.command)
-            cat << 'EOF' | sed 's/^            //' > combine.command
-            #!/bin/bash
-            set -e
-            cd "$(dirname "$0")"
-            echo "========================================================"
-            echo " Merging Caelaris Linux ARM64 Laptop & PC ISO parts..."
-            echo "========================================================"
-            echo
-            if [ ! -f "caelaris-arm64-pc.iso.part-00" ]; then
-                echo "ERROR: 'caelaris-arm64-pc.iso.part-00' not found in this folder."
-                echo "Please ensure all parts are in the same directory."
-                read -p "Press Enter to exit..." _
-                exit 1
-            fi
-            echo "Combining ISO parts into caelaris-arm64-pc.iso..."
-            cat caelaris-arm64-pc.iso.part-* > caelaris-arm64-pc.iso
-            echo
-            echo "Verifying SHA256 checksum..."
-            if which shasum >/dev/null 2>&1; then
-                shasum -a 256 -c caelaris-arm64-pc.iso.sha256 || true
-            elif which sha256sum >/dev/null 2>&1; then
-                sha256sum -c caelaris-arm64-pc.iso.sha256 || true
-            fi
-            echo
-            echo "========================================================"
-            echo " [SUCCESS] caelaris-arm64-pc.iso is ready!"
-            echo " In VMware Fusion or UTM on Mac:"
-            echo "   1. Select 'caelaris-arm64-pc.iso'"
-            echo "   2. Ensure CD/DVD drive is set to 'Connected' in VM Settings"
-            echo "========================================================"
-            read -p "Press Enter to finish..." _
-            EOF
-            chmod +x combine.command
-
-            # Linux / macOS shell script (combine.sh)
-            cat << 'EOF' | sed 's/^            //' > combine.sh
-            #!/usr/bin/env bash
-            set -euo pipefail
-            cd "$(dirname "${BASH_SOURCE[0]}")"
-            echo "Merging Caelaris Linux ARM64 ISO parts..."
-            cat caelaris-arm64-pc.iso.part-* > caelaris-arm64-pc.iso
-            echo "Verifying SHA256 checksum..."
-            if command -v sha256sum >/dev/null 2>&1; then
-                sha256sum -c caelaris-arm64-pc.iso.sha256
-            elif command -v shasum >/dev/null 2>&1; then
-                shasum -a 256 -c caelaris-arm64-pc.iso.sha256
-            fi
-            echo "Done! caelaris-arm64-pc.iso assembled successfully."
-            EOF
-            chmod +x combine.sh
           else
             echo "ISO size is $ISO_SIZE bytes (< 1.9GB). Standalone ISO uploaded without split."
+            rm -f combine.bat combine.command combine.sh
           fi
-
-          # 4. Quickstart Guide
-          cat << 'EOF' | sed 's/^          //' > QUICKSTART_ARM64_PC.txt
-          ========================================================================
-           Caelaris Linux - ARM64 Laptop & PC Edition Quickstart Guide
-           Target Hardware: Apple Silicon (M1-M4), Qualcomm Snapdragon X Elite/Plus
-          ========================================================================
-
-          1. APPLE SILICON (M1 / M2 / M3 / M4):
-             a. VMware Fusion (macOS):
-                - Download parts and run 'combine.command' (or combine in Terminal)
-                - In VMware Fusion: Virtual Machine -> Settings -> CD/DVD (SATA)
-                - IMPORTANT: Ensure "Connect CD/DVD Drive" is CHECKED!
-                - Select 'caelaris-arm64-pc.iso'
-                - Allocate 4-8 GB RAM and 4+ CPU cores, then boot!
-             b. UTM Virtualization (100% Native CPU speed & VirtIO-GPU):
-                - In UTM (https://mac.getutm.app/), click Create -> Virtualize -> Linux
-                - Select the ISO, allocate 4-8 GB RAM and 4+ CPU cores
-                - In Display, enable VirtIO-GPU Metal acceleration
-                - Boot VM directly into KDE Plasma 6 or GNOME on Wayland!
-             c. Bare-Metal Dual Boot (Asahi U-Boot):
-                - Deploy rootfs partition using standard Asahi Linux APFS installer.
-
-          2. QUALCOMM SNAPDRAGON X ELITE & X PLUS LAPTOPS:
-             (Surface Laptop 7, Lenovo Yoga Slim 7x, Dell XPS 13 9345, Vivobook S 15)
-             a. Flash 'caelaris-arm64-pc.iso' to a USB 3.0+ flash drive using
-                Rufus (select 'DD Image mode') or BalenaEtcher.
-             b. In Windows, turn off BitLocker Device Encryption.
-             c. Reboot into UEFI BIOS firmware (Shift + Restart -> UEFI Settings).
-             d. Temporarily disable Secure Boot (or enable Microsoft 3rd Party CA).
-             e. Boot from USB drive into KDE Plasma 6 or GNOME with Adreno GPU acceleration!
-
-          3. VERIFICATION:
-             sha256sum -c SHA256SUMS.txt
-          ========================================================================
-          EOF
 
           cd ..
-
-          # 5. Build dynamic release body with exact computed size
-          ASSET_DESC="1. **\`caelaris-arm64-pc.iso\` ($ISO_SIZE_HR)**: Universal single-file bootable hybrid UEFI ARM64 ISO image. Instant 1-click download."
-          if [ "$ISO_SIZE" -gt 1992294400 ]; then
-            ASSET_DESC="1. **\`caelaris-arm64-pc.iso.part-*\` ($ISO_SIZE_HR total)**: Multi-part bootable hybrid UEFI ARM64 ISO archive. Run \`combine.command\` (Mac), \`combine.bat\` (Windows), or \`combine.sh\` (Linux) to merge back to \`caelaris-arm64-pc.iso\`."
-          fi
-
-          cat << EOF > release_body.md
-          ## 💻 Caelaris Linux ARM64 Laptop & PC Edition
-
-          Official 64-bit ARM (AArch64) operating system engineered for modern ARM laptops, workstations, and Apple Silicon computers.
-
-          ---
-
-          ### 📥 How to Download & Assemble Your ISO
-          Because GitHub limits individual asset uploads to under 2.0 GB, this ISO (~2.58 GB) is distributed in multi-part chunks:
-
-          1. **Download the files into the same directory**:
-             - \`caelaris-arm64-pc.iso.part-00\`
-             - \`caelaris-arm64-pc.iso.part-01\`
-             - Helper script for your OS:
-               - **macOS (Apple Silicon)**: \`combine.command\`
-               - **Windows**: \`combine.bat\`
-               - **Linux**: \`combine.sh\`
-
-          2. **Assemble the single ISO file**:
-             * **On macOS (Mac with Apple Silicon M1/M2/M3/M4)**:
-               - **Option A (One-Click)**: Simply double-click **\`combine.command\`** in Finder!
-               - **Option B (Terminal)**: Open Terminal and run:
-                 \`\`\`bash
-                 cd ~/Downloads && cat caelaris-arm64-pc.iso.part-00 caelaris-arm64-pc.iso.part-01 > caelaris-arm64-pc.iso
-                 \`\`\`
-             * **On Windows**:
-               - Double-click **\`combine.bat\`**
-             * **On Linux**:
-               - Run: \`bash combine.sh\`
-
-          3. **Running on macOS (VMware Fusion & UTM)**:
-             * **VMware Fusion**:
-               1. Create a New Virtual Machine -> Select "Custom virtual machine" -> Linux -> Other Linux 64-bit ARM.
-               2. Go to **Virtual Machine** -> **Settings...** -> **CD/DVD (SATA)**:
-                  - ⚠️ **Check "Connect CD/DVD Drive"** (must be checked, otherwise "No Media" is shown).
-                  - Select your assembled **\`caelaris-arm64-pc.iso\`**.
-               3. Start the virtual machine to boot straight into Caelaris Linux!
-             * **UTM**:
-               1. Click Create -> Virtualize -> Linux -> Select \`caelaris-arm64-pc.iso\`.
-               2. Set 4-8 GB RAM and 4+ CPU cores, enable VirtIO-GPU Metal acceleration.
-
-          ---
-
-          ### 🖥️ Dedicated Hardware Support:
-          1. **Apple Silicon Macs (M1 / M2 / M3 / M4)**:
-             - Run inside **VMware Fusion** and **UTM** on macOS with 100% native Apple Silicon CPU speed.
-             - Run bare-metal via standard Asahi U-Boot integration with hardware-accelerated Mesa Apple AGX graphics.
-          2. **Qualcomm Snapdragon X Elite & X Plus Laptops**:
-             - Copilot+ PCs (Microsoft Surface Laptop 7, Lenovo Yoga Slim 7x, Dell XPS 13 ARM 9345, ASUS Vivobook S 15) with standard AArch64 UEFI booting (\`BOOTAA64.EFI\`) and Mesa Freedreno Adreno 3D acceleration.
-          3. **ARM64 Workstations & Cloud PCs**:
-             - Lenovo ThinkPad X13s, Ampere Altra workstations, and standard ARM64 cloud hypervisors.
-
-          ---
-
-          ### 📦 Available Release Assets:
-          ${ASSET_DESC}
-          2. **\`combine.command\`**: Double-click helper script for macOS Finder.
-          3. **\`combine.bat\`**: Double-click helper script for Windows.
-          4. **\`combine.sh\`**: Helper script for Linux / macOS Terminal.
-          5. **\`caelaris-arm64-pc.iso.sha256\`**: Cryptographic integrity checksum.
-          6. **\`SHA256SUMS.txt\`**: Consolidated release checksums.
-          7. **\`QUICKSTART_ARM64_PC.txt\`**: Standalone step-by-step setup guide for UTM, VMware Fusion, and Snapdragon laptops.
-
-          ---
-
-          ### ⚡ Edition Features & Optimizations:
-          - **Live Graphical Desktop Preview**: Interactive KDE Plasma Wayland live preview session with auto-login (\`liveuser\`).
-          - **Guided System Installer**: One-click graphical system installer (\`caelaris-installer-gui\`) to deploy Caelaris directly to internal NVMe/SSD storage.
-          - **Hybrid UEFI AArch64 Bootloader**: Native EFI booting with GPT partition table support on Apple Silicon & Copilot+ laptops.
-          - **Hardware-Specific Graphic Drivers**: Mesa Freedreno for Snapdragon Adreno GPUs and Apple AGX driver compatibility.
-          - **Performance & Latency Tuning**: Custom sysctl presets (\`vm.max_map_count=2147483642\`), BBR congestion control, and zstd ZRAM memory compression.
-          - **Arch Linux ARM Baseline**: Rolling-release foundation with pacman package manager.
-          EOF
-
-          sed -i 's/^          //' release_body.md
           ls -lh release_assets/
 
       - name: Publish GitHub Release (ARM64 Laptops & PCs)
