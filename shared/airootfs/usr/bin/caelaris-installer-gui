@@ -16,11 +16,12 @@ import traceback
 from pathlib import Path
 
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtGui import QIcon, QPixmap
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QStackedWidget, QLabel, QPushButton, QRadioButton,
     QCheckBox, QLineEdit, QComboBox, QProgressBar, QTextEdit,
-    QFrame, QMessageBox
+    QFrame, QMessageBox, QListView
 )
 
 DARK_STYLE = """
@@ -77,7 +78,7 @@ QComboBox::down-arrow {
     width: 12px;
     height: 12px;
 }
-QComboBox QAbstractItemView {
+QComboBox QListView {
     background-color: #0b0f19;
     border: 2px solid #38bdf8;
     border-radius: 6px;
@@ -87,17 +88,13 @@ QComboBox QAbstractItemView {
     padding: 4px;
     outline: none;
 }
-QComboBox QAbstractItemView::item {
+QComboBox QListView::item {
     min-height: 28px;
     padding: 6px 10px;
     border-radius: 4px;
     color: #f8fafc;
 }
-QComboBox QAbstractItemView::item:hover {
-    background-color: #1e293b;
-    color: #38bdf8;
-}
-QComboBox QAbstractItemView::item:selected {
+QComboBox QListView::item:selected {
     background-color: #0284c7;
     color: #ffffff;
     font-weight: bold;
@@ -243,6 +240,8 @@ class InstallWorker(QThread):
             self.progress_changed.emit(5, f"Preparing target disk {disk}...")
             self.run_cmd("umount -R /mnt 2>/dev/null || true", check=False)
             self.run_cmd("swapoff -a 2>/dev/null || true", check=False)
+            self.run_cmd("dmsetup remove_all 2>/dev/null || true", check=False)
+            self.run_cmd("vgchange -an 2>/dev/null || true", check=False)
 
             self.progress_changed.emit(12, "Partitioning disk (GPT + Hybrid BIOS/UEFI + Root)...")
             self.run_cmd(f"wipefs -a -f {disk}", check=False)
@@ -512,12 +511,12 @@ class InstallWorker(QThread):
                     'GRUB_TIMEOUT=12\n'
                     'GRUB_TIMEOUT_STYLE=menu\n'
                     'GRUB_DISTRIBUTOR="Caelaris"\n'
-                    f'GRUB_CMDLINE_LINUX_DEFAULT="{subvol_arg} quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 video=1920x1080"\n'
+                    f'GRUB_CMDLINE_LINUX_DEFAULT="{subvol_arg} quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0"\n'
                     'GRUB_CMDLINE_LINUX=""\n'
-                    'GRUB_GFXMODE=1920x1080,auto\n'
+                    'GRUB_GFXMODE=auto\n'
                     'GRUB_GFXPAYLOAD_LINUX=keep\n'
                     'GRUB_DISABLE_SUBMENU=y\n'
-                    'GRUB_DISABLE_RECOVERY=true\n'
+                    'GRUB_DISABLE_RECOVERY=false\n'
                     'GRUB_DISABLE_OS_PROBER=true\n'
                 )
 
@@ -579,32 +578,88 @@ class InstallWorker(QThread):
             self.progress_changed.emit(94, "Generating GRUB menu configuration...")
             self.run_cmd("arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg", check=False)
 
-            # ── Clean up menu titles: Show ONLY "Caelaris Linux" & set 12s timeout ──
+            # ── Step 3b: Clean up and deduplicate menu entries: Keep ONLY Caelaris Linux + Recovery ──
             grub_cfg_file = "/mnt/boot/grub/grub.cfg"
             if os.path.isfile(grub_cfg_file):
-                with open(grub_cfg_file, "r") as f:
-                    cfg_text = f.read()
+                try:
+                    with open(grub_cfg_file, "r") as f:
+                        cfg_text = f.read()
 
-                import re
-                cfg_text = re.sub(r'set timeout=\d+', 'set timeout=12', cfg_text)
-                cfg_text = cfg_text.replace("Caelaris Linux, with Linux linux", "Caelaris Linux")
-                cfg_text = cfg_text.replace("Caelaris Linux linux", "Caelaris Linux")
-                cfg_text = cfg_text.replace("Caelaris linux", "Caelaris Linux")
-                cfg_text = cfg_text.replace("with Linux linux", "Caelaris Linux")
-                cfg_text = cfg_text.replace("Caelaris Linux, with Linux linux (fallback initramfs)", "Caelaris Linux (Recovery Mode)")
-                cfg_text = cfg_text.replace("Caelaris Linux (fallback initramfs)", "Caelaris Linux (Recovery Mode)")
+                    import re
+                    cfg_text = re.sub(r'set timeout=\d+', 'set timeout=12', cfg_text)
+                    first_menu = re.search(r'^(menuentry\s+.*)', cfg_text, re.MULTILINE)
+                    if first_menu:
+                        header = cfg_text[:first_menu.start()]
+                        entries_text = cfg_text[first_menu.start():]
 
-                with open(grub_cfg_file, "w") as f:
-                    f.write(cfg_text)
+                        menu_blocks = []
+                        current_block = []
+                        brace_depth = 0
+                        in_entry = False
 
-            # ── Step 3b: Verify and guarantee Linux boot entry in grub.cfg ───
+                        for line in entries_text.splitlines(keepends=True):
+                            if not in_entry:
+                                if re.match(r'^\s*menuentry\s+', line):
+                                    in_entry = True
+                                    current_block = [line]
+                                    brace_depth = line.count('{') - line.count('}')
+                                    if brace_depth == 0 and '{' in line:
+                                        menu_blocks.append(''.join(current_block))
+                                        current_block = []
+                                        in_entry = False
+                                continue
+                            else:
+                                current_block.append(line)
+                                brace_depth += line.count('{') - line.count('}')
+                                if brace_depth <= 0:
+                                    menu_blocks.append(''.join(current_block))
+                                    current_block = []
+                                    in_entry = False
+
+                        kept_entries = []
+                        has_primary = False
+                        has_recovery = False
+                        has_uefi = False
+
+                        for block in menu_blocks:
+                            title_match = re.search(r'menuentry\s+[\'"]([^\'"]+)[\'"]', block)
+                            if not title_match:
+                                continue
+                            raw_title = title_match.group(1)
+
+                            if "uefi" in raw_title.lower() or "firmware" in raw_title.lower():
+                                if not has_uefi:
+                                    kept_entries.append((3, block))
+                                    has_uefi = True
+                            elif "fallback" in raw_title.lower() or "recovery" in raw_title.lower():
+                                if not has_recovery:
+                                    clean_block = re.sub(r'menuentry\s+[\'"][^\'"]+[\'"]', 'menuentry "Caelaris Linux (Recovery Mode)"', block, count=1)
+                                    kept_entries.append((2, clean_block))
+                                    has_recovery = True
+                            else:
+                                if not has_primary and ("caelaris" in raw_title.lower() or "linux" in raw_title.lower()):
+                                    clean_block = re.sub(r'menuentry\s+[\'"][^\'"]+[\'"]', 'menuentry "Caelaris Linux"', block, count=1)
+                                    kept_entries.append((1, clean_block))
+                                    has_primary = True
+
+                        if kept_entries:
+                            kept_entries.sort(key=lambda x: x[0])
+                            final_entries = "\n\n".join(e[1].strip() for e in kept_entries)
+                            cfg_text = header.strip() + "\n\n" + final_entries + "\n"
+
+                    with open(grub_cfg_file, "w") as f:
+                        f.write(cfg_text)
+                    self.log("[SUCCESS] GRUB menu decluttered successfully (kept essential entries only, 12s timeout).")
+                except Exception as ex:
+                    self.log(f"[WARNING] Could not parse and declutter grub.cfg: {ex}")
+
+            # ── Step 3c: Guarantee primary boot entry if not generated ───
             has_linux = False
             if os.path.isfile(grub_cfg_file):
                 with open(grub_cfg_file, "r") as f:
                     cfg_text = f.read()
                 if "vmlinuz" in cfg_text:
                     has_linux = True
-                    self.log("[SUCCESS] Verified clean Caelaris Linux boot entry present in grub.cfg!")
 
             if not has_linux:
                 self.log("[WARNING] Generating bulletproof Caelaris Linux entry...")
@@ -627,7 +682,7 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
     insmod part_msdos
     insmod {fs_type}
     search --no-floppy --fs-uuid --set=root {root_uuid}
-    linux {k_path} root=UUID={root_uuid} rw {subvol_flag}quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 video=1920x1080
+    linux {k_path} root=UUID={root_uuid} rw {subvol_flag}quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0
     initrd {ucode_str}{initrd_path}
 }}
 """
@@ -769,6 +824,15 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
             # Ensure proper ownership of user home directory
             self.run_cmd(f"arch-chroot /mnt chown -R {user}:users /home/{user}", check=False)
 
+            # Set new Caelaris icon as user face icon
+            if os.path.isfile("/mnt/usr/share/pixmaps/caelaris-logo.png"):
+                try:
+                    shutil.copy2("/mnt/usr/share/pixmaps/caelaris-logo.png", f"/mnt/home/{user}/.face.icon")
+                    os.makedirs("/mnt/var/lib/AccountsService/icons", exist_ok=True)
+                    shutil.copy2("/mnt/usr/share/pixmaps/caelaris-logo.png", f"/mnt/var/lib/AccountsService/icons/{user}")
+                except Exception:
+                    pass
+
             self.progress_changed.emit(100, "Installation complete!")
             self.installation_finished.emit(True, "Caelaris Linux installed successfully!")
 
@@ -781,7 +845,26 @@ class CaelarisInstaller(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Caelaris Linux Installer")
-        self.resize(960, 620)
+
+        # Adaptive window geometry that fits nicely on any screen without pushing the taskbar off-screen
+        screen = QApplication.primaryScreen()
+        if screen:
+            geo = screen.availableGeometry()
+            w = min(920, max(760, int(geo.width() * 0.85)))
+            h = min(580, max(480, int(geo.height() * 0.80)))
+            self.resize(w, h)
+        else:
+            self.resize(880, 560)
+
+        # Set official Caelaris logo as window icon
+        for icon_path in [
+            "/usr/share/pixmaps/caelaris-logo.png",
+            "/usr/share/icons/hicolor/256x256/apps/caelaris-logo.png"
+        ]:
+            if os.path.exists(icon_path):
+                self.setWindowIcon(QIcon(icon_path))
+                break
+
         self.setStyleSheet(DARK_STYLE)
 
         self.current_step = 0
@@ -806,6 +889,22 @@ class CaelarisInstaller(QMainWindow):
         side_layout = QVBoxLayout(sidebar)
         side_layout.setContentsMargins(18, 20, 18, 20)
         side_layout.setSpacing(4)
+
+        # New Caelaris Logo Display
+        logo_icon = QLabel()
+        for icon_path in [
+            "/usr/share/pixmaps/caelaris-logo.png",
+            "/usr/share/icons/hicolor/256x256/apps/caelaris-logo.png",
+            "/usr/share/pixmaps/caelaris-logo.svg"
+        ]:
+            if os.path.exists(icon_path):
+                pm = QPixmap(icon_path)
+                if not pm.isNull():
+                    logo_icon.setPixmap(pm.scaled(52, 52, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+                    logo_icon.setAlignment(Qt.AlignmentFlag.AlignLeft)
+                    logo_icon.setStyleSheet("margin-bottom: 8px;")
+                    side_layout.addWidget(logo_icon)
+                    break
 
         logo = QLabel("✨ Caelaris Linux")
         logo.setObjectName("sidebarTitle")
@@ -874,11 +973,13 @@ class CaelarisInstaller(QMainWindow):
         cl2 = QVBoxLayout(c2)
         cl2.addWidget(QLabel("Region:"))
         self.cb_region = QComboBox()
+        self.cb_region.setView(QListView())
         self.cb_region.addItems(["America", "Europe", "Asia", "Australia", "Africa", "Pacific"])
         self.cb_region.currentTextChanged.connect(self.populate_cities)
         cl2.addWidget(self.cb_region)
         cl2.addWidget(QLabel("City / Timezone:"))
         self.cb_city = QComboBox()
+        self.cb_city.setView(QListView())
         cl2.addWidget(self.cb_city)
         self.populate_cities(self.cb_region.currentText())
         l2.addWidget(c2)
@@ -893,6 +994,7 @@ class CaelarisInstaller(QMainWindow):
         c3 = QFrame(objectName="card")
         cl3 = QVBoxLayout(c3)
         self.cb_kb = QComboBox()
+        self.cb_kb.setView(QListView())
         self.cb_kb.addItems(["English (US)", "English (UK)", "German", "French", "Spanish", "Italian", "Japanese"])
         cl3.addWidget(self.cb_kb)
         cl3.addWidget(QLabel("Test Keyboard:"))
@@ -912,6 +1014,7 @@ class CaelarisInstaller(QMainWindow):
         cl4 = QVBoxLayout(c4)
         cl4.addWidget(QLabel("Target Disk:"))
         self.cb_disks = QComboBox()
+        self.cb_disks.setView(QListView())
         self.populate_disks()
         cl4.addWidget(self.cb_disks)
         cl4.addWidget(QLabel("Filesystem:"))
@@ -1262,6 +1365,14 @@ def ensure_ui_assets():
 if __name__ == "__main__":
     ensure_ui_assets()
     app = QApplication(sys.argv)
+
+    # Disable popup animations to eliminate lag on software rendering and virtual environments
+    app.setEffectEnabled(Qt.UIEffect.UI_AnimateCombo, False)
+    app.setEffectEnabled(Qt.UIEffect.UI_AnimateMenu, False)
+    app.setEffectEnabled(Qt.UIEffect.UI_AnimateTooltip, False)
+    app.setEffectEnabled(Qt.UIEffect.UI_FadeMenu, False)
+    app.setEffectEnabled(Qt.UIEffect.UI_FadeTooltip, False)
+
     installer = CaelarisInstaller()
     installer.show()
     sys.exit(app.exec())

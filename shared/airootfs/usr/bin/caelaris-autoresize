@@ -1,25 +1,8 @@
 #!/bin/bash
-# caelaris-autoresize: Enforce 1920x1080 resolution and dynamic scaling for VirtualBox / VM guests
+# caelaris-autoresize: Dynamic display scaling and auto-fit resolution for VirtualBox, VMware & QEMU guests
 
-# 1. Wait a moment for the compositor and display outputs to initialize
-sleep 2
-
-# 2. KDE Plasma (Wayland / X11) via kscreen-doctor
-if which kscreen-doctor >/dev/null 2>&1; then
-    for out in $(kscreen-doctor -o 2>/dev/null | grep -o 'Output: [0-9]\+' | awk '{print $2}'); do
-        kscreen-doctor "output.${out}.mode.1920x1080@60" 2>/dev/null || \
-        kscreen-doctor "output.${out}.mode.1920x1080" 2>/dev/null || \
-        kscreen-doctor "output.${out}.mode.1600x900" 2>/dev/null || \
-        kscreen-doctor "output.${out}.mode.1366x768" 2>/dev/null || true
-    done
-fi
-
-# 3. GNOME / X11 via xrandr
-if which xrandr >/dev/null 2>&1 && [ -n "$DISPLAY" ]; then
-    xrandr -s 1920x1080 2>/dev/null || xrandr -s 1600x900 2>/dev/null || xrandr -s 1366x768 2>/dev/null || true
-fi
-
-# 4. VirtualBox userspace integration
+# 1. Initialize guest hypervisor daemons first so dynamic host-window resizing works
+# VirtualBox userspace integration
 if which VBoxClient >/dev/null 2>&1; then
     VBoxClient --clipboard 2>/dev/null || true
     VBoxClient --draganddrop 2>/dev/null || true
@@ -27,16 +10,27 @@ if which VBoxClient >/dev/null 2>&1; then
     VBoxClient --vmsvga 2>/dev/null || true
 fi
 
-# 5. SPICE / UTM / QEMU userspace integration
+# SPICE / UTM / QEMU userspace integration
 if which spice-vdagent >/dev/null 2>&1; then
     spice-vdagent 2>/dev/null || true
 fi
 
-# 6. VMware userspace integration (open-vm-tools)
+# VMware userspace integration (open-vm-tools)
 if which vmware-user-suid-wrapper >/dev/null 2>&1; then
     vmware-user-suid-wrapper 2>/dev/null || true
 elif which vmtoolsd >/dev/null 2>&1; then
     vmtoolsd -n vmusr 2>/dev/null || true
 fi
 
+# 2. Give the compositor and display outputs a moment to settle
+sleep 1
 
+# 3. Only apply auto mode if display resolution is abnormally small (< 1024 width)
+# Never force a fixed 1920x1080 that overflows smaller laptop screens or VM windows
+if which xrandr >/dev/null 2>&1 && [ -n "$DISPLAY" ]; then
+    curr_res=$(xrandr --current 2>/dev/null | grep '\*' | awk '{print $1}' | head -n1)
+    curr_w=$(echo "$curr_res" | cut -d'x' -f1)
+    if [ -n "$curr_w" ] && [ "$curr_w" -lt 1024 ] 2>/dev/null; then
+        xrandr --auto 2>/dev/null || true
+    fi
+fi

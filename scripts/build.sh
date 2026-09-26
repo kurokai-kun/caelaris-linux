@@ -98,7 +98,7 @@ linux   /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
 initrd  /%INSTALL_DIR%/boot/intel-ucode.img
 initrd  /%INSTALL_DIR%/boot/amd-ucode.img
 initrd  /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-options archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma video=1920x1080 quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
+options archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
 EOF
 
         cat > "${loader_dir}/entries/02-caelaris-safe.conf" << 'EOF'
@@ -146,15 +146,8 @@ INCLUDE archiso_sys-linux.cfg
 INCLUDE archiso_tail.cfg
 EOF
 
-    cat > "${BUILD_PROFILE}/syslinux/archiso_tail.cfg" << 'EOF'
-LABEL reboot
-MENU LABEL Reboot
-COM32 reboot.c32
-
-LABEL poweroff
-MENU LABEL Power Off
-COM32 poweroff.c32
-EOF
+    # Empty archiso_tail.cfg to keep syslinux boot menu completely uncluttered (no extra reboot/poweroff items)
+    : > "${BUILD_PROFILE}/syslinux/archiso_tail.cfg"
 
     # Strip audible ASCII bell characters (\x07) and prompt beeps from all syslinux configs
     find "${BUILD_PROFILE}/syslinux" -type f -exec sed -i 's/\x07//g' {} + 2>/dev/null || true
@@ -167,7 +160,7 @@ ENDTEXT
 MENU LABEL Caelaris Linux
 LINUX /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
 INITRD /%INSTALL_DIR%/boot/intel-ucode.img,/%INSTALL_DIR%/boot/amd-ucode.img,/%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma video=1920x1080 quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
+APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
 
 LABEL caelaris_safe
 TEXT HELP
@@ -188,7 +181,7 @@ set timeout=12
 
 menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --class gnu --class os {
     set gfxpayload=keep
-    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma video=1920x1080 quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
+    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
     initrd /%INSTALL_DIR%/boot/intel-ucode.img /%INSTALL_DIR%/boot/amd-ucode.img /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
 }
 
@@ -245,9 +238,18 @@ ln -sf /usr/lib/systemd/system/vmtoolsd.service "${BUILD_PROFILE}/airootfs/etc/s
 ln -sf /usr/lib/systemd/system/vmware-vmblock-fuse.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/vmware-vmblock-fuse.service" 2>/dev/null || true
 ln -sf /usr/lib/systemd/system/spice-vdagentd.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/spice-vdagentd.service" 2>/dev/null || true
 
-# Generate PNG logo from SVG if rsvg-convert is available
-if which rsvg-convert >/dev/null 2>&1; then
-    rsvg-convert -w 256 -h 256 -o "${BUILD_PROFILE}/airootfs/usr/share/pixmaps/caelaris-logo.png" "${BUILD_PROFILE}/airootfs/usr/share/pixmaps/caelaris-logo.svg" 2>/dev/null || true
+# Ensure new Caelaris logo is deployed across all icon and branding paths
+if [ -f "${ROOT_DIR}/assets/logo.png" ]; then
+    mkdir -p "${BUILD_PROFILE}/airootfs/usr/share/pixmaps"
+    cp -f "${ROOT_DIR}/assets/logo.png" "${BUILD_PROFILE}/airootfs/usr/share/pixmaps/caelaris-logo.png"
+    cp -f "${ROOT_DIR}/assets/logo.png" "${BUILD_PROFILE}/airootfs/usr/share/pixmaps/distributor-logo.png"
+    for sz in 32 48 64 128 256; do
+        mkdir -p "${BUILD_PROFILE}/airootfs/usr/share/icons/hicolor/${sz}x${sz}/apps"
+        cp -f "${ROOT_DIR}/assets/logo.png" "${BUILD_PROFILE}/airootfs/usr/share/icons/hicolor/${sz}x${sz}/apps/caelaris-logo.png"
+    done
+    mkdir -p "${BUILD_PROFILE}/airootfs/usr/share/icons/hicolor/256x256/apps"
+    cp -f "${ROOT_DIR}/assets/logo.png" "${BUILD_PROFILE}/airootfs/usr/share/icons/hicolor/256x256/apps/distributor-logo.png"
+    cp -f "${ROOT_DIR}/assets/logo.png" "${BUILD_PROFILE}/airootfs/usr/share/icons/hicolor/256x256/apps/start-here-kde.png"
 fi
 
 # Ensure all scripts are executable

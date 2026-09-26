@@ -67,6 +67,8 @@ fi
 # Set Caelaris icon as user face icon
 if [ -f /usr/share/pixmaps/caelaris-logo.png ]; then
     cp -f /usr/share/pixmaps/caelaris-logo.png /home/liveuser/.face.icon 2>/dev/null || true
+    mkdir -p /var/lib/AccountsService/icons
+    cp -f /usr/share/pixmaps/caelaris-logo.png /var/lib/AccountsService/icons/liveuser 2>/dev/null || true
 elif [ -f /usr/share/pixmaps/caelaris-logo.svg ]; then
     cp -f /usr/share/pixmaps/caelaris-logo.svg /home/liveuser/.face.icon 2>/dev/null || true
 fi
