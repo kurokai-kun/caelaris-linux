@@ -107,10 +107,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Purging old ISO split assets from rolling-release..."
-          gh release view rolling-release --json assets -q '.assets[] | select(.name | test("caelaris-kde-.*\\.iso")) | .id' 2>/dev/null | while read -r asset_id; do
-            if [ -n "$asset_id" ]; then
-              echo "Deleting old asset ID: $asset_id"
-              gh api -X DELETE "repos/${{ github.repository }}/releases/assets/$asset_id" || true
+          gh release view rolling-release --json assets -q '.assets[].name' 2>/dev/null | while read -r asset_name; do
+            if [ -n "$asset_name" ]; then
+              echo "Deleting old asset: $asset_name"
+              gh release delete-asset rolling-release "$asset_name" --yes || true
             fi
           done || true
 
