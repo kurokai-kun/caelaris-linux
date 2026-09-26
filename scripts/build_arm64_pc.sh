@@ -444,19 +444,20 @@ set timeout=12
 set color_normal=light-gray/black
 set color_highlight=white/magenta
 
+# Search and switch root to partition containing live kernel
+search --no-floppy --set=root --file /live/vmlinuz
 if [ -z "$root" ]; then
     search --no-floppy --set=root --label CAELARIS_ARM64_PC
 fi
-if [ -z "$root" ]; then
-    search --no-floppy --set=root --file /live/vmlinuz
-fi
 
 menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --class gnu --class os {
+    search --no-floppy --set=root --file /live/vmlinuz
     linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 session=plasma plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
     initrd /live/initrd.img
 }
 
 menuentry "Caelaris Linux (Safe Graphics / Fallback)" --class caelaris --class gnu-linux {
+    search --no-floppy --set=root --file /live/vmlinuz
     linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live nomodeset quiet plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
     initrd /live/initrd.img
 }
@@ -532,15 +533,21 @@ GRUB_EARLY
     rm -f "${WORK_DIR}/host_early_grub.cfg"
 fi
 
-# Create FAT32 EFI boot partition image (with BOOTAA64.EFI and grub.cfg)
-truncate -s 64M "${ISO_STAGING}/efi.img"
+# Create FAT32 EFI boot partition image (with BOOTAA64.EFI, grub.cfg, and live kernel/initrd fallback)
+truncate -s 256M "${ISO_STAGING}/efi.img"
 mkfs.vfat -F 32 -n "EFI" "${ISO_STAGING}/efi.img"
-mmd -i "${ISO_STAGING}/efi.img" ::EFI ::EFI/BOOT ::boot ::boot/grub || true
+mmd -i "${ISO_STAGING}/efi.img" ::EFI ::EFI/BOOT ::boot ::boot/grub ::live || true
 if [ -f "${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" ]; then
     mcopy -i "${ISO_STAGING}/efi.img" "${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" ::EFI/BOOT/ || true
 fi
 mcopy -i "${ISO_STAGING}/efi.img" "${ISO_STAGING}/EFI/BOOT/grub.cfg" ::EFI/BOOT/ || true
 mcopy -i "${ISO_STAGING}/efi.img" "${ISO_STAGING}/EFI/BOOT/grub.cfg" ::boot/grub/ || true
+if [ -f "${ISO_STAGING}/live/vmlinuz" ]; then
+    mcopy -i "${ISO_STAGING}/efi.img" "${ISO_STAGING}/live/vmlinuz" ::live/vmlinuz || true
+fi
+if [ -f "${ISO_STAGING}/live/initrd.img" ]; then
+    mcopy -i "${ISO_STAGING}/efi.img" "${ISO_STAGING}/live/initrd.img" ::live/initrd.img || true
+fi
 
 # Generate Hybrid GPT/UEFI ISO with El Torito for virtual CD-ROM (VMware Fusion, UTM, QEMU) and GPT for USB flash drives
 echo "Building final hybrid UEFI ISO via xorriso..."
