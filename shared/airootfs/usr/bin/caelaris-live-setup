@@ -6,16 +6,24 @@ set +e
 systemctl mask --now plymouth-start.service plymouth-quit.service plymouth-quit-wait.service plymouth-reboot.service plymouth-poweroff.service plymouth-halt.service 2>/dev/null || true
 killall -9 plymouth plymouthd 2>/dev/null || true
 
-# 1. Create liveuser if not already created by systemd-sysusers
+# Mask getty@tty1 so SDDM has exclusive console ownership and does not blink
+systemctl mask --now getty@tty1.service 2>/dev/null || true
+
+# 1. Completely remove default alarm user from base image
+userdel -r -f alarm 2>/dev/null || true
+rm -rf /home/alarm /var/lib/AccountsService/users/alarm 2>/dev/null || true
+
+# Create liveuser with UID 1000 if not already created
 if ! id -u liveuser >/dev/null 2>&1; then
-    useradd -m -c "Caelaris Linux" -g users -G wheel,video,audio,optical,storage,input,power -s /bin/bash liveuser
+    useradd -u 1000 -m -c "Caelaris Live" -g users -G wheel,video,audio,optical,storage,input,power -s /bin/bash liveuser
 fi
 passwd -d liveuser 2>/dev/null || true
+passwd -d root 2>/dev/null || true
 echo "liveuser ALL=(ALL:ALL) NOPASSWD: ALL" > /etc/sudoers.d/liveuser
 chmod 0440 /etc/sudoers.d/liveuser
 
-# Ensure display name is set to "Caelaris Linux" in GECOS
-chfn -f "Caelaris Linux" liveuser 2>/dev/null || true
+# Ensure display name is set to "Caelaris Live" in GECOS
+chfn -f "Caelaris Live" liveuser 2>/dev/null || true
 
 # 2. Check kernel command-line for desktop preference (dual session support)
 DESKTOP_CHOICE="plasma"
@@ -34,10 +42,31 @@ Language=en_US.UTF-8
 Session=${SESSION_NAME}
 XSession=${SESSION_NAME}
 SystemAccount=false
-RealName=Caelaris Linux
+RealName=Caelaris Live
 Icon=/usr/share/pixmaps/caelaris-logo.png
 EOF
 chmod 0644 /var/lib/AccountsService/users/liveuser
+rm -f /var/lib/AccountsService/users/alarm 2>/dev/null || true
+
+# Configure PAM to ensure passwordless autologin and permit liveuser
+mkdir -p /etc/pam.d
+cat > /etc/pam.d/sddm-autologin << 'EOF'
+#%PAM-1.0
+auth        sufficient  pam_permit.so
+auth        required    pam_env.so
+account     include     system-login
+password    include     system-login
+session     include     system-login
+EOF
+
+cat > /etc/pam.d/sddm << 'EOF'
+#%PAM-1.0
+auth        sufficient  pam_permit.so
+auth        include     system-login
+account     include     system-login
+password    include     system-login
+session     include     system-login
+EOF
 
 # 3. Configure SDDM for Stable Autologin
 mkdir -p /etc/sddm.conf.d
@@ -109,23 +138,29 @@ for kapp in org.kde.dolphin dolphin org.kde.konsole konsole org.kde.kate kate \
              org.kde.kwrite kwrite org.kde.ark ark org.kde.spectacle spectacle \
              org.kde.gwenview gwenview org.kde.kcalc kcalc \
              org.kde.plasma-systemmonitor plasma-systemmonitor \
-             systemsettings kinfocenter org.kde.discover org.kde.drkonqi; do
-    df="/usr/share/applications/${kapp}.desktop"
-    if [ -f "$df" ]; then
-        sed -i '/^NotShowIn=/d; /^OnlyShowIn=/d' "$df" 2>/dev/null || true
-        echo "NotShowIn=GNOME;" >> "$df" 2>/dev/null || true
-    fi
+             systemsettings kinfocenter org.kde.discover org.kde.drkonqi \
+             org.kde.plasma.vault org.kde.kfind org.kde.plasma.emojier; do
+    for dir in /usr/share/applications /usr/local/share/applications; do
+        df="${dir}/${kapp}.desktop"
+        if [ -f "$df" ]; then
+            sed -i '/^NotShowIn=/d; /^OnlyShowIn=/d' "$df" 2>/dev/null || true
+            echo "NotShowIn=GNOME;" >> "$df" 2>/dev/null || true
+        fi
+    done
 done
 
 for gapp in org.gnome.Nautilus nautilus org.gnome.Ptyxis ptyxis \
              org.gnome.TextEditor gnome-text-editor org.gnome.Calculator gnome-calculator \
              org.gnome.SystemMonitor gnome-system-monitor org.gnome.DiskUtility gnome-disk-utility \
-             gnome-control-center org.gnome.Settings; do
-    df="/usr/share/applications/${gapp}.desktop"
-    if [ -f "$df" ]; then
-        sed -i '/^NotShowIn=/d; /^OnlyShowIn=/d' "$df" 2>/dev/null || true
-        echo "NotShowIn=KDE;" >> "$df" 2>/dev/null || true
-    fi
+             gnome-control-center org.gnome.Settings org.gnome.Characters org.gnome.font-viewer \
+             org.gnome.Logs org.gnome.Software org.gnome.Tour org.gnome.Console org.gnome.Terminal; do
+    for dir in /usr/share/applications /usr/local/share/applications; do
+        df="${dir}/${gapp}.desktop"
+        if [ -f "$df" ]; then
+            sed -i '/^NotShowIn=/d; /^OnlyShowIn=/d' "$df" 2>/dev/null || true
+            echo "NotShowIn=KDE;" >> "$df" 2>/dev/null || true
+        fi
+    done
 done
 
 for util in avahi-discover bssh bvnc qv4l2 qvidcap lstopo cmake-gui \

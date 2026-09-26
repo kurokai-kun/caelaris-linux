@@ -7,16 +7,19 @@ echo " Caelaris Linux ARM64 ISO Merger (macOS / Apple Silicon)  "
 echo "=========================================================="
 echo ""
 
-if [ ! -f "caelaris-arm64-pc.iso.part-00" ] || [ ! -f "caelaris-arm64-pc.iso.part-01" ]; then
+PARTS=$(ls -1 caelaris-arm64-pc.iso.part* 2>/dev/null | sort)
+if [ -z "$PARTS" ]; then
     echo "[-] Error: Missing part files in $DIR"
-    echo "    Please ensure caelaris-arm64-pc.iso.part-00 and part-01 are in the same folder as this script."
+    echo "    Please ensure caelaris-arm64-pc.iso.part-* files are in the same folder as this script."
     echo ""
     read -p "Press Enter to close..."
     exit 1
 fi
 
-echo "[*] Merging ISO parts into caelaris-arm64-pc.iso..."
-cat caelaris-arm64-pc.iso.part-00 caelaris-arm64-pc.iso.part-01 > caelaris-arm64-pc.iso
+echo "[*] Found ISO parts:"
+echo "$PARTS"
+echo "[*] Merging parts into caelaris-arm64-pc.iso..."
+cat $PARTS > caelaris-arm64-pc.iso
 
 if [ -f "caelaris-arm64-pc.iso" ]; then
     SIZE=$(ls -lh caelaris-arm64-pc.iso | awk '{print $5}')

@@ -378,13 +378,16 @@ class InstallWorker(QThread):
             if os.path.exists("/mnt/etc/sudoers.d/g_wheel"):
                 os.remove("/mnt/etc/sudoers.d/g_wheel")
 
-            # Fully purge liveuser and sysusers config so only the created user profile remains
+            # Fully purge liveuser and alarm so only the created user profile remains
             self.run_cmd("arch-chroot /mnt userdel -r -f liveuser 2>/dev/null || true", check=False)
+            self.run_cmd("arch-chroot /mnt userdel -r -f alarm 2>/dev/null || true", check=False)
             for stale_live in [
                 "/mnt/etc/sysusers.d/caelaris-liveuser.conf",
                 "/mnt/var/lib/AccountsService/users/liveuser",
+                "/mnt/var/lib/AccountsService/users/alarm",
                 "/mnt/etc/sudoers.d/liveuser",
-                "/mnt/home/liveuser"
+                "/mnt/home/liveuser",
+                "/mnt/home/alarm"
             ]:
                 if os.path.isdir(stale_live):
                     shutil.rmtree(stale_live, ignore_errors=True)
@@ -395,10 +398,9 @@ class InstallWorker(QThread):
                         pass
 
             sess_name = "gnome" if "gnome" in str(desktop).lower() else "plasma"
-            desktop_session = f"{sess_name}.desktop"
             os.makedirs("/mnt/var/lib/AccountsService/users", exist_ok=True)
             with open(f"/mnt/var/lib/AccountsService/users/{user}", "w") as f:
-                f.write(f"[User]\nLanguage=en_US.UTF-8\nSession={desktop_session}\nXSession={desktop_session}\nSystemAccount=false\nRealName={realname}\nIcon=/usr/share/pixmaps/caelaris-logo.png\n")
+                f.write(f"[User]\nLanguage=en_US.UTF-8\nSession={sess_name}\nXSession={sess_name}\nSystemAccount=false\nRealName={realname}\nIcon=/usr/share/pixmaps/caelaris-logo.png\n")
 
             os.makedirs("/mnt/etc/sddm.conf.d", exist_ok=True)
             sddm_cfg = (
@@ -412,7 +414,7 @@ class InstallWorker(QThread):
                 "CompositorCommand=kwin_wayland --no-lockscreen --no-global-shortcuts --locale1\n"
             )
             if autologin:
-                sddm_cfg += f"\n[Autologin]\nUser={user}\nSession={desktop_session}\nRelogin=false\n"
+                sddm_cfg += f"\n[Autologin]\nUser={user}\nSession={sess_name}\nRelogin=false\n"
             with open("/mnt/etc/sddm.conf.d/10-caelaris.conf", "w") as f:
                 f.write(sddm_cfg)
 
@@ -759,7 +761,7 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
                 "org.kde.gwenview", "gwenview", "org.kde.kcalc", "kcalc",
                 "org.kde.plasma-systemmonitor", "plasma-systemmonitor",
                 "systemsettings", "kinfocenter", "org.kde.discover",
-                "org.kde.drkonqi", "org.kde.plasma.vault"
+                "org.kde.drkonqi", "org.kde.plasma.vault", "org.kde.kfind", "org.kde.plasma.emojier"
             ]
             gnome_exclusive_apps = [
                 "org.gnome.Nautilus", "nautilus", "org.gnome.Ptyxis", "ptyxis",
@@ -767,7 +769,10 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
                 "org.gnome.Calculator", "gnome-calculator",
                 "org.gnome.SystemMonitor", "gnome-system-monitor",
                 "org.gnome.DiskUtility", "gnome-disk-utility",
-                "gnome-control-center", "org.gnome.Settings"
+                "gnome-control-center", "org.gnome.Settings",
+                "org.gnome.Characters", "org.gnome.font-viewer",
+                "org.gnome.Logs", "org.gnome.Software", "org.gnome.Tour",
+                "org.gnome.Console", "org.gnome.Terminal"
             ]
             utility_clutter = [
                 "avahi-discover", "bssh", "bvnc", "qv4l2", "qvidcap",

@@ -109,25 +109,49 @@ EOF
     # Desktop packages for live preview & installer
     # Unified Dual Desktop Suite: Pre-installs BOTH KDE Plasma 6 and GNOME Desktop
     DESKTOP_PKGS=(
+        plasma-workspace
         plasma-desktop
         kwin
+        plasma-x11-session
+        plasma-nm
+        plasma-pa
+        powerdevil
+        kscreen
+        systemsettings
+        polkit-kde-agent
+        xdg-desktop-portal-kde
+        layer-shell-qt
+        qt6-declarative
+        qt6-svg
         sddm
+        sddm-kcm
         wayland
         qt6-wayland
+        xorg-server
+        xorg-xinit
         xorg-xwayland
         konsole
         dolphin
         breeze
         breeze-gtk
+        breeze-icons
         gnome-shell
+        gnome-session
+        gnome-settings-daemon
+        gnome-control-center
         mutter
         ptyxis
         nautilus
+        xdg-desktop-portal-gnome
+        accountsservice
+        spice-vdagent
         mesa
         vulkan-freedreno
         vulkan-panfrost
         linux-firmware
         pipewire
+        pipewire-alsa
+        pipewire-pulse
         wireplumber
         networkmanager
         network-manager-applet
@@ -139,6 +163,7 @@ EOF
         e2fsprogs
         btrfs-progs
         arch-install-scripts
+        archinstall
         rsync
         squashfs-tools
         grub
@@ -157,9 +182,8 @@ EOF
 
     # Tier 2: Complete Desktop Preview Suite & Graphics
     chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm --overwrite='*' pipewire-jack qt6-multimedia-ffmpeg ${DESKTOP_PKGS[*]}" || {
-        echo "Retrying Tier 2 package installation..."
-        sleep 3
-        chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm --overwrite='*' pipewire-jack qt6-multimedia-ffmpeg ${DESKTOP_PKGS[*]}"
+        echo "Retrying Tier 2 individual package installation..."
+        chroot "$ROOTFS_DIR" /bin/bash -c "for pkg in ${DESKTOP_PKGS[*]}; do pacman -S --needed --noconfirm --overwrite='*' \"\$pkg\" 2>/dev/null || true; done"
     }
 
     # Verify installation of core desktop and installer packages
@@ -179,13 +203,18 @@ EOF
     echo "Generating bootable live initramfs..."
     chroot "$ROOTFS_DIR" /bin/bash -c "mkinitcpio -P" || true
 
-    # Ensure liveuser exists inside rootfs
+    # Completely purge alarm user and ensure single liveuser exists with UID 1000
     chroot "$ROOTFS_DIR" /bin/bash -c "
+        userdel -r -f alarm 2>/dev/null || true
+        rm -rf /home/alarm /var/lib/AccountsService/users/alarm 2>/dev/null || true
         if ! id -u liveuser >/dev/null 2>&1; then
-            useradd -m -c 'Caelaris Live' -g users -G wheel,video,audio,storage,input,power -s /bin/bash liveuser
+            useradd -u 1000 -m -c 'Caelaris Live' -g users -G wheel,video,audio,optical,storage,input,power -s /bin/bash liveuser
         fi
-        passwd -d liveuser
+        passwd -d liveuser 2>/dev/null || true
+        passwd -d root 2>/dev/null || true
     " || true
+    rm -rf "${ROOTFS_DIR}/home/alarm"
+    rm -f "${ROOTFS_DIR}/var/lib/AccountsService/users/alarm"
 
     # Generate standalone BOOTAA64.EFI using ARM64 GRUB modules
     echo "Compiling standalone ARM64 EFI bootloader (BOOTAA64.EFI)..."
@@ -316,9 +345,12 @@ fs-type = swap
 EOF
 
 # Configure SDDM display manager with modern theme and autologin to live user
-# Configure SDDM display manager with modern theme and autologin to live user
 mkdir -p "${ROOTFS_DIR}/etc/sddm.conf.d"
 cat << 'EOF' > "${ROOTFS_DIR}/etc/sddm.conf.d/10-caelaris.conf"
+[General]
+HaltCommand=/usr/bin/systemctl poweroff
+RebootCommand=/usr/bin/systemctl reboot
+
 [Theme]
 Current=breeze
 CursorTheme=breeze_cursors
@@ -336,10 +368,45 @@ Session=${SESSION_NAME}
 Relogin=false
 EOF
 
+# Configure PAM to ensure passwordless autologin and permit liveuser
+mkdir -p "${ROOTFS_DIR}/etc/pam.d"
+cat << 'EOF' > "${ROOTFS_DIR}/etc/pam.d/sddm-autologin"
+#%PAM-1.0
+auth        sufficient  pam_permit.so
+auth        required    pam_env.so
+account     include     system-login
+password    include     system-login
+session     include     system-login
+EOF
+
+cat << 'EOF' > "${ROOTFS_DIR}/etc/pam.d/sddm"
+#%PAM-1.0
+auth        sufficient  pam_permit.so
+auth        include     system-login
+account     include     system-login
+password    include     system-login
+session     include     system-login
+EOF
+
+# Configure AccountsService
+mkdir -p "${ROOTFS_DIR}/var/lib/AccountsService/users"
+cat << EOF > "${ROOTFS_DIR}/var/lib/AccountsService/users/liveuser"
+[User]
+Language=en_US.UTF-8
+Session=${SESSION_NAME}
+XSession=${SESSION_NAME}
+SystemAccount=false
+RealName=Caelaris Live
+Icon=/usr/share/pixmaps/caelaris-logo.png
+EOF
+chmod 0644 "${ROOTFS_DIR}/var/lib/AccountsService/users/liveuser"
+rm -f "${ROOTFS_DIR}/var/lib/AccountsService/users/alarm" 2>/dev/null || true
+
 # Configure liveuser with wheel privileges
 mkdir -p "${ROOTFS_DIR}/etc/sudoers.d"
 echo "%wheel ALL=(ALL:ALL) NOPASSWD: ALL" > "${ROOTFS_DIR}/etc/sudoers.d/wheel"
-chmod 440 "${ROOTFS_DIR}/etc/sudoers.d/wheel"
+echo "liveuser ALL=(ALL:ALL) NOPASSWD: ALL" > "${ROOTFS_DIR}/etc/sudoers.d/liveuser"
+chmod 440 "${ROOTFS_DIR}/etc/sudoers.d/wheel" "${ROOTFS_DIR}/etc/sudoers.d/liveuser"
 
 # Configure dynamic session selection service based on bootloader session= cmdline parameter
 mkdir -p "${ROOTFS_DIR}/usr/lib/systemd/system"
@@ -358,13 +425,30 @@ RemainAfterExit=yes
 WantedBy=multi-user.target
 EOF
 
-# Enable system services
+# Enable system services and configure default graphical target
+mkdir -p "${ROOTFS_DIR}/etc/systemd/system/graphical.target.wants"
 mkdir -p "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants"
-mkdir -p "${ROOTFS_DIR}/etc/systemd/system/display-manager.service.wants"
+
+ln -sf /usr/lib/systemd/system/graphical.target "${ROOTFS_DIR}/etc/systemd/system/default.target"
+
+# Enable live setup service before SDDM
+ln -sf /etc/systemd/system/caelaris-live-setup.service "${ROOTFS_DIR}/etc/systemd/system/graphical.target.wants/caelaris-live-setup.service"
+ln -sf /etc/systemd/system/caelaris-live-setup.service "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/caelaris-live-setup.service"
+
+# Enable SDDM display manager
+ln -sf /usr/lib/systemd/system/sddm.service "${ROOTFS_DIR}/etc/systemd/system/display-manager.service"
+ln -sf /usr/lib/systemd/system/sddm.service "${ROOTFS_DIR}/etc/systemd/system/graphical.target.wants/sddm.service"
+ln -sf /usr/lib/systemd/system/sddm.service "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/sddm.service"
+
+# Enable essential background services
 ln -sf /usr/lib/systemd/system/systemd-resolved.service "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/" || true
 ln -sf /usr/lib/systemd/system/NetworkManager.service "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/" || true
-ln -sf /usr/lib/systemd/system/sddm.service "${ROOTFS_DIR}/etc/systemd/system/display-manager.service" || true
+ln -sf /usr/lib/systemd/system/spice-vdagentd.service "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/" || true
 ln -sf /usr/lib/systemd/system/caelaris-session-select.service "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/" || true
+
+# Prevent getty@tty1 from seizing console and causing display blinking
+ln -sf /dev/null "${ROOTFS_DIR}/etc/systemd/system/getty@tty1.service" 2>/dev/null || true
+rm -rf "${ROOTFS_DIR}/etc/systemd/system/getty@tty1.service.d" 2>/dev/null || true
 
 # Mask plymouth services so systemd never hangs waiting on non-existent splash daemon
 for unit in plymouth-start.service plymouth-quit.service plymouth-quit-wait.service plymouth-reboot.service plymouth-poweroff.service plymouth-halt.service plymouth-kexec.service plymouth-switch-root.service; do
@@ -381,18 +465,33 @@ chmod +x "${ROOTFS_DIR}/usr/bin/caelaris-"* 2>/dev/null || true
 chown -R 1000:100 "${ROOTFS_DIR}/home/liveuser" 2>/dev/null || true
 
 # Isolate KDE and GNOME application menus to avoid clutter in both environments
-for kapp in org.kde.dolphin dolphin org.kde.konsole konsole org.kde.kate kate org.kde.kwrite kwrite org.kde.ark ark org.kde.spectacle spectacle org.kde.gwenview gwenview systemsettings kinfocenter org.kde.discover; do
-    df="${ROOTFS_DIR}/usr/share/applications/${kapp}.desktop"
-    if [ -f "$df" ]; then
-        grep -q "NotShowIn=" "$df" && sed -i 's/^NotShowIn=.*/&GNOME;/' "$df" || echo "NotShowIn=GNOME;" >> "$df"
-    fi
+for kapp in org.kde.dolphin dolphin org.kde.konsole konsole org.kde.kate kate \
+             org.kde.kwrite kwrite org.kde.ark ark org.kde.spectacle spectacle \
+             org.kde.gwenview gwenview org.kde.kcalc kcalc \
+             org.kde.plasma-systemmonitor plasma-systemmonitor \
+             systemsettings kinfocenter org.kde.discover org.kde.drkonqi \
+             org.kde.plasma.vault org.kde.kfind org.kde.plasma.emojier; do
+    for dir in "${ROOTFS_DIR}/usr/share/applications" "${ROOTFS_DIR}/usr/local/share/applications"; do
+        df="${dir}/${kapp}.desktop"
+        if [ -f "$df" ]; then
+            sed -i '/^NotShowIn=/d; /^OnlyShowIn=/d' "$df" 2>/dev/null || true
+            echo "NotShowIn=GNOME;" >> "$df"
+        fi
+    done
 done
 
-for gapp in org.gnome.Nautilus nautilus org.gnome.Ptyxis ptyxis org.gnome.TextEditor gnome-text-editor org.gnome.Calculator gnome-calculator org.gnome.SystemMonitor gnome-system-monitor gnome-control-center; do
-    df="${ROOTFS_DIR}/usr/share/applications/${gapp}.desktop"
-    if [ -f "$df" ]; then
-        grep -q "NotShowIn=" "$df" && sed -i 's/^NotShowIn=.*/&KDE;/' "$df" || echo "NotShowIn=KDE;" >> "$df"
-    fi
+for gapp in org.gnome.Nautilus nautilus org.gnome.Ptyxis ptyxis \
+             org.gnome.TextEditor gnome-text-editor org.gnome.Calculator gnome-calculator \
+             org.gnome.SystemMonitor gnome-system-monitor org.gnome.DiskUtility gnome-disk-utility \
+             gnome-control-center org.gnome.Settings org.gnome.Characters org.gnome.font-viewer \
+             org.gnome.Logs org.gnome.Software org.gnome.Tour org.gnome.Console org.gnome.Terminal; do
+    for dir in "${ROOTFS_DIR}/usr/share/applications" "${ROOTFS_DIR}/usr/local/share/applications"; do
+        df="${dir}/${gapp}.desktop"
+        if [ -f "$df" ]; then
+            sed -i '/^NotShowIn=/d; /^OnlyShowIn=/d' "$df" 2>/dev/null || true
+            echo "NotShowIn=KDE;" >> "$df"
+        fi
+    done
 done
 
 # 4. Generate Uncompromised Full Desktop Hybrid ARM64 ISO
@@ -459,6 +558,12 @@ fi
 menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --class gnu --class os {
     search --no-floppy --set=root --file /live/vmlinuz
     linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 session=plasma plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
+    initrd /live/initrd.img
+}
+
+menuentry "Caelaris Linux (GNOME 46 Desktop Preview)" --class caelaris --class gnome --class gnu-linux {
+    search --no-floppy --set=root --file /live/vmlinuz
+    linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 session=gnome plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
     initrd /live/initrd.img
 }
 

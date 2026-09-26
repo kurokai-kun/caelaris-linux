@@ -20,16 +20,25 @@ Because GitHub limits individual asset uploads to under 2.0 GB, this ISO (~2.58 
      - **Linux**: [`combine.sh`](https://github.com/kurokai-kun/caelaris-linux/releases/download/arm64-pc-release/combine.sh)
 
 2. **Assemble the single ISO file**:
-   * **On macOS (Mac with Apple Silicon M1/M2/M3/M4)**:
-     * **Option A (One-Click)**: Simply double-click **`combine.command`** directly in macOS Finder!
-     * **Option B (Terminal)**: Open Terminal and run:
+   * **🍎 On macOS (Apple Silicon M1/M2/M3/M4)**:
+     * **Option A (Terminal - Fastest & Recommended)**: Open Terminal and run:
        ```bash
-       cd ~/Downloads && cat caelaris-arm64-pc.iso.part-00 caelaris-arm64-pc.iso.part-01 > caelaris-arm64-pc.iso
+       cd ~/Downloads && cat caelaris-arm64-pc.iso.part* > caelaris-arm64-pc.iso
        ```
-   * **On Windows**:
+       *(If downloaded to another folder, replace `~/Downloads` with your folder path).*
+     * **Option B (One-Click)**: Simply double-click **`combine.command`** directly in macOS Finder!
+   * **🐧 On Linux**:
+     * Open Terminal in your download folder and run:
+       ```bash
+       cat caelaris-arm64-pc.iso.part* > caelaris-arm64-pc.iso
+       ```
+     * Or run: `bash combine.sh`
+   * **🪟 On Windows**:
      * Double-click **`combine.bat`**
-   * **On Linux**:
-     * Open terminal in your download folder and run: `bash combine.sh`
+     * Or in PowerShell:
+       ```powershell
+       cmd /c "copy /b caelaris-arm64-pc.iso.part* caelaris-arm64-pc.iso"
+       ```
 
 ---
 

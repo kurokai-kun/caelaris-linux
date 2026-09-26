@@ -1,11 +1,18 @@
 #!/usr/bin/env bash
 # Caelaris Linux System Installer Launcher
-set -e
+set +e
+
+# Grant root access to local user's X11/Wayland display server
+xhost +si:localuser:root 2>/dev/null || true
+xhost + 2>/dev/null || true
+
+export QT_QPA_PLATFORM="wayland;xcb"
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 
 # If in a graphical session, launch the PyQt6 Graphical Installer
 if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
     if [ -x /usr/bin/caelaris-installer-gui ]; then
-        exec sudo /usr/bin/caelaris-installer-gui "$@"
+        exec sudo -E /usr/bin/caelaris-installer-gui "$@"
     fi
 fi
 
