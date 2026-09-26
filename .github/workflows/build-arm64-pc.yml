@@ -67,20 +67,34 @@ jobs:
           # 3. Clean relative checksums
           cd release_assets
           sha256sum caelaris-arm64-pc.iso > caelaris-arm64-pc.iso.sha256
-          sha256sum caelaris-arm64-pc.iso > SHA256SUMS.txt
 
           # 4. Only split if file exceeds 1.9GB GitHub asset limit
           if [ "$ISO_SIZE" -gt 1992294400 ]; then
             echo "ISO exceeds 1.9GB. Generating multi-part split for GitHub Release..."
             split -b 1900M -d caelaris-arm64-pc.iso "caelaris-arm64-pc.iso.part-"
             rm -f caelaris-arm64-pc.iso
+            sha256sum caelaris-arm64-pc.iso.part-* > SHA256SUMS.txt
+            cat caelaris-arm64-pc.iso.sha256 >> SHA256SUMS.txt
           else
             echo "ISO size is $ISO_SIZE bytes (< 1.9GB). Standalone ISO uploaded without split."
             rm -f combine.bat combine.command combine.sh
+            cp caelaris-arm64-pc.iso.sha256 SHA256SUMS.txt
           fi
 
           cd ..
           ls -lh release_assets/
+
+      - name: Clean Previous Release Assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Purging old assets from arm64-pc-release to prevent caching issues..."
+          gh release view arm64-pc-release --json assets -q '.assets[].name' 2>/dev/null | while read -r asset_name; do
+            if [ -n "$asset_name" ]; then
+              echo "Deleting old asset: $asset_name"
+              gh release delete-asset arm64-pc-release "$asset_name" --yes || true
+            fi
+          done || true
 
       - name: Publish GitHub Release (ARM64 Laptops & PCs)
         uses: softprops/action-gh-release@v2

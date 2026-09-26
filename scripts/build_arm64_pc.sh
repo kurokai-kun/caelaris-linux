@@ -190,15 +190,44 @@ EOF
     # Generate standalone BOOTAA64.EFI using ARM64 GRUB modules
     echo "Compiling standalone ARM64 EFI bootloader (BOOTAA64.EFI)..."
     cat << 'GRUB_EARLY' > "${ROOTFS_DIR}/tmp/early_grub.cfg"
-search.fs_label CAELARIS_ARM64_PC root
+insmod part_gpt
+insmod part_msdos
+insmod iso9660
+insmod fat
+insmod ext2
+insmod btrfs
+insmod search
+insmod search_fs_file
+insmod search_label
+insmod test
+insmod echo
+insmod normal
+
+if [ -n "$cmdpath" ]; then
+    set prefix=$cmdpath
+    if [ -f $prefix/grub.cfg ]; then
+        configfile $prefix/grub.cfg
+    fi
+fi
+
+search --no-floppy --set=root --label CAELARIS_ARM64_PC
 if [ -z "$root" ]; then
-    search.file /EFI/BOOT/grub.cfg root
+    search --no-floppy --set=root --file /EFI/BOOT/grub.cfg
 fi
 if [ -z "$root" ]; then
-    search.file /live/vmlinuz root
+    search --no-floppy --set=root --file /live/vmlinuz
 fi
-set prefix=($root)/EFI/BOOT
-configfile $prefix/grub.cfg
+if [ -z "$root" ]; then
+    search --no-floppy --set=root --file /boot/grub/grub.cfg
+fi
+
+if [ -f ($root)/EFI/BOOT/grub.cfg ]; then
+    set prefix=($root)/EFI/BOOT
+    configfile $prefix/grub.cfg
+elif [ -f ($root)/boot/grub/grub.cfg ]; then
+    set prefix=($root)/boot/grub
+    configfile $prefix/grub.cfg
+fi
 GRUB_EARLY
 
     chroot "$ROOTFS_DIR" /bin/bash -c "
@@ -209,7 +238,16 @@ GRUB_EARLY
                 --output=/boot/BOOTAA64.EFI \
                 --locales='' \
                 --fonts='' \
-                'boot/grub/grub.cfg=/tmp/early_grub.cfg' 2>/dev/null || true
+                --modules='part_gpt part_msdos iso9660 fat ext2 btrfs search search_fs_file search_fs_uuid search_label test echo normal linux all_video gfxterm font loadenv configfile' \
+                'boot/grub/grub.cfg=/tmp/early_grub.cfg' 2>/dev/null || {
+                grub-mkstandalone \
+                    --format=arm64-efi \
+                    -O arm64-efi \
+                    --output=/boot/BOOTAA64.EFI \
+                    --locales='' \
+                    --fonts='' \
+                    'boot/grub/grub.cfg=/tmp/early_grub.cfg' 2>/dev/null || true
+            }
         fi
     " || true
     rm -f "${ROOTFS_DIR}/tmp/early_grub.cfg"
@@ -396,12 +434,22 @@ if [ ! -s "${ISO_STAGING}/live/initrd.img" ]; then
 fi
 
 # Create GRUB EFI configuration for ARM64 PCs & Apple Silicon
+mkdir -p "${ISO_STAGING}/EFI/BOOT"
+mkdir -p "${ISO_STAGING}/boot/grub/arm64-efi"
+
 cat << 'EOF' > "${ISO_STAGING}/EFI/BOOT/grub.cfg"
 set default="0"
 set timeout=12
 
 set color_normal=light-gray/black
 set color_highlight=white/magenta
+
+if [ -z "$root" ]; then
+    search --no-floppy --set=root --label CAELARIS_ARM64_PC
+fi
+if [ -z "$root" ]; then
+    search --no-floppy --set=root --file /live/vmlinuz
+fi
 
 menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --class gnu --class os {
     linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 session=plasma plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
@@ -414,6 +462,10 @@ menuentry "Caelaris Linux (Safe Graphics / Fallback)" --class caelaris --class g
 }
 EOF
 
+# Ensure grub.cfg is available at standard search locations
+cp -f "${ISO_STAGING}/EFI/BOOT/grub.cfg" "${ISO_STAGING}/boot/grub/grub.cfg"
+cp -f "${ISO_STAGING}/EFI/BOOT/grub.cfg" "${ISO_STAGING}/boot/grub/arm64-efi/grub.cfg"
+
 # Ensure BOOTAA64.EFI exists in ISO_STAGING
 if [ -f "${ROOTFS_DIR}/boot/BOOTAA64.EFI" ]; then
     cp "${ROOTFS_DIR}/boot/BOOTAA64.EFI" "${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI"
@@ -422,15 +474,44 @@ fi
 if [ ! -f "${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" ] && which grub-mkstandalone >/dev/null 2>&1; then
     echo "Generating BOOTAA64.EFI via host grub-mkstandalone..."
     cat << 'GRUB_EARLY' > "${WORK_DIR}/host_early_grub.cfg"
-search.fs_label CAELARIS_ARM64_PC root
+insmod part_gpt
+insmod part_msdos
+insmod iso9660
+insmod fat
+insmod ext2
+insmod btrfs
+insmod search
+insmod search_fs_file
+insmod search_label
+insmod test
+insmod echo
+insmod normal
+
+if [ -n "$cmdpath" ]; then
+    set prefix=$cmdpath
+    if [ -f $prefix/grub.cfg ]; then
+        configfile $prefix/grub.cfg
+    fi
+fi
+
+search --no-floppy --set=root --label CAELARIS_ARM64_PC
 if [ -z "$root" ]; then
-    search.file /EFI/BOOT/grub.cfg root
+    search --no-floppy --set=root --file /EFI/BOOT/grub.cfg
 fi
 if [ -z "$root" ]; then
-    search.file /live/vmlinuz root
+    search --no-floppy --set=root --file /live/vmlinuz
 fi
-set prefix=($root)/EFI/BOOT
-configfile $prefix/grub.cfg
+if [ -z "$root" ]; then
+    search --no-floppy --set=root --file /boot/grub/grub.cfg
+fi
+
+if [ -f ($root)/EFI/BOOT/grub.cfg ]; then
+    set prefix=($root)/EFI/BOOT
+    configfile $prefix/grub.cfg
+elif [ -f ($root)/boot/grub/grub.cfg ]; then
+    set prefix=($root)/boot/grub
+    configfile $prefix/grub.cfg
+fi
 GRUB_EARLY
     grub-mkstandalone \
         --format=arm64-efi \
@@ -438,18 +519,28 @@ GRUB_EARLY
         --output="${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" \
         --locales="" \
         --fonts="" \
-        "boot/grub/grub.cfg=${WORK_DIR}/host_early_grub.cfg" 2>/dev/null || true
+        --modules="part_gpt part_msdos iso9660 fat ext2 btrfs search search_fs_file search_fs_uuid search_label test echo normal linux all_video gfxterm font loadenv configfile" \
+        "boot/grub/grub.cfg=${WORK_DIR}/host_early_grub.cfg" 2>/dev/null || {
+        grub-mkstandalone \
+            --format=arm64-efi \
+            -O arm64-efi \
+            --output="${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" \
+            --locales="" \
+            --fonts="" \
+            "boot/grub/grub.cfg=${WORK_DIR}/host_early_grub.cfg" 2>/dev/null || true
+    }
     rm -f "${WORK_DIR}/host_early_grub.cfg"
 fi
 
 # Create FAT32 EFI boot partition image (with BOOTAA64.EFI and grub.cfg)
 truncate -s 64M "${ISO_STAGING}/efi.img"
 mkfs.vfat -F 32 -n "EFI" "${ISO_STAGING}/efi.img"
-mmd -i "${ISO_STAGING}/efi.img" ::EFI ::EFI/BOOT || true
+mmd -i "${ISO_STAGING}/efi.img" ::EFI ::EFI/BOOT ::boot ::boot/grub || true
 if [ -f "${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" ]; then
     mcopy -i "${ISO_STAGING}/efi.img" "${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" ::EFI/BOOT/ || true
 fi
 mcopy -i "${ISO_STAGING}/efi.img" "${ISO_STAGING}/EFI/BOOT/grub.cfg" ::EFI/BOOT/ || true
+mcopy -i "${ISO_STAGING}/efi.img" "${ISO_STAGING}/EFI/BOOT/grub.cfg" ::boot/grub/ || true
 
 # Generate Hybrid GPT/UEFI ISO with El Torito for virtual CD-ROM (VMware Fusion, UTM, QEMU) and GPT for USB flash drives
 echo "Building final hybrid UEFI ISO via xorriso..."

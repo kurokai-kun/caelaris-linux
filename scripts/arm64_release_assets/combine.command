@@ -22,9 +22,33 @@ if [ -f "caelaris-arm64-pc.iso" ]; then
     SIZE=$(ls -lh caelaris-arm64-pc.iso | awk '{print $5}')
     echo "[+] SUCCESS! Assembled caelaris-arm64-pc.iso ($SIZE)"
     echo ""
-    echo "In VMware Fusion or UTM on Mac:"
-    echo "  1. Select 'caelaris-arm64-pc.iso'"
-    echo "  2. In VMware Fusion -> Settings -> CD/DVD: ensure 'Connect CD/DVD Drive' is CHECKED!"
+    echo "[*] Verifying checksum..."
+    CHECK_CMD=""
+    if command -v shasum >/dev/null 2>&1; then
+        CHECK_CMD="shasum -a 256 -c"
+    elif command -v sha256sum >/dev/null 2>&1; then
+        CHECK_CMD="sha256sum -c"
+    fi
+
+    if [ -n "$CHECK_CMD" ]; then
+        if [ -f "caelaris-arm64-pc.iso.sha256" ]; then
+            $CHECK_CMD caelaris-arm64-pc.iso.sha256 || {
+                echo ""
+                echo "[-] Notice: Checksum failed. If you downloaded parts at different times,"
+                echo "    please re-download part-00 and part-01 together to ensure matching builds."
+            }
+        elif [ -f "SHA256SUMS.txt" ]; then
+            $CHECK_CMD SHA256SUMS.txt || true
+        fi
+    fi
+
+    echo ""
+    echo "=========================================================="
+    echo " In VMware Fusion or UTM on Mac:"
+    echo "   1. Select 'caelaris-arm64-pc.iso'"
+    echo "   2. In VMware Fusion -> Settings -> CD/DVD: ensure"
+    echo "      'Connect CD/DVD Drive' is CHECKED!"
+    echo "=========================================================="
 else
     echo "[-] Assembly failed."
 fi
