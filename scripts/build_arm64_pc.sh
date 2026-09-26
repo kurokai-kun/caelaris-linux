@@ -189,6 +189,18 @@ EOF
 
     # Generate standalone BOOTAA64.EFI using ARM64 GRUB modules
     echo "Compiling standalone ARM64 EFI bootloader (BOOTAA64.EFI)..."
+    cat << 'GRUB_EARLY' > "${ROOTFS_DIR}/tmp/early_grub.cfg"
+search.fs_label CAELARIS_ARM64_PC root
+if [ -z "$root" ]; then
+    search.file /EFI/BOOT/grub.cfg root
+fi
+if [ -z "$root" ]; then
+    search.file /live/vmlinuz root
+fi
+set prefix=($root)/EFI/BOOT
+configfile $prefix/grub.cfg
+GRUB_EARLY
+
     chroot "$ROOTFS_DIR" /bin/bash -c "
         if which grub-mkstandalone >/dev/null 2>&1; then
             grub-mkstandalone \
@@ -197,9 +209,10 @@ EOF
                 --output=/boot/BOOTAA64.EFI \
                 --locales='' \
                 --fonts='' \
-                'boot/grub/grub.cfg=/etc/hostname' 2>/dev/null || true
+                'boot/grub/grub.cfg=/tmp/early_grub.cfg' 2>/dev/null || true
         fi
     " || true
+    rm -f "${ROOTFS_DIR}/tmp/early_grub.cfg"
 
     # Restore standard pacman options for target installation
     sed -i 's/^SigLevel = Never/SigLevel = Required DatabaseOptional/' "${ROOTFS_DIR}/etc/pacman.conf" 2>/dev/null || true
@@ -385,7 +398,7 @@ fi
 # Create GRUB EFI configuration for ARM64 PCs & Apple Silicon
 cat << 'EOF' > "${ISO_STAGING}/EFI/BOOT/grub.cfg"
 set default="0"
-set timeout=2
+set timeout=12
 
 set color_normal=light-gray/black
 set color_highlight=white/magenta
@@ -408,13 +421,25 @@ fi
 
 if [ ! -f "${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" ] && which grub-mkstandalone >/dev/null 2>&1; then
     echo "Generating BOOTAA64.EFI via host grub-mkstandalone..."
+    cat << 'GRUB_EARLY' > "${WORK_DIR}/host_early_grub.cfg"
+search.fs_label CAELARIS_ARM64_PC root
+if [ -z "$root" ]; then
+    search.file /EFI/BOOT/grub.cfg root
+fi
+if [ -z "$root" ]; then
+    search.file /live/vmlinuz root
+fi
+set prefix=($root)/EFI/BOOT
+configfile $prefix/grub.cfg
+GRUB_EARLY
     grub-mkstandalone \
         --format=arm64-efi \
         -O arm64-efi \
         --output="${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" \
         --locales="" \
         --fonts="" \
-        "boot/grub/grub.cfg=${ISO_STAGING}/EFI/BOOT/grub.cfg" 2>/dev/null || true
+        "boot/grub/grub.cfg=${WORK_DIR}/host_early_grub.cfg" 2>/dev/null || true
+    rm -f "${WORK_DIR}/host_early_grub.cfg"
 fi
 
 # Create FAT32 EFI boot partition image (with BOOTAA64.EFI and grub.cfg)
@@ -426,17 +451,25 @@ if [ -f "${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" ]; then
 fi
 mcopy -i "${ISO_STAGING}/efi.img" "${ISO_STAGING}/EFI/BOOT/grub.cfg" ::EFI/BOOT/ || true
 
-# Generate Hybrid GPT/UEFI ISO
+# Generate Hybrid GPT/UEFI ISO with El Torito for virtual CD-ROM (VMware Fusion, UTM, QEMU) and GPT for USB flash drives
 echo "Building final hybrid UEFI ISO via xorriso..."
 xorriso -as mkisofs \
     -r -V "CAELARIS_ARM64_PC" \
     -J -joliet-long \
+    -e "efi.img" \
+    -no-emul-boot \
+    -isohybrid-gpt-basdat \
     -append_partition 2 0xef "${ISO_STAGING}/efi.img" \
     -appended_part_as_gpt \
     -iso_mbr_part_type a2a0d0ebe5b9334487c068b6b72699c7 \
     -o "${OUT_DIR}/${IMAGE_NAME}.iso" \
     "$ISO_STAGING" || {
-        xorriso -as mkisofs -r -V "CAELARIS_ARM64_PC" -o "${OUT_DIR}/${IMAGE_NAME}.iso" "$ISO_STAGING"
+        xorriso -as mkisofs \
+            -r -V "CAELARIS_ARM64_PC" \
+            -e "efi.img" \
+            -no-emul-boot \
+            -o "${OUT_DIR}/${IMAGE_NAME}.iso" \
+            "$ISO_STAGING"
     }
 
 cp "${OUT_DIR}/${IMAGE_NAME}.iso" "${OUT_DIR}/caelaris-arm64-pc.iso"
