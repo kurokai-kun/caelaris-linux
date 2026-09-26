@@ -170,11 +170,11 @@ EOF
 
     # Configure mkinitcpio for live ISO booting
     cat << 'EOF' > "${ROOTFS_DIR}/etc/mkinitcpio.conf"
-MODULES=()
+MODULES=(loop squashfs isofs overlay xz)
 BINARIES=()
 FILES=()
 HOOKS=(base udev archiso archiso_loop_mnt block filesystems keyboard)
-COMPRESSION="zstd"
+COMPRESSION="xz"
 EOF
     echo "Generating bootable live initramfs..."
     chroot "$ROOTFS_DIR" /bin/bash -c "mkinitcpio -P" || true
@@ -405,8 +405,8 @@ mkdir -p "${ISO_STAGING}/live" "${ISO_STAGING}/EFI/BOOT"
 truncate -s 0 "${ROOTFS_DIR}/etc/machine-id" 2>/dev/null || true
 rm -f "${ROOTFS_DIR}"/etc/ssh/ssh_host_* 2>/dev/null || true
 
-echo "Creating SquashFS filesystem for ISO (zstd level 15)..."
-mksquashfs "$ROOTFS_DIR" "${ISO_STAGING}/live/airootfs.sfs" -comp zstd -Xcompression-level 15 -b 1M
+echo "Creating SquashFS filesystem for ISO (xz compression, 1M block size)..."
+mksquashfs "$ROOTFS_DIR" "${ISO_STAGING}/live/airootfs.sfs" -comp xz -b 1M
 
 # Archiso hook expects airootfs.sfs inside archisobasedir (e.g. /live/airootfs.sfs or /live/aarch64/airootfs.sfs)
 mkdir -p "${ISO_STAGING}/live/aarch64" "${ISO_STAGING}/live/arm64"
