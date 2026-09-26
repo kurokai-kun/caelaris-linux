@@ -406,7 +406,13 @@ truncate -s 0 "${ROOTFS_DIR}/etc/machine-id" 2>/dev/null || true
 rm -f "${ROOTFS_DIR}"/etc/ssh/ssh_host_* 2>/dev/null || true
 
 echo "Creating SquashFS filesystem for ISO (zstd level 15)..."
-mksquashfs "$ROOTFS_DIR" "${ISO_STAGING}/live/filesystem.squashfs" -comp zstd -Xcompression-level 15 -b 1M
+mksquashfs "$ROOTFS_DIR" "${ISO_STAGING}/live/airootfs.sfs" -comp zstd -Xcompression-level 15 -b 1M
+
+# Archiso hook expects airootfs.sfs inside archisobasedir (e.g. /live/airootfs.sfs or /live/aarch64/airootfs.sfs)
+mkdir -p "${ISO_STAGING}/live/aarch64" "${ISO_STAGING}/live/arm64"
+ln -f "${ISO_STAGING}/live/airootfs.sfs" "${ISO_STAGING}/live/aarch64/airootfs.sfs"
+ln -f "${ISO_STAGING}/live/airootfs.sfs" "${ISO_STAGING}/live/arm64/airootfs.sfs"
+ln -f "${ISO_STAGING}/live/airootfs.sfs" "${ISO_STAGING}/live/filesystem.squashfs"
 
 # Locate or copy ARM64 kernel and initramfs
 if [ -f "${ROOTFS_DIR}/boot/Image" ]; then
