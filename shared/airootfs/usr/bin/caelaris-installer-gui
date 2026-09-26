@@ -203,8 +203,21 @@ class InstallWorker(QThread):
         for line in iter(process.stdout.readline, ''):
             clean = line.strip()
             if clean:
-                # Suppress harmless legacy storage/network controller missing firmware warnings from mkinitcpio
-                if "Possibly missing firmware" in clean or "missing firmware for module" in clean:
+                # Suppress harmless warnings and verbose background noise
+                if any(w in clean for w in [
+                    "Possibly missing firmware",
+                    "missing firmware for module",
+                    "device-mapper: reload ioctl",
+                    "os-prober will not be executed",
+                    "Failed to enable unit: Unit file",
+                    "does not exist",
+                    "marginals needed",
+                    "trustdb not found",
+                    "No such device or address",
+                    "Scanning for Btrfs",
+                    "Scanning for lvm",
+                    "no modules were found in"
+                ]):
                     continue
                 self.log(clean)
         process.stdout.close()
@@ -275,27 +288,36 @@ class InstallWorker(QThread):
             sfs = None
             sfs_candidates = [
                 "/run/archiso/bootmnt/arch/x86_64/airootfs.sfs",
-                "/run/archiso/bootmnt/arch/airootfs.sfs",
                 "/run/archiso/bootmnt/caelaris/x86_64/airootfs.sfs",
+                "/run/archiso/bootmnt/arch/airootfs.sfs",
                 "/run/archiso/bootmnt/caelaris/airootfs.sfs",
                 "/run/archiso/bootmnt/live/filesystem.squashfs",
                 "/run/archiso/airootfs.sfs",
                 "/live/filesystem.squashfs"
             ]
-            for root_dir in ["/run/archiso/bootmnt", "/run/archiso", "/live"]:
-                if os.path.exists(root_dir):
-                    sfs_candidates.extend(glob.glob(f"{root_dir}/**/*.sfs", recursive=True))
-                    sfs_candidates.extend(glob.glob(f"{root_dir}/**/*.squashfs", recursive=True))
-
             for cand in sfs_candidates:
                 if os.path.isfile(cand):
                     sfs = cand
                     break
 
+            if not sfs:
+                for root_dir in ["/run/archiso/bootmnt", "/run/archiso", "/live"]:
+                    if os.path.exists(root_dir):
+                        for root, _, files in os.walk(root_dir):
+                            for f in files:
+                                if f.endswith(".sfs") or f.endswith(".squashfs"):
+                                    sfs = os.path.join(root, f)
+                                    break
+                            if sfs:
+                                break
+                    if sfs:
+                        break
+
             extracted = False
             if sfs:
-                self.log(f"Extracting SquashFS image {sfs} to /mnt...")
-                ret = self.run_cmd(f'unsquashfs -f -no-progress -d /mnt "{sfs}"', check=False)
+                n_cpus = os.cpu_count() or 4
+                self.log(f"Extracting SquashFS image ({sfs}) using {n_cpus} CPU cores...")
+                ret = self.run_cmd(f'unsquashfs -f -no-progress -processors {n_cpus} -d /mnt "{sfs}"', check=False)
                 if ret in [0, 2] and (os.path.exists("/mnt/usr/bin/bash") or os.path.exists("/mnt/bin/bash")):
                     extracted = True
                     self.log("[SUCCESS] SquashFS image extracted successfully to /mnt.")
@@ -462,12 +484,9 @@ class InstallWorker(QThread):
                     '# mkinitcpio preset file for the linux package\n'
                     'ALL_config="/etc/mkinitcpio.conf"\n'
                     'ALL_kver="/boot/vmlinuz-linux"\n\n'
-                    "PRESETS=('default' 'fallback')\n\n"
+                    "PRESETS=('default')\n\n"
                     'default_config="/etc/mkinitcpio.conf"\n'
-                    'default_image="/boot/initramfs-linux.img"\n\n'
-                    'fallback_config="/etc/mkinitcpio.conf"\n'
-                    'fallback_image="/boot/initramfs-linux-fallback.img"\n'
-                    'fallback_options="-S autodetect"\n'
+                    'default_image="/boot/initramfs-linux.img"\n'
                 )
 
             with open("/mnt/etc/mkinitcpio.conf", "w") as f:
@@ -490,14 +509,16 @@ class InstallWorker(QThread):
             with open("/mnt/etc/default/grub", "w") as f:
                 f.write(
                     'GRUB_DEFAULT=0\n'
-                    'GRUB_TIMEOUT=2\n'
+                    'GRUB_TIMEOUT=12\n'
                     'GRUB_TIMEOUT_STYLE=menu\n'
                     'GRUB_DISTRIBUTOR="Caelaris"\n'
                     f'GRUB_CMDLINE_LINUX_DEFAULT="{subvol_arg} quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 video=1920x1080"\n'
                     'GRUB_CMDLINE_LINUX=""\n'
                     'GRUB_GFXMODE=1920x1080,auto\n'
                     'GRUB_GFXPAYLOAD_LINUX=keep\n'
-                    'GRUB_DISABLE_OS_PROBER=false\n'
+                    'GRUB_DISABLE_SUBMENU=y\n'
+                    'GRUB_DISABLE_RECOVERY=true\n'
+                    'GRUB_DISABLE_OS_PROBER=true\n'
                 )
 
             # Remove any stale custom menu entries from old installs
@@ -558,12 +579,14 @@ class InstallWorker(QThread):
             self.progress_changed.emit(94, "Generating GRUB menu configuration...")
             self.run_cmd("arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg", check=False)
 
-            # ── Clean up menu titles: Show ONLY "Caelaris Linux" ────────────
+            # ── Clean up menu titles: Show ONLY "Caelaris Linux" & set 12s timeout ──
             grub_cfg_file = "/mnt/boot/grub/grub.cfg"
             if os.path.isfile(grub_cfg_file):
                 with open(grub_cfg_file, "r") as f:
                     cfg_text = f.read()
 
+                import re
+                cfg_text = re.sub(r'set timeout=\d+', 'set timeout=12', cfg_text)
                 cfg_text = cfg_text.replace("Caelaris Linux, with Linux linux", "Caelaris Linux")
                 cfg_text = cfg_text.replace("Caelaris Linux linux", "Caelaris Linux")
                 cfg_text = cfg_text.replace("Caelaris linux", "Caelaris Linux")
@@ -623,12 +646,10 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
 
             # ── Step 5: Install & Enable All Hardware & Virtualization Drivers ───
             self.progress_changed.emit(96, "Installing and enabling hardware drivers & guest tools...")
-            self.run_cmd(
-                "arch-chroot /mnt systemctl enable NetworkManager sddm pipewire wireplumber "
-                "vboxservice vmtoolsd vmware-vmblock-fuse spice-vdagentd qemu-guest-agent "
-                "systemd-timesyncd ananicy-cpp 2>/dev/null || true",
-                check=False
-            )
+            self.run_cmd("arch-chroot /mnt systemctl enable NetworkManager sddm pipewire wireplumber systemd-timesyncd ananicy-cpp 2>/dev/null || true", check=False)
+            for guest_srv in ["vmtoolsd", "vmware-vmblock-fuse", "vboxservice", "spice-vdagentd", "qemu-guest-agent"]:
+                if os.path.isfile(f"/mnt/usr/lib/systemd/system/{guest_srv}.service"):
+                    self.run_cmd(f"arch-chroot /mnt systemctl enable {guest_srv} 2>/dev/null || true", check=False)
 
             # Enable NVIDIA modesetting if NVIDIA hardware is present
             try:
@@ -928,12 +949,12 @@ class CaelarisInstaller(QMainWindow):
         cl5.addWidget(QLabel("Password:"))
         self.txt_pass1 = QLineEdit()
         self.txt_pass1.setEchoMode(QLineEdit.EchoMode.Password)
-        self.txt_pass1.setText("caelaris")
+        self.txt_pass1.setPlaceholderText("Enter password (required)")
         cl5.addWidget(self.txt_pass1)
         cl5.addWidget(QLabel("Confirm Password:"))
         self.txt_pass2 = QLineEdit()
         self.txt_pass2.setEchoMode(QLineEdit.EchoMode.Password)
-        self.txt_pass2.setText("caelaris")
+        self.txt_pass2.setPlaceholderText("Confirm password (required)")
         cl5.addWidget(self.txt_pass2)
         self.chk_autologin = QCheckBox("Log in automatically without asking for password on boot")
         cl5.addWidget(self.chk_autologin)
@@ -1003,6 +1024,7 @@ class CaelarisInstaller(QMainWindow):
         self.log_view = QTextEdit(objectName="logView")
         self.log_view.setReadOnly(True)
         self.log_view.setFixedHeight(220)
+        self.log_view.document().setMaximumBlockCount(300)
         l9.addWidget(self.log_view)
         self.stack.addWidget(p9)
 
@@ -1113,8 +1135,11 @@ class CaelarisInstaller(QMainWindow):
             if not self.txt_username.text().strip():
                 QMessageBox.warning(self, "Input Error", "Please enter a valid username.")
                 return
+            if not self.txt_pass1.text():
+                QMessageBox.warning(self, "Password Required", "Please enter a password for your account.")
+                return
             if self.txt_pass1.text() != self.txt_pass2.text():
-                QMessageBox.warning(self, "Password Error", "Passwords do not match.")
+                QMessageBox.warning(self, "Password Error", "Passwords do not match. Please re-enter them.")
                 return
         if self.current_step == 6:
             self.update_summary()
@@ -1189,7 +1214,7 @@ class CaelarisInstaller(QMainWindow):
 
         self.worker = InstallWorker(config)
         self.worker.progress_changed.connect(lambda p, m: (self.progress_bar.setValue(p), self.ins_status.setText(m)))
-        self.worker.log_received.connect(lambda t: (self.log_view.append(t), self.log_view.verticalScrollBar().setValue(self.log_view.verticalScrollBar().maximum())))
+        self.worker.log_received.connect(self.log_view.append)
         self.worker.installation_finished.connect(self.on_finish)
         self.worker.start()
 

@@ -86,7 +86,7 @@ for loader_dir in "${BUILD_PROFILE}/loader" "${BUILD_PROFILE}/efiboot/loader"; d
         rm -rf "${loader_dir}/entries/"* 2>/dev/null || true
 
         cat > "${loader_dir}/loader.conf" << 'EOF'
-timeout 2
+timeout 12
 default 01-caelaris.conf
 beep off
 console-mode max
@@ -128,7 +128,7 @@ EOF
 UI vesamenu.c32
 DEFAULT caelaris
 PROMPT 0
-TIMEOUT 20
+TIMEOUT 120
 MENU TITLE Caelaris Linux
 MENU BACKGROUND splash.png
 MENU COLOR border       30;44   #40ffffff #a0000000 std
@@ -184,7 +184,7 @@ fi
 find "${BUILD_PROFILE}" -type f \( -name "grub.cfg" -o -name "loopback.cfg" \) -exec sh -c '
     cat > "$1" << "EOF"
 set default="0"
-set timeout=2
+set timeout=12
 
 menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --class gnu --class os {
     set gfxpayload=keep
