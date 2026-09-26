@@ -12,6 +12,12 @@ on:
       - '*.pdf'
       - '.gitignore'
       - 'Caelaris Linux Web Page/**'
+      - 'scripts/build_arm64*'
+      - 'scripts/build_rpi*'
+      - '.github/workflows/build-arm64*'
+      - '.github/workflows/build-rpi*'
+      - '.github/workflows/build-cloud*'
+      - '.github/workflows/build-server*'
   workflow_dispatch:
     inputs:
       edition:
