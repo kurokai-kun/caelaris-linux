@@ -286,12 +286,16 @@ class InstallWorker(QThread):
             self.progress_changed.emit(45, "Extracting Caelaris Linux system files...")
             sfs = None
             sfs_candidates = [
+                "/run/archiso/bootmnt/live/airootfs.sfs",
+                "/run/archiso/bootmnt/live/aarch64/airootfs.sfs",
+                "/run/archiso/bootmnt/live/arm64/airootfs.sfs",
+                "/run/archiso/bootmnt/live/filesystem.squashfs",
                 "/run/archiso/bootmnt/arch/x86_64/airootfs.sfs",
                 "/run/archiso/bootmnt/caelaris/x86_64/airootfs.sfs",
                 "/run/archiso/bootmnt/arch/airootfs.sfs",
                 "/run/archiso/bootmnt/caelaris/airootfs.sfs",
-                "/run/archiso/bootmnt/live/filesystem.squashfs",
                 "/run/archiso/airootfs.sfs",
+                "/live/airootfs.sfs",
                 "/live/filesystem.squashfs"
             ]
             for cand in sfs_candidates:

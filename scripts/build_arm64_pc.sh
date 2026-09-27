@@ -159,6 +159,7 @@ EOF
         python-pyqt6
         python-psutil
         parted
+        gptfdisk
         dosfstools
         e2fsprogs
         btrfs-progs
@@ -170,14 +171,18 @@ EOF
         efibootmgr
         sudo
         bash
+        xorg-xhost
+        kwrite
+        hicolor-icon-theme
+        adwaita-icon-theme
     )
 
     echo "Installing live preview desktop & installer packages..."
     # Tier 1: Core System, Kernel, GUI Installer, and Bootloader essentials
-    chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm --overwrite='*' linux-aarch64 mkinitcpio mkinitcpio-archiso python python-pyqt6 sudo bash networkmanager sddm mesa grub efibootmgr parted dosfstools e2fsprogs btrfs-progs rsync squashfs-tools noto-fonts" || {
+    chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm --overwrite='*' linux-aarch64 mkinitcpio mkinitcpio-archiso python python-pyqt6 sudo bash networkmanager sddm mesa grub efibootmgr parted gptfdisk dosfstools e2fsprogs btrfs-progs rsync squashfs-tools noto-fonts xorg-xhost hicolor-icon-theme" || {
         echo "Retrying Tier 1 package installation..."
         sleep 3
-        chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm --overwrite='*' linux-aarch64 mkinitcpio mkinitcpio-archiso python python-pyqt6 sudo bash networkmanager sddm mesa grub efibootmgr parted dosfstools e2fsprogs btrfs-progs rsync squashfs-tools noto-fonts"
+        chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm --overwrite='*' linux-aarch64 mkinitcpio mkinitcpio-archiso python python-pyqt6 sudo bash networkmanager sddm mesa grub efibootmgr parted gptfdisk dosfstools e2fsprogs btrfs-progs rsync squashfs-tools noto-fonts xorg-xhost hicolor-icon-theme"
     }
 
     # Tier 2: Complete Desktop Preview Suite & Graphics
@@ -402,11 +407,14 @@ EOF
 chmod 0644 "${ROOTFS_DIR}/var/lib/AccountsService/users/liveuser"
 rm -f "${ROOTFS_DIR}/var/lib/AccountsService/users/alarm" 2>/dev/null || true
 
-# Configure liveuser with wheel privileges
+# Configure liveuser with wheel privileges and GUI environment preservation
 mkdir -p "${ROOTFS_DIR}/etc/sudoers.d"
 echo "%wheel ALL=(ALL:ALL) NOPASSWD: ALL" > "${ROOTFS_DIR}/etc/sudoers.d/wheel"
 echo "liveuser ALL=(ALL:ALL) NOPASSWD: ALL" > "${ROOTFS_DIR}/etc/sudoers.d/liveuser"
-chmod 440 "${ROOTFS_DIR}/etc/sudoers.d/wheel" "${ROOTFS_DIR}/etc/sudoers.d/liveuser"
+cat << 'EOF' > "${ROOTFS_DIR}/etc/sudoers.d/99-caelaris-env"
+Defaults env_keep += "DISPLAY WAYLAND_DISPLAY XDG_RUNTIME_DIR XAUTHORITY PULSE_SERVER"
+EOF
+chmod 440 "${ROOTFS_DIR}/etc/sudoers.d/wheel" "${ROOTFS_DIR}/etc/sudoers.d/liveuser" "${ROOTFS_DIR}/etc/sudoers.d/99-caelaris-env"
 
 # Configure dynamic session selection service based on bootloader session= cmdline parameter
 mkdir -p "${ROOTFS_DIR}/usr/lib/systemd/system"
@@ -494,6 +502,46 @@ for gapp in org.gnome.Nautilus nautilus org.gnome.Ptyxis ptyxis \
     done
 done
 
+# Deploy Caelaris branding and high-resolution icons across all theme directories
+if [ -f "${ROOT_DIR}/assets/logo.png" ]; then
+    echo "Deploying Caelaris logo across all icon directories..."
+    mkdir -p "${ROOTFS_DIR}/usr/share/pixmaps"
+    cp -f "${ROOT_DIR}/assets/logo.png" "${ROOTFS_DIR}/usr/share/pixmaps/caelaris-logo.png"
+    cp -f "${ROOT_DIR}/assets/logo.png" "${ROOTFS_DIR}/usr/share/pixmaps/distributor-logo.png"
+    cp -f "${ROOT_DIR}/assets/logo.png" "${ROOTFS_DIR}/usr/share/pixmaps/system-software-install.png"
+
+    for sz in 16 22 24 32 48 64 128 256; do
+        mkdir -p "${ROOTFS_DIR}/usr/share/icons/hicolor/${sz}x${sz}/apps"
+        cp -f "${ROOT_DIR}/assets/logo.png" "${ROOTFS_DIR}/usr/share/icons/hicolor/${sz}x${sz}/apps/caelaris-logo.png"
+        cp -f "${ROOT_DIR}/assets/logo.png" "${ROOTFS_DIR}/usr/share/icons/hicolor/${sz}x${sz}/apps/distributor-logo.png"
+        cp -f "${ROOT_DIR}/assets/logo.png" "${ROOTFS_DIR}/usr/share/icons/hicolor/${sz}x${sz}/apps/system-software-install.png"
+        cp -f "${ROOT_DIR}/assets/logo.png" "${ROOTFS_DIR}/usr/share/icons/hicolor/${sz}x${sz}/apps/start-here-kde.png"
+        cp -f "${ROOT_DIR}/assets/logo.png" "${ROOTFS_DIR}/usr/share/icons/hicolor/${sz}x${sz}/apps/start-here.png"
+    done
+fi
+
+# Hide terminal text editors (vim, nvim, vi, nano) and utility clutter from GUI application launcher
+for util in vim nvim vi nano avahi-discover bssh bvnc qv4l2 qvidcap lstopo cmake-gui \
+            electron electron31 electron32 electron33; do
+    for dir in "${ROOTFS_DIR}/usr/share/applications" "${ROOTFS_DIR}/usr/local/share/applications"; do
+        df="${dir}/${util}.desktop"
+        if [ -f "$df" ]; then
+            sed -i '/^NoDisplay=/d' "$df" 2>/dev/null || true
+            echo "NoDisplay=true" >> "$df"
+        fi
+    done
+done
+rm -f "${ROOTFS_DIR}/usr/share/applications/vim.desktop" "${ROOTFS_DIR}/usr/share/applications/nvim.desktop" 2>/dev/null || true
+
+# Rebuild icon cache and desktop database in chroot
+if which qemu-aarch64-static >/dev/null 2>&1; then
+    chroot "$ROOTFS_DIR" /bin/bash -c "
+        gtk-update-icon-cache -f -t /usr/share/icons/hicolor 2>/dev/null || true
+        update-desktop-database /usr/share/applications 2>/dev/null || true
+        kbuildsycoca6 --noincremental 2>/dev/null || true
+    " 2>/dev/null || true
+fi
+
 # 4. Generate Uncompromised Full Desktop Hybrid ARM64 ISO
 echo "[4/5] Generating Full ARM64 UEFI Desktop ISO..."
 ISO_STAGING="${WORK_DIR}/iso-staging"
@@ -558,12 +606,6 @@ fi
 menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --class gnu --class os {
     search --no-floppy --set=root --file /live/vmlinuz
     linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 session=plasma plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
-    initrd /live/initrd.img
-}
-
-menuentry "Caelaris Linux (GNOME 46 Desktop Preview)" --class caelaris --class gnome --class gnu-linux {
-    search --no-floppy --set=root --file /live/vmlinuz
-    linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 session=gnome plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
     initrd /live/initrd.img
 }
 

@@ -162,6 +162,9 @@ class CaelarisWelcome(Gtk.Window):
         main_box.pack_start(bottom_box, False, False, 0)
 
     def launch_installer(self, widget):
+        if os.path.exists("/usr/bin/caelaris-installer"):
+            subprocess.Popen(["/usr/bin/caelaris-installer"])
+            return
         if os.path.exists("/usr/bin/caelaris-installer-gui"):
             subprocess.Popen(["sudo", "-E", "/usr/bin/caelaris-installer-gui"])
             return

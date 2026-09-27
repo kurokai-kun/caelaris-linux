@@ -18,6 +18,7 @@ on:
       - 'scripts/build_arm64*'
       - '.github/workflows/build-arm64*'
       - 'scripts/arm64_release_assets/**'
+      - 'shared/**'
     tags:
       - 'arm64-pc-*'
 

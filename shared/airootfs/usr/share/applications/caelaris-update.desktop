@@ -2,7 +2,7 @@
 Name=Caelaris System Update
 Comment=Sync Caelaris Linux with GitHub & Update System Packages
 Exec=caelaris-update
-Icon=system-software-update
+Icon=/usr/share/pixmaps/caelaris-logo.png
 Terminal=true
 Type=Application
 Categories=System;Settings;PackageManager;

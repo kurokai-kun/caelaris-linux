@@ -164,11 +164,14 @@ for gapp in org.gnome.Nautilus nautilus org.gnome.Ptyxis ptyxis \
 done
 
 for util in avahi-discover bssh bvnc qv4l2 qvidcap lstopo cmake-gui \
-            electron electron31 electron32 electron33; do
-    df="/usr/share/applications/${util}.desktop"
-    if [ -f "$df" ]; then
-        grep -q "NoDisplay=true" "$df" 2>/dev/null || echo "NoDisplay=true" >> "$df" 2>/dev/null || true
-    fi
+            electron electron31 electron32 electron33 \
+            vim nvim vi nano; do
+    for dir in /usr/share/applications /usr/local/share/applications; do
+        df="${dir}/${util}.desktop"
+        if [ -f "$df" ]; then
+            grep -q "NoDisplay=true" "$df" 2>/dev/null || echo "NoDisplay=true" >> "$df" 2>/dev/null || true
+        fi
+    done
 done
 
 chown -R liveuser:users /home/liveuser

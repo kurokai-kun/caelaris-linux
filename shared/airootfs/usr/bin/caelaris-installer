@@ -2,20 +2,79 @@
 # Caelaris Linux System Installer Launcher
 set +e
 
-# Grant root access to local user's X11/Wayland display server
-xhost +si:localuser:root 2>/dev/null || true
-xhost + 2>/dev/null || true
+LOGFILE="/tmp/caelaris-installer.log"
+exec > >(tee -a "$LOGFILE") 2>&1
 
-export QT_QPA_PLATFORM="wayland;xcb"
-export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+echo "=============================================="
+echo " Starting Caelaris Linux Installer            "
+echo "=============================================="
+echo "[*] Date: $(date)"
+echo "[*] User: $(whoami) (UID: $(id -u))"
+echo "[*] DISPLAY: ${DISPLAY:-none}"
+echo "[*] WAYLAND_DISPLAY: ${WAYLAND_DISPLAY:-none}"
+echo "[*] XDG_RUNTIME_DIR: ${XDG_RUNTIME_DIR:-none}"
 
-# If in a graphical session, launch the PyQt6 Graphical Installer
-if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
-    if [ -x /usr/bin/caelaris-installer-gui ]; then
-        exec sudo -E /usr/bin/caelaris-installer-gui "$@"
+# 1. Authorize root on X11 / XWayland
+if command -v xhost >/dev/null 2>&1; then
+    xhost +SI:localuser:root 2>/dev/null || true
+    xhost +local: 2>/dev/null || true
+    xhost + 2>/dev/null || true
+fi
+
+# 2. Grant open permissions to Wayland socket for root access
+if [ -n "$XDG_RUNTIME_DIR" ] && [ -d "$XDG_RUNTIME_DIR" ]; then
+    chmod 777 "$XDG_RUNTIME_DIR" 2>/dev/null || true
+    if [ -n "$WAYLAND_DISPLAY" ] && [ -e "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]; then
+        chmod 777 "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" 2>/dev/null || true
     fi
 fi
 
-# Fallback for text console / TTY
-echo "Launching Caelaris Installer..."
-exec sudo archinstall "$@"
+# 3. Grant read access to XAUTHORITY
+if [ -n "$XAUTHORITY" ] && [ -f "$XAUTHORITY" ]; then
+    chmod 666 "$XAUTHORITY" 2>/dev/null || true
+fi
+
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+if [ -z "$DISPLAY" ]; then
+    export DISPLAY=":0"
+fi
+
+# 4. Launch GUI Installer
+if [ -x /usr/bin/caelaris-installer-gui ] || [ -f /usr/bin/caelaris-installer-gui ]; then
+    echo "[*] Attempting launch with QT_QPA_PLATFORM='wayland;xcb'..."
+    sudo -E env DISPLAY="$DISPLAY" \
+                 WAYLAND_DISPLAY="$WAYLAND_DISPLAY" \
+                 XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" \
+                 XAUTHORITY="$XAUTHORITY" \
+                 QT_QPA_PLATFORM="wayland;xcb" \
+                 python3 /usr/bin/caelaris-installer-gui "$@"
+    STATUS=$?
+    if [ $STATUS -eq 0 ]; then
+        exit 0
+    fi
+
+    echo "[!] Wayland launch exited with code $STATUS. Retrying strictly via XCB (XWayland)..."
+    sudo -E env DISPLAY="${DISPLAY:-:0}" \
+                 XAUTHORITY="$XAUTHORITY" \
+                 QT_QPA_PLATFORM="xcb" \
+                 python3 /usr/bin/caelaris-installer-gui "$@"
+    STATUS=$?
+    if [ $STATUS -eq 0 ]; then
+        exit 0
+    fi
+
+    echo "[!] Sudo XCB launch exited with code $STATUS. Retrying directly as liveuser..."
+    QT_QPA_PLATFORM="wayland;xcb" python3 /usr/bin/caelaris-installer-gui "$@"
+    STATUS=$?
+    if [ $STATUS -eq 0 ]; then
+        exit 0
+    fi
+fi
+
+# 5. If GUI failed, open a visible terminal so the user sees diagnostics
+echo "[-] Graphical installer failed to launch."
+if command -v konsole >/dev/null 2>&1; then
+    exec konsole -e /bin/bash -c "echo '=== Caelaris Installer Crash Report ==='; cat '$LOGFILE'; echo ''; read -p 'Press Enter to close...'"
+elif command -v ptyxis >/dev/null 2>&1; then
+    exec ptyxis -- /bin/bash -c "echo '=== Caelaris Installer Crash Report ==='; cat '$LOGFILE'; echo ''; read -p 'Press Enter to close...'"
+fi

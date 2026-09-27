@@ -18,6 +18,7 @@ on:
       - '.github/workflows/build-rpi*'
       - '.github/workflows/build-cloud*'
       - '.github/workflows/build-server*'
+      - 'shared/**'
   workflow_dispatch:
     inputs:
       edition:
