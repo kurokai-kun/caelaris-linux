@@ -236,33 +236,60 @@ class InstallWorker(QThread):
             autologin = cfg['autologin']
             desktop = cfg['desktop']
             is_aarch64 = platform.machine().lower() in ["aarch64", "arm64"]
+            is_efi = os.path.exists("/sys/firmware/efi") or is_aarch64
 
             self.progress_changed.emit(5, f"Preparing target disk {disk}...")
             self.run_cmd("umount -R /mnt 2>/dev/null || true", check=False)
             self.run_cmd("swapoff -a 2>/dev/null || true", check=False)
             self.run_cmd("dmsetup remove_all 2>/dev/null || true", check=False)
             self.run_cmd("vgchange -an 2>/dev/null || true", check=False)
-
-            self.progress_changed.emit(12, "Partitioning disk (GPT + Hybrid BIOS/UEFI + Root)...")
+            self.run_cmd(f"fuser -k {disk}* 2>/dev/null || true", check=False)
             self.run_cmd(f"wipefs -a -f {disk}", check=False)
-            self.run_cmd(["sgdisk", "-Z", disk], check=False)
-            self.run_cmd(["sgdisk", "-n", "1:0:+2M", "-t", "1:ef02", "-c", "1:BIOS-Boot", disk])
-            self.run_cmd(["sgdisk", "-n", "2:0:+512M", "-t", "2:ef00", "-c", "2:EFI-SP", disk])
-            self.run_cmd(["sgdisk", "-n", "3:0:0", "-t", "3:8300", "-c", "3:Caelaris-Root", disk])
+            self.run_cmd(f"dd if=/dev/zero of={disk} bs=1M count=10 status=none conv=notrunc 2>/dev/null || true", check=False)
+
+            p_prefix = "p" if (disk[-1].isdigit()) else ""
+
+            # Ensure clean GPT label
+            self.run_cmd(f"parted -s {disk} mklabel gpt", check=False)
+            self.run_cmd(["sgdisk", "--zap-all", disk], check=False)
+            self.run_cmd(["sgdisk", "-o", disk], check=False)
+
+            if is_aarch64 or is_efi:
+                self.progress_changed.emit(12, "Partitioning disk (UEFI GPT: 512MB ESP + Root)...")
+                res_esp = self.run_cmd(["sgdisk", "-n", "1:0:+512M", "-t", "1:ef00", "-c", "1:EFI-SP", disk], check=False)
+                if res_esp != 0:
+                    self.run_cmd(f"parted -s {disk} mkpart ESP fat32 1MiB 513MiB", check=False)
+                    self.run_cmd(f"parted -s {disk} set 1 esp on", check=False)
+
+                res_root = self.run_cmd(["sgdisk", "-n", "2:0:0", "-t", "2:8300", "-c", "2:Caelaris-Root", disk], check=False)
+                if res_root != 0:
+                    self.run_cmd(f"parted -s {disk} mkpart Caelaris-Root 513MiB 100%", check=False)
+
+                p_bios = None
+                p_efi = f"{disk}{p_prefix}1"
+                p_root = f"{disk}{p_prefix}2"
+            else:
+                self.progress_changed.emit(12, "Partitioning disk (Hybrid BIOS/UEFI GPT: BIOS-Boot + ESP + Root)...")
+                self.run_cmd(["sgdisk", "-n", "1:0:+2M", "-t", "1:ef02", "-c", "1:BIOS-Boot", disk], check=False)
+                self.run_cmd(["sgdisk", "-n", "2:0:+512M", "-t", "2:ef00", "-c", "2:EFI-SP", disk], check=False)
+                self.run_cmd(["sgdisk", "-n", "3:0:0", "-t", "3:8300", "-c", "3:Caelaris-Root", disk], check=False)
+                p_bios = f"{disk}{p_prefix}1"
+                p_efi = f"{disk}{p_prefix}2"
+                p_root = f"{disk}{p_prefix}3"
+
             self.run_cmd(["partprobe", disk], check=False)
+            self.run_cmd(f"partx -u {disk} 2>/dev/null || true", check=False)
             self.run_cmd("udevadm settle", check=False)
             time.sleep(2)
 
-            p_prefix = "p" if (disk[-1].isdigit()) else ""
-            p_bios = f"{disk}{p_prefix}1"
-            p_efi = f"{disk}{p_prefix}2"
-            p_root = f"{disk}{p_prefix}3"
-
-            for _ in range(5):
+            for _ in range(10):
                 if os.path.exists(p_efi) and os.path.exists(p_root):
                     break
                 self.run_cmd("udevadm settle", check=False)
                 time.sleep(1)
+
+            if not (os.path.exists(p_efi) and os.path.exists(p_root)):
+                raise RuntimeError(f"Target partitions ({p_efi}, {p_root}) were not registered by the kernel!")
 
             self.progress_changed.emit(25, f"Formatting EFI partition ({p_efi})...")
             self.run_cmd(["mkfs.fat", "-F32", "-n", "ESP", p_efi])
@@ -576,9 +603,10 @@ class InstallWorker(QThread):
                 self.run_cmd("arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Caelaris --removable --no-nvram --recheck", check=False)
                 if is_efi:
                     self.run_cmd("arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Caelaris --recheck", check=False)
-                # 2. Install BIOS/MBR GRUB (embeds core.img into ef02 BIOS Boot partition and writes MBR sector)
-                self.log(f"Installing GRUB BIOS MBR to {disk}...")
-                self.run_cmd(f"arch-chroot /mnt grub-install --target=i386-pc --recheck {disk}", check=False)
+                # 2. Install BIOS/MBR GRUB if BIOS boot partition was created
+                if p_bios:
+                    self.log(f"Installing GRUB BIOS MBR to {disk}...")
+                    self.run_cmd(f"arch-chroot /mnt grub-install --target=i386-pc --recheck {disk}", check=False)
 
             # ── Step 3: Generate grub.cfg ─────────────────────────────────────
             self.progress_changed.emit(94, "Generating GRUB menu configuration...")

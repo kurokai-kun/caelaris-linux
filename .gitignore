@@ -15,3 +15,7 @@ Thumbs.db
 # Website files (local only, not on GitHub)
 Caelaris Linux Web Page/
 Caelaris Web Page/
+
+# Python cache
+__pycache__/
+*.pyc
