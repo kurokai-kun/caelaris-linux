@@ -11,3 +11,7 @@ out-*/
 *.swp
 .DS_Store
 Thumbs.db
+
+# Website files (local only, not on GitHub)
+Caelaris Linux Web Page/
+Caelaris Web Page/
