@@ -993,8 +993,9 @@ class CaelarisInstaller(QMainWindow):
         l1.addWidget(QLabel("Next-generation Arch-based desktop distribution.", objectName="pageSubtitle"))
         c1 = QFrame(objectName="card")
         cl1 = QVBoxLayout(c1)
+        arch_name = "64-bit ARM64 (AArch64)" if platform.machine().lower() in ["aarch64", "arm64"] else "64-bit modern x86_64"
         cl1.addWidget(QLabel("<b>Live Preview Active:</b> You can explore the system freely before installing."))
-        cl1.addWidget(QLabel("✔ 64-bit modern x86_64 system ready"))
+        cl1.addWidget(QLabel(f"✔ {arch_name} system ready"))
         cl1.addWidget(QLabel("✔ Dual session ready: KDE Plasma 6 & GNOME"))
         cl1.addWidget(QLabel("✔ PipeWire modern audio stack loaded"))
         l1.addWidget(c1)
@@ -1258,13 +1259,26 @@ class CaelarisInstaller(QMainWindow):
             lbl.style().polish(lbl)
 
         self.btn_back.setEnabled(self.current_step > 0)
+        # Restore standard handler if modified
+        try:
+            self.btn_next.clicked.disconnect()
+        except TypeError:
+            pass
+        self.btn_next.clicked.connect(self.next_page)
+
         if self.current_step == 7:
+            self.btn_back.setVisible(True)
+            self.btn_next.setVisible(True)
+            self.btn_back.setText("◀ Back")
             self.btn_next.setText("Install Now 🚀")
             self.btn_next.setObjectName("successBtn")
         elif self.current_step >= 8:
             self.btn_back.setVisible(False)
             self.btn_next.setVisible(False)
         else:
+            self.btn_back.setVisible(True)
+            self.btn_next.setVisible(True)
+            self.btn_back.setText("◀ Back")
             self.btn_next.setText("Next ▶")
             self.btn_next.setObjectName("primaryBtn")
         self.btn_next.style().unpolish(self.btn_next)
@@ -1317,6 +1331,12 @@ class CaelarisInstaller(QMainWindow):
             self.update_step_ui()
 
     def prev_page(self):
+        if self.current_step == 8:
+            # Allow returning from failed install back to Summary
+            self.current_step = 7
+            self.stack.setCurrentIndex(self.current_step)
+            self.update_step_ui()
+            return
         if self.current_step > 0:
             self.current_step -= 1
             self.stack.setCurrentIndex(self.current_step)
@@ -1338,6 +1358,9 @@ class CaelarisInstaller(QMainWindow):
     def start_installation(self):
         self.current_step = 8
         self.stack.setCurrentIndex(self.current_step)
+        self.progress_bar.setStyleSheet("")
+        self.progress_bar.setValue(0)
+        self.ins_status.setText("Preparing target disk...")
         self.update_step_ui()
 
         config = {
@@ -1364,6 +1387,27 @@ class CaelarisInstaller(QMainWindow):
             self.stack.setCurrentIndex(self.current_step)
             self.update_step_ui()
         else:
+            first_err = message.splitlines()[0] if message else "Unknown error"
+            self.ins_status.setText(f"<font color='#ef4444'><b>Installation failed: {first_err}</b></font>")
+            self.progress_bar.setStyleSheet("QProgressBar::chunk { background-color: #ef4444; border-radius: 4px; }")
+
+            # Restore navigation buttons so UI does not stay frozen
+            self.btn_back.setVisible(True)
+            self.btn_back.setEnabled(True)
+            self.btn_back.setText("◀ Back to Summary")
+
+            self.btn_next.setVisible(True)
+            self.btn_next.setEnabled(True)
+            self.btn_next.setText("Close Installer")
+            self.btn_next.setObjectName("dangerBtn")
+            self.btn_next.style().unpolish(self.btn_next)
+            self.btn_next.style().polish(self.btn_next)
+            try:
+                self.btn_next.clicked.disconnect()
+            except TypeError:
+                pass
+            self.btn_next.clicked.connect(self.close)
+
             QMessageBox.critical(self, "Installation Failed", message)
 
     def finish_installation(self):
@@ -1400,6 +1444,22 @@ def ensure_ui_assets():
                 pass
 
 if __name__ == "__main__":
+    if hasattr(os, "geteuid") and os.geteuid() != 0:
+        # Re-elevate with sudo
+        cmd = ["sudo", "-E", sys.executable] + sys.argv
+        try:
+            os.execvp("sudo", cmd)
+        except Exception:
+            pass
+
+        app = QApplication(sys.argv)
+        QMessageBox.critical(
+            None,
+            "Root Privileges Required",
+            "The Caelaris Linux installer requires administrative (root) privileges to partition drives and install the system.\n\nPlease launch with root privileges or run:\nsudo caelaris-installer"
+        )
+        sys.exit(1)
+
     ensure_ui_assets()
     app = QApplication(sys.argv)
 
