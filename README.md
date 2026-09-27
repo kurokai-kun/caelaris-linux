@@ -9,6 +9,7 @@
 </p>
 
 <p align="center">
+  <a href="https://caelaris.vercel.app"><img src="https://img.shields.io/badge/Website-caelaris.vercel.app-8b5cf6?style=for-the-badge&logo=vercel&logoColor=white" alt="Official Website"></a>
   <a href="https://github.com/kurokai-kun/caelaris-linux/releases"><img src="https://img.shields.io/badge/Architecture-x86__64%20%7C%20AArch64-blue?style=for-the-badge" alt="Architecture"></a>
   <a href="https://archlinux.org"><img src="https://img.shields.io/badge/Base-Arch%20Linux%20Rolling-1793d1?style=for-the-badge&logo=arch-linux&logoColor=white" alt="Arch Linux Base"></a>
   <img src="https://img.shields.io/badge/Desktops-KDE%20Plasma%206%20%2B%20GNOME%204x-6366f1?style=for-the-badge" alt="Desktops">
