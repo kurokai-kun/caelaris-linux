@@ -1,0 +1,10 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/Caelaris Linux Web Page/index.html" },
+    { "source": "/assets/(.*)", "destination": "/Caelaris Linux Web Page/assets/$1" },
+    { "source": "/docs/(.*)", "destination": "/Caelaris Linux Web Page/docs/$1" },
+    { "source": "/styles.css", "destination": "/Caelaris Linux Web Page/styles.css" },
+    { "source": "/script.js", "destination": "/Caelaris Linux Web Page/script.js" },
+    { "source": "/(.*)", "destination": "/Caelaris Linux Web Page/$1" }
+  ]
+}
