@@ -11,7 +11,7 @@
 
 ## 1. Executive Product Overview
 
-**Caelaris Linux** is a next-generation Arch-based operating system designed for gamers, software engineers, and power users who demand cutting-edge performance with zero configuration headaches. By combining Arch Linux's rolling package model with pre-configured dual desktop environments, automated hardware/virtualization drivers, a custom graphical installer, and pro-grade gaming enhancements, Caelaris Linux offers an uncompromising desktop experience straight from the ISO.
+**Caelaris Linux** is a next-generation Arch-based operating system designed for gamers, software engineers, and power users who demand cutting-edge performance with zero configuration headaches. By combining Arch Linux's rolling package model with pre-configured tri-desktop environments (KDE Plasma 6, GNOME 4x, and Caelestia Shell powered by Hyprland), automated hardware/virtualization drivers, a custom graphical installer, and pro-grade gaming enhancements, Caelaris Linux offers an uncompromising desktop experience straight from the ISO.
 
 ---
 
@@ -22,7 +22,7 @@
                      CAELARIS LINUX FEATURE HIGHLIGHTS
 ==================================================================================
   [1] Tri-Desktop Wayland Stack   -> KDE Plasma 6 + GNOME 4x + Caelestia Shell (Hyprland)
-  [2] Tri-Desktop Hot-Switcher    -> Toggle Plasma, GNOME, & Caelestia in 2s (GUI / CLI)
+  [2] Seamless SDDM Switcher      -> Select Plasma, GNOME, or Caelestia Shell at login
   [3] Native Graphical Installer  -> Python/PyQt6 wizard with guided Btrfs & Ext4
   [4] Silent Direct Bootloader    -> Clean single "Caelaris Linux" entry to SDDM
   [5] Single User Profile Purity  -> Zero leftover liveuser profiles after setup
@@ -164,8 +164,8 @@ Caelestia Shell is a next-generation, animated, dynamic tiling desktop environme
 
 | Feature / Capability | Caelaris Linux | Vanilla Arch | Manjaro | Pop!_OS | Fedora Workstation |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Dual Desktop (KDE + GNOME)** | Yes (Unified ISO) | Manual | Separate ISOs | Separate Spins | Separate Spins |
-| **Live Session Hot-Switcher** | Yes (< 2s) | No | No | No | No |
+| **Tri-Desktop (KDE + GNOME + Caelestia)** | Yes (Unified ISO) | Manual | Separate ISOs | Separate Spins | Separate Spins |
+| **Login Session Switcher (SDDM)** | Yes (Instant) | No | No | No | No |
 | **Custom Graphical Installer** | Yes (PyQt6) | No (CLI) | Calamares | Custom | Anaconda |
 | **Tuned Low-Latency Gaming Sysctl** | Yes | Manual | No | Partial | Partial |
 | **VMware & VBox Auto-Resize** | Yes (Built-in) | Manual | Partial | Partial | Partial |
@@ -203,4 +203,4 @@ Caelestia Shell is a next-generation, animated, dynamic tiling desktop environme
   - **ARM64 Workstations & Cloud:** Lenovo ThinkPad X13s, Ampere Altra workstations, and standard ARM64 hypervisors.
 - **Kernel & GPU Stack:** Standard AArch64 Linux kernel with Mesa Freedreno (Qualcomm Adreno) and Mesa Apple AGX drivers under Wayland.
 - **Distribution Format:** Bootable Hybrid UEFI ARM64 ISO (`caelaris-arm64-pc.iso`) with full live graphical desktop preview and installer on dedicated `arm64-pc-release`.
-- **Desktop & Gaming:** Dual KDE Plasma 6 & GNOME 4x Wayland sessions, native PyQt6 graphical installer, zstd ZRAM memory compression, and Box64 / FEX-Emu x86 emulation.
+- **Desktop & Gaming:** Tri-Desktop Wayland architecture (KDE Plasma 6, GNOME 4x, and Caelestia Shell powered by Hyprland), native PyQt6 graphical installer, zstd ZRAM memory compression, and Box64 / FEX-Emu x86 emulation.

@@ -8,9 +8,8 @@ Official 64-bit ARM (`aarch64`) operating system engineered for modern ARM lapto
 
 ---
 
-### 🎨 Tri-Desktop Wayland Architecture & Hot Switcher
-* **KDE Plasma 6, GNOME 4x, & Caelestia Shell (Hyprland)**: Fully integrated into the unified ISO. Choose your default desktop during installation via `caelaris-installer-gui` or at every login.
-* **Instant 2-Second Hot-Switching**: Use `Super + S` or run `caelaris-switch-desktop` to transition between KDE Plasma, GNOME, and Caelestia Shell without closing apps or rebooting.
+### 🎨 Tri-Desktop Wayland Architecture
+* **KDE Plasma 6, GNOME 4x, & Caelestia Shell (Hyprland)**: Fully integrated into the unified ISO. Choose your default desktop during installation via `caelaris-installer-gui`, or freely select between all three environments directly from the SDDM login screen at any time.
 * **Caelestia Shell (Hyprland Dynamic Tiling)**: Pre-configured out-of-the-box with glassmorphism, fluid Bezier physics animations, zero window overlap, under 400MB idle RAM, and ultra-low latency.
 
 ---

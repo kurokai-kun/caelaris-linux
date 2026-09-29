@@ -28,6 +28,8 @@ file_permissions=(
   ["/usr/bin/caelaris-session-selector"]="0:0:755"
   ["/usr/bin/caelaris-switch-desktop"]="0:0:755"
   ["/usr/bin/caelaris-post-install-reboot"]="0:0:755"
+  ["/usr/bin/caelaris-update"]="0:0:755"
+  ["/usr/bin/caelestia-session"]="0:0:755"
   ["/usr/bin/yay"]="0:0:755"
   ["/usr/bin/caelaris-install"]="0:0:755"
 )

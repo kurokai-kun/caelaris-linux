@@ -18,7 +18,6 @@ on:
       - '.github/workflows/build-rpi*'
       - '.github/workflows/build-cloud*'
       - '.github/workflows/build-server*'
-      - 'shared/**'
   workflow_dispatch:
     inputs:
       edition:
@@ -172,9 +171,8 @@ jobs:
 
             ---
 
-            ### 🎨 Tri-Desktop Wayland Architecture & Hot Switcher
-            * **KDE Plasma 6, GNOME 4x, & Caelestia Shell Included**: Choose your preferred daily driver session directly during installation via `caelaris-installer-gui`, or select from the SDDM login screen at any time.
-            * **Instant 2-Second Hot-Switching**: Press `Super + S` or run `caelaris-switch-desktop` to hot-switch between KDE Plasma, GNOME, and Caelestia Shell on the fly without closing applications or rebooting.
+            ### 🎨 Tri-Desktop Wayland Architecture
+            * **KDE Plasma 6, GNOME 4x, & Caelestia Shell (Hyprland) Included**: Choose your preferred daily driver session directly during installation via `caelaris-installer-gui`, or freely select between all three environments directly from the SDDM login screen at any time.
             * **Caelestia Shell (Hyprland Dynamic Tiling)**: Pre-configured out of the box with glassmorphism, fluid Bezier physics animations, zero window overlap, under 400MB idle RAM, and near-zero compositor input latency for competitive gaming and high-velocity coding.
             * **Separated Application Menus & Profiles**: Strict XDG environment isolation ensures Plasma, GNOME, and Hyprland utilities stay in their respective sessions with zero duplicate app clutter.
             * **Modern Wayland by Default**: Fractional scaling, smooth animations, and multi-monitor variable refresh rate (VRR).

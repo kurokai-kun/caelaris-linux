@@ -30,7 +30,7 @@ qt6-svg
 accountsservice
 
 # ==========================================================
-# GNOME Desktop & Core Applications (Dual Session Support)
+# GNOME Desktop & Core Applications (Tri-Desktop Suite)
 # ==========================================================
 gnome-shell
 gnome-control-center
