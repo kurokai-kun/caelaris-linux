@@ -428,10 +428,22 @@ class InstallWorker(QThread):
                     except OSError:
                         pass
 
-            sess_name = "gnome" if "gnome" in str(desktop).lower() else "plasma"
+            if "caelestia" in str(desktop).lower() or "hyprland" in str(desktop).lower():
+                sess_name = "caelestia"
+            elif "gnome" in str(desktop).lower():
+                sess_name = "gnome"
+            else:
+                sess_name = "plasma"
+
             os.makedirs("/mnt/var/lib/AccountsService/users", exist_ok=True)
             with open(f"/mnt/var/lib/AccountsService/users/{user}", "w") as f:
                 f.write(f"[User]\nLanguage=en_US.UTF-8\nSession={sess_name}\nXSession={sess_name}\nSystemAccount=false\nRealName={realname}\nIcon=/usr/share/pixmaps/caelaris-logo.png\n")
+
+            # Setup user Hyprland / Caelestia configuration
+            os.makedirs(f"/mnt/home/{user}/.config/hypr", exist_ok=True)
+            with open(f"/mnt/home/{user}/.config/hypr/hyprland.conf", "w") as f:
+                f.write("# Caelestia Shell configuration for Caelaris Linux\nsource = /etc/caelestia/hyprland.conf\n")
+            self.run_cmd(f"arch-chroot /mnt chown -R '{user}:users' '/home/{user}/.config'", check=False)
 
             os.makedirs("/mnt/etc/sddm.conf.d", exist_ok=True)
             sddm_cfg = (
@@ -1107,17 +1119,20 @@ class CaelarisInstaller(QMainWindow):
         p6 = QWidget()
         l6 = QVBoxLayout(p6)
         l6.addWidget(QLabel("Default Desktop", objectName="pageTitle"))
-        l6.addWidget(QLabel("Select your primary desktop. Both KDE Plasma and GNOME are installed!", objectName="pageSubtitle"))
+        l6.addWidget(QLabel("Select your primary desktop environment. You can hot-switch between them anytime!", objectName="pageSubtitle"))
         c6 = QFrame(objectName="card")
         cl6 = QVBoxLayout(c6)
-        self.rb_kde = QRadioButton("KDE Plasma 6 (Recommended) - Modern, fast, and customizable")
+        self.rb_kde = QRadioButton("KDE Plasma 6 (Default) - Modern, fast, and customizable")
         self.rb_kde.setChecked(True)
         self.rb_gnome = QRadioButton("GNOME Desktop - Clean, elegant, distraction-free environment")
+        self.rb_caelestia = QRadioButton("Caelestia Shell (Hyprland) - Modern animated dynamic tiling Wayland interface")
         cl6.addWidget(self.rb_kde)
         cl6.addSpacing(10)
         cl6.addWidget(self.rb_gnome)
         cl6.addSpacing(10)
-        cl6.addWidget(QLabel("<small style='color: #64748b;'>Note: You can switch between KDE and GNOME anytime on the login screen.</small>"))
+        cl6.addWidget(self.rb_caelestia)
+        cl6.addSpacing(10)
+        cl6.addWidget(QLabel("<small style='color: #64748b;'>Note: You can switch between KDE, GNOME, and Caelestia Shell anytime using the Hot Switcher or SDDM login screen.</small>"))
         l6.addWidget(c6)
         l6.addStretch()
         self.stack.addWidget(p6)
@@ -1345,7 +1360,13 @@ class CaelarisInstaller(QMainWindow):
     def update_summary(self):
         fs = "Btrfs" if self.rb_btrfs.isChecked() else "Ext4"
         tz = f"{self.cb_region.currentText()}/{self.cb_city.currentText()}"
-        dt = "KDE Plasma 6" if self.rb_kde.isChecked() else "GNOME Desktop"
+        if self.rb_caelestia.isChecked():
+            dt = "Caelestia Shell (Hyprland)"
+        elif self.rb_gnome.isChecked():
+            dt = "GNOME Desktop"
+        else:
+            dt = "KDE Plasma 6"
+
         self.summary_text.setText(
             f"<b>Target Disk:</b> {self.cb_disks.currentText()}<br>"
             f"<b>Filesystem:</b> {fs}<br>"
@@ -1363,6 +1384,13 @@ class CaelarisInstaller(QMainWindow):
         self.ins_status.setText("Preparing target disk...")
         self.update_step_ui()
 
+        if self.rb_caelestia.isChecked():
+            chosen_desktop = "caelestia"
+        elif self.rb_gnome.isChecked():
+            chosen_desktop = "gnome"
+        else:
+            chosen_desktop = "plasma"
+
         config = {
             'disk': self.cb_disks.currentData(),
             'filesystem': "btrfs" if self.rb_btrfs.isChecked() else "ext4",
@@ -1372,7 +1400,7 @@ class CaelarisInstaller(QMainWindow):
             'password': self.txt_pass1.text(),
             'hostname': self.txt_hostname.text().strip(),
             'autologin': self.chk_autologin.isChecked(),
-            'desktop': "plasma" if self.rb_kde.isChecked() else "gnome"
+            'desktop': chosen_desktop
         }
 
         self.worker = InstallWorker(config)

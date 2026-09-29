@@ -1,0 +1,76 @@
+{
+    "layer": "top",
+    "position": "top",
+    "height": 38,
+    "margin-top": 8,
+    "margin-left": 12,
+    "margin-right": 12,
+    "spacing": 8,
+    "modules-left": [
+        "custom/launcher",
+        "hyprland/workspaces"
+    ],
+    "modules-center": [
+        "hyprland/window"
+    ],
+    "modules-right": [
+        "pulseaudio",
+        "network",
+        "battery",
+        "clock",
+        "custom/switcher",
+        "custom/power"
+    ],
+    "custom/launcher": {
+        "format": "✦ Caelaris",
+        "on-click": "rofi -show drun -theme /etc/caelestia/rofi.rasi || wofi --show drun",
+        "tooltip": false
+    },
+    "hyprland/workspaces": {
+        "disable-scroll": true,
+        "all-outputs": true,
+        "format": "{name}"
+    },
+    "hyprland/window": {
+        "format": "{title}",
+        "max-length": 45,
+        "separate-outputs": true
+    },
+    "pulseaudio": {
+        "format": "{icon} {volume}%",
+        "format-muted": "🔇 Muted",
+        "format-icons": {
+            "default": ["🔈", "🔉", "🔊"]
+        },
+        "on-click": "pavucontrol"
+    },
+    "network": {
+        "format-wifi": " {essid}",
+        "format-ethernet": "󰈀 {ipaddr}",
+        "format-disconnected": "⚠ Disconnected",
+        "on-click": "nm-connection-editor || konsole -e nmtui"
+    },
+    "battery": {
+        "states": {
+            "warning": 30,
+            "critical": 15
+        },
+        "format": "{icon} {capacity}%",
+        "format-icons": ["", "", "", "", ""]
+    },
+    "clock": {
+        "format": "{:%a, %b %d  %I:%M %p}",
+        "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>"
+    },
+    "custom/switcher": {
+        "format": "⇄ Switch Desktop",
+        "on-click": "caelaris-switch-desktop",
+        "tooltip": true,
+        "tooltip-format": "Hot switch between KDE Plasma, GNOME, and Caelestia Shell"
+    },
+    "custom/power": {
+        "format": "⏻",
+        "on-click": "wlogout || systemctl poweroff",
+        "tooltip": false
+    }
+}

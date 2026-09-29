@@ -93,6 +93,10 @@ class CaelarisWelcome(Gtk.Window):
             tab_general.pack_start(btn_install, False, False, 0)
 
 
+        btn_switch_desktop = Gtk.Button(label="⇄ Hot-Switch Desktop (Plasma 6 / GNOME / Caelestia Shell)")
+        btn_switch_desktop.connect("clicked", lambda w: subprocess.Popen(["/usr/bin/caelaris-switch-desktop"]))
+        tab_general.pack_start(btn_switch_desktop, False, False, 0)
+
         btn_caelaris_update = Gtk.Button(label="⚡ Sync Caelaris Linux with GitHub & Update System (caelaris-update)")
         btn_caelaris_update.connect("clicked", self.run_terminal_command, "caelaris-update")
         tab_general.pack_start(btn_caelaris_update, False, False, 0)

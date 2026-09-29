@@ -175,6 +175,11 @@ EOF
         kwrite
         hicolor-icon-theme
         adwaita-icon-theme
+        hyprland
+        xdg-desktop-portal-hyprland
+        waybar
+        rofi-wayland
+        swaybg
     )
 
     echo "Installing live preview desktop & installer packages..."
@@ -426,7 +431,7 @@ ConditionPathExists=/etc/sddm.conf.d/autologin.conf
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash -c 'if grep -qw "session=gnome" /proc/cmdline; then sed -i "s/Session=.*/Session=gnome/" /etc/sddm.conf.d/autologin.conf; else sed -i "s/Session=.*/Session=plasma/" /etc/sddm.conf.d/autologin.conf; fi'
+ExecStart=/bin/bash -c 'if grep -qE "session=caelestia|desktop=caelestia|session=hyprland|desktop=hyprland" /proc/cmdline; then sed -i "s/Session=.*/Session=caelestia/" /etc/sddm.conf.d/autologin.conf; elif grep -qw "session=gnome" /proc/cmdline; then sed -i "s/Session=.*/Session=gnome/" /etc/sddm.conf.d/autologin.conf; else sed -i "s/Session=.*/Session=plasma/" /etc/sddm.conf.d/autologin.conf; fi'
 RemainAfterExit=yes
 
 [Install]

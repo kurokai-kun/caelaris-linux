@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# ==========================================================
+# Caelestia Shell Session Launcher for Caelaris Linux
+# Powered by Hyprland dynamic tiling Wayland compositor
+# ==========================================================
+set -e
+
+# Session Environment Variables
+export XDG_CURRENT_DESKTOP="Hyprland"
+export XDG_SESSION_DESKTOP="Hyprland"
+export XDG_SESSION_TYPE="wayland"
+export QT_QPA_PLATFORM="wayland;xcb"
+export QT_WAYLAND_DISABLE_WINDOWDECORATION="1"
+export QT_AUTO_SCREEN_SCALE_FACTOR="1"
+export GDK_BACKEND="wayland,x11,*"
+export CLUTTER_BACKEND="wayland"
+export SDL_VIDEODRIVER="wayland"
+export MOZ_ENABLE_WAYLAND="1"
+export ELECTRON_OZONE_PLATFORM_HINT="auto"
+
+# Hardware Acceleration Flags
+if [ -d /dev/dri ]; then
+    export LIBVA_DRIVER_NAME="$(lspci -k 2>/dev/null | grep -iE 'amd|radeon' >/dev/null && echo 'radeonsi' || echo '')"
+    [ -z "$LIBVA_DRIVER_NAME" ] && unset LIBVA_DRIVER_NAME
+fi
+
+# Ensure user runtime directory exists
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+
+# Ensure default Caelestia Hyprland config is initialized in user profile
+if [ ! -f "$HOME/.config/hypr/hyprland.conf" ]; then
+    mkdir -p "$HOME/.config/hypr"
+    if [ -f /etc/caelestia/hyprland.conf ]; then
+        cp -n /etc/caelestia/hyprland.conf "$HOME/.config/hypr/hyprland.conf" 2>/dev/null || true
+    fi
+fi
+
+# Launch Hyprland with Caelestia configuration
+if [ -f "$HOME/.config/hypr/hyprland.conf" ]; then
+    exec Hyprland --config "$HOME/.config/hypr/hyprland.conf"
+elif [ -f /etc/caelestia/hyprland.conf ]; then
+    exec Hyprland --config /etc/caelestia/hyprland.conf
+else
+    exec Hyprland
+fi

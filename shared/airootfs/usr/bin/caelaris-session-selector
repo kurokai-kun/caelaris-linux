@@ -2,7 +2,9 @@
 # caelaris-session-selector: Automatically switches default session between KDE and GNOME based on kernel cmdline
 
 DESKTOP_CHOICE="plasma"
-if grep -q "desktop=gnome" /proc/cmdline 2>/dev/null || grep -q "session=gnome" /proc/cmdline 2>/dev/null; then
+if grep -qE "desktop=caelestia|session=caelestia|desktop=hyprland|session=hyprland" /proc/cmdline 2>/dev/null; then
+    DESKTOP_CHOICE="caelestia"
+elif grep -qE "desktop=gnome|session=gnome" /proc/cmdline 2>/dev/null; then
     DESKTOP_CHOICE="gnome"
 fi
 

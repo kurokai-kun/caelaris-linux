@@ -1,0 +1,85 @@
+configuration {
+    modi: "drun,run";
+    show-icons: true;
+    icon-theme: "breeze-dark";
+    font: "Noto Sans 12";
+    drun-display-format: "{name}";
+}
+
+@theme "/dev/null"
+
+* {
+    bg: rgba(15, 23, 42, 0.88);
+    bg-alt: rgba(30, 41, 59, 0.75);
+    fg: #f8fafc;
+    fg-alt: #94a3b8;
+    accent: #38bdf8;
+    border-col: rgba(56, 189, 248, 0.35);
+
+    background-color: transparent;
+    text-color: @fg;
+    margin: 0;
+    padding: 0;
+}
+
+window {
+    width: 620px;
+    height: 480px;
+    background-color: @bg;
+    border: 2px solid @border-col;
+    border-radius: 16px;
+    padding: 24px;
+}
+
+mainbox {
+    children: [ inputbar, listview ];
+    spacing: 16px;
+}
+
+inputbar {
+    background-color: @bg-alt;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 10px 16px;
+    children: [ prompt, entry ];
+    spacing: 12px;
+}
+
+prompt {
+    text-color: @accent;
+    font-weight: 700;
+}
+
+entry {
+    placeholder: "Search applications, utilities, games...";
+    placeholder-color: @fg-alt;
+    text-color: @fg;
+}
+
+listview {
+    columns: 2;
+    lines: 7;
+    spacing: 6px;
+    cycle: true;
+}
+
+element {
+    padding: 8px 12px;
+    border-radius: 8px;
+    children: [ element-icon, element-text ];
+    spacing: 12px;
+}
+
+element-icon {
+    size: 28px;
+}
+
+element-text {
+    vertical-align: 0.5;
+    text-color: inherit;
+}
+
+element selected {
+    background-color: @accent;
+    text-color: #0f172a;
+}

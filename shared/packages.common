@@ -95,6 +95,18 @@ xorg-xinit
 wayland
 xorg-xwayland
 
+# ==========================================================
+# Caelestia Shell & Hyprland Dynamic Tiling Wayland Stack
+# ==========================================================
+hyprland
+xdg-desktop-portal-hyprland
+waybar
+rofi-wayland
+swaybg
+dunst
+brightnessctl
+playerctl
+
 # AMD Vulkan & Video Acceleration
 vulkan-radeon
 lib32-vulkan-radeon

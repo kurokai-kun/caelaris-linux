@@ -25,9 +25,11 @@ chmod 0440 /etc/sudoers.d/liveuser
 # Ensure display name is set to "Caelaris Live" in GECOS
 chfn -f "Caelaris Live" liveuser 2>/dev/null || true
 
-# 2. Check kernel command-line for desktop preference (dual session support)
+# 2. Check kernel command-line for desktop preference (Plasma, GNOME, or Caelestia Shell)
 DESKTOP_CHOICE="plasma"
-if grep -q "desktop=gnome" /proc/cmdline 2>/dev/null || grep -q "session=gnome" /proc/cmdline 2>/dev/null; then
+if grep -qE "desktop=caelestia|session=caelestia|desktop=hyprland|session=hyprland" /proc/cmdline 2>/dev/null; then
+    DESKTOP_CHOICE="caelestia"
+elif grep -qE "desktop=gnome|session=gnome" /proc/cmdline 2>/dev/null; then
     DESKTOP_CHOICE="gnome"
 fi
 
