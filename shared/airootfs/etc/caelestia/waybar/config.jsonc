@@ -18,11 +18,10 @@
         "network",
         "battery",
         "clock",
-        "custom/switcher",
         "custom/power"
     ],
     "custom/launcher": {
-        "format": "✦ Caelaris",
+        "format": "✦ Caelestia",
         "on-click": "rofi -show drun -theme /etc/caelestia/rofi.rasi || wofi --show drun",
         "tooltip": false
     },
@@ -61,12 +60,6 @@
     "clock": {
         "format": "{:%a, %b %d  %I:%M %p}",
         "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>"
-    },
-    "custom/switcher": {
-        "format": "⇄ Switch Desktop",
-        "on-click": "caelaris-switch-desktop",
-        "tooltip": true,
-        "tooltip-format": "Hot switch between KDE Plasma, GNOME, and Caelestia Shell"
     },
     "custom/power": {
         "format": "⏻",

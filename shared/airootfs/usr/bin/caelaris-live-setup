@@ -28,7 +28,7 @@ chfn -f "Caelaris Live" liveuser 2>/dev/null || true
 # 2. Check kernel command-line for desktop preference (Plasma, GNOME, or Caelestia Shell)
 DESKTOP_CHOICE="plasma"
 if grep -qE "desktop=caelestia|session=caelestia|desktop=hyprland|session=hyprland" /proc/cmdline 2>/dev/null; then
-    DESKTOP_CHOICE="caelestia"
+    DESKTOP_CHOICE="hyprland"
 elif grep -qE "desktop=gnome|session=gnome" /proc/cmdline 2>/dev/null; then
     DESKTOP_CHOICE="gnome"
 fi

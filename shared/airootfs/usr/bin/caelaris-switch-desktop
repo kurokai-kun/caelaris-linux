@@ -28,7 +28,7 @@ fi
 
 # Normalize current
 case "$CURRENT" in
-    *caelestia*|*hyprland*) CURRENT="caelestia" ;;
+    *caelestia*|*hyprland*) CURRENT="hyprland" ;;
     *gnome*) CURRENT="gnome" ;;
     *) CURRENT="plasma" ;;
 esac
@@ -106,7 +106,7 @@ if dlg.exec() == QDialog.DialogCode.Accepted:
     elif sel == 2:
         print("gnome")
     elif sel == 3:
-        print("caelestia")
+        print("hyprland")
 PYEOF
             )
         elif command -v zenity >/dev/null 2>&1; then
@@ -116,13 +116,13 @@ PYEOF
                 --column="Pick" --column="Session" --column="Description" \
                 $([ "$CURRENT" = "plasma" ] && echo "TRUE" || echo "FALSE") "plasma" "KDE Plasma 6 (Modern, customizable)" \
                 $([ "$CURRENT" = "gnome" ] && echo "TRUE" || echo "FALSE") "gnome" "GNOME Desktop (Clean, elegant)" \
-                $([ "$CURRENT" = "caelestia" ] && echo "TRUE" || echo "FALSE") "caelestia" "Caelestia Shell / Hyprland (Fluid tiling Wayland)" \
+                $([ "$CURRENT" = "hyprland" ] && echo "TRUE" || echo "FALSE") "hyprland" "Caelestia Shell (Hyprland - Fluid tiling Wayland)" \
                 --width=520 --height=260 2>/dev/null || true)
         elif command -v kdialog >/dev/null 2>&1; then
             TARGET=$(kdialog --radiolist "Select Desktop Environment to switch to:" \
                 "plasma" "KDE Plasma 6" $([ "$CURRENT" = "plasma" ] && echo "on" || echo "off") \
                 "gnome" "GNOME Desktop" $([ "$CURRENT" = "gnome" ] && echo "on" || echo "off") \
-                "caelestia" "Caelestia Shell (Hyprland)" $([ "$CURRENT" = "caelestia" ] && echo "on" || echo "off") \
+                "hyprland" "Caelestia Shell (Hyprland)" $([ "$CURRENT" = "hyprland" ] && echo "on" || echo "off") \
                 --title "Caelaris Hot Switcher" 2>/dev/null || true)
         fi
     fi
@@ -141,7 +141,7 @@ PYEOF
         case "$CHOICE" in
             1) TARGET="plasma" ;;
             2) TARGET="gnome" ;;
-            3) TARGET="caelestia" ;;
+            3) TARGET="hyprland" ;;
             *) echo "Invalid choice."; exit 1 ;;
         esac
     fi
@@ -158,12 +158,12 @@ case "$TARGET" in
         TARGET="gnome"
         TARGET_NAME="GNOME Desktop"
         ;;
-    caelestia|hyprland)
-        TARGET="caelestia"
+    hyprland|caelestia)
+        TARGET="hyprland"
         TARGET_NAME="Caelestia Shell (Hyprland)"
         ;;
     *)
-        echo "Usage: caelaris-switch-desktop [plasma|gnome|caelestia]"
+        echo "Usage: caelaris-switch-desktop [plasma|gnome|hyprland]"
         exit 1
         ;;
 esac

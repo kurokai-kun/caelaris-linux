@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=Caelestia Shell (Hyprland)
-Comment=Modern fluid tiling Wayland environment powered by Hyprland and Caelestia Quickshell
+Comment=Modern fluid dynamic tiling Wayland interface powered by Caelestia and Hyprland
 Exec=/usr/bin/caelestia-session
 TryExec=/usr/bin/caelestia-session
 Type=Application

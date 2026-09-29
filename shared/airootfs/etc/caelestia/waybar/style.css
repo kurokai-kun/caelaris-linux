@@ -58,25 +58,13 @@ window#waybar {
     font-weight: 600;
 }
 
-#pulseaudio, #network, #battery, #clock, #custom-switcher, #custom-power {
+#pulseaudio, #network, #battery, #clock, #custom-power {
     background: rgba(30, 41, 59, 0.65);
     padding: 0 12px;
     margin: 4px 2px;
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.06);
     color: #f1f5f9;
-}
-
-#custom-switcher {
-    background: rgba(56, 189, 248, 0.15);
-    border: 1px solid rgba(56, 189, 248, 0.4);
-    color: #38bdf8;
-    font-weight: 600;
-}
-
-#custom-switcher:hover {
-    background: rgba(56, 189, 248, 0.35);
-    color: #ffffff;
 }
 
 #custom-power {

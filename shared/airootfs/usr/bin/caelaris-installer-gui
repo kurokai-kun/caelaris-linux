@@ -429,7 +429,7 @@ class InstallWorker(QThread):
                         pass
 
             if "caelestia" in str(desktop).lower() or "hyprland" in str(desktop).lower():
-                sess_name = "caelestia"
+                sess_name = "hyprland"
             elif "gnome" in str(desktop).lower():
                 sess_name = "gnome"
             else:
@@ -779,7 +779,11 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
                 "/mnt/etc/skel/Desktop/install-caelaris.desktop",
                 "/mnt/usr/share/applications/install-caelaris.desktop",
                 "/mnt/usr/share/applications/caelaris-installer.desktop",
-                "/mnt/usr/share/applications/caelaris-installer-gui.desktop"
+                "/mnt/usr/share/applications/caelaris-installer-gui.desktop",
+                # Remove switch desktop shortcuts from installed system
+                f"/mnt/home/{user}/Desktop/switch-desktop.desktop",
+                "/mnt/etc/skel/Desktop/switch-desktop.desktop",
+                "/mnt/usr/share/applications/caelaris-switch-desktop.desktop"
             ]:
                 if os.path.isdir(live_artifact):
                     shutil.rmtree(live_artifact, ignore_errors=True)
@@ -789,8 +793,8 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
                     except OSError:
                         pass
 
-            # Remove any stray switch-to-*.desktop
-            for shortcut in glob.glob(f"/mnt/home/{user}/Desktop/switch-to-*.desktop") + glob.glob("/mnt/etc/skel/Desktop/switch-to-*.desktop"):
+            # Remove any stray switch-*.desktop
+            for shortcut in glob.glob(f"/mnt/home/{user}/Desktop/switch-*.desktop") + glob.glob("/mnt/etc/skel/Desktop/switch-*.desktop") + glob.glob("/mnt/usr/share/applications/*switch-desktop*.desktop"):
                 try:
                     os.remove(shortcut)
                 except OSError:
@@ -1008,7 +1012,7 @@ class CaelarisInstaller(QMainWindow):
         arch_name = "64-bit ARM64 (AArch64)" if platform.machine().lower() in ["aarch64", "arm64"] else "64-bit modern x86_64"
         cl1.addWidget(QLabel("<b>Live Preview Active:</b> You can explore the system freely before installing."))
         cl1.addWidget(QLabel(f"✔ {arch_name} system ready"))
-        cl1.addWidget(QLabel("✔ Dual session ready: KDE Plasma 6 & GNOME"))
+        cl1.addWidget(QLabel("✔ Tri-Desktop ready: KDE Plasma 6, GNOME & Caelestia Shell (Hyprland)"))
         cl1.addWidget(QLabel("✔ PipeWire modern audio stack loaded"))
         l1.addWidget(c1)
         l1.addStretch()
@@ -1132,7 +1136,7 @@ class CaelarisInstaller(QMainWindow):
         cl6.addSpacing(10)
         cl6.addWidget(self.rb_caelestia)
         cl6.addSpacing(10)
-        cl6.addWidget(QLabel("<small style='color: #64748b;'>Note: You can switch between KDE, GNOME, and Caelestia Shell anytime using the Hot Switcher or SDDM login screen.</small>"))
+        cl6.addWidget(QLabel("<small style='color: #64748b;'>Note: All three desktops are installed. Your selected desktop boots by default, and you can switch between them anytime at the SDDM login screen.</small>"))
         l6.addWidget(c6)
         l6.addStretch()
         self.stack.addWidget(p6)
@@ -1191,8 +1195,8 @@ class CaelarisInstaller(QMainWindow):
         l10.addWidget(QLabel("Caelaris Linux has been installed successfully onto your disk.", objectName="pageSubtitle"))
         c10 = QFrame(objectName="card")
         cl10 = QVBoxLayout(c10)
-        cl10.addWidget(QLabel("<b>Dual Desktops Ready:</b> Both KDE Plasma 6 and GNOME Desktop are installed."))
-        cl10.addWidget(QLabel("The default session boots into KDE Plasma. You can switch between KDE and GNOME at the login screen."))
+        cl10.addWidget(QLabel("<b>Tri-Desktop Architecture Ready:</b> KDE Plasma 6, GNOME, and Caelestia Shell (Hyprland) are installed."))
+        cl10.addWidget(QLabel("Your selected desktop environment will boot by default. You can freely switch between all three from the session dropdown at the SDDM login screen."))
         cl10.addSpacing(10)
         cl10.addWidget(QLabel("<b>Virtual Machine Users:</b>"))
         cl10.addWidget(QLabel("To boot directly into your new installation, disconnect or unmount the live ISO in VM settings,<br>"
