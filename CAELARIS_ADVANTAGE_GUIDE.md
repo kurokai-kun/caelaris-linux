@@ -7,7 +7,7 @@
 ### Document Overview
 - **Product:** Caelaris Linux
 - **Base Architecture:** Arch Linux Rolling Baseline, Linux Kernel 6.13+
-- **Desktop Stack:** Dual Wayland: KDE Plasma 6.3 & GNOME 47 (Hot-Switchable in 2s)
+- **Desktop Stack:** Tri-Desktop Wayland: KDE Plasma 6.3, GNOME 47, & Caelestia Shell (Hyprland) (Hot-Switchable in 2s)
 - **Supported Tiers:** x86_64, Raspberry Pi (4/5), ARM64 (Apple Silicon, Snapdragon X)
 - **Publication:** Release 1.0 (Gold Master)
 - **Printable PDF:** `Caelaris_Linux_The_Superior_OS.pdf`
@@ -21,7 +21,7 @@ Personal computing is experiencing a systemic crisis of user sovereignty, system
 1. **The Commercial Surveillance Monoculture (Microsoft Windows):** Modern operating systems have transitioned from software products serving the user into data harvesting platforms. Windows 11 mandates cloud account linkage, introduces invasive screenshot-level monitoring through Recall AI, injects advertisements directly into the core shell and Start Menu, consumes an unprecedented 4.5 GB to 6 GB of RAM simply idling, and routinely interrupts user workflows with unpredictable, non-negotiable update reboots.
 2. **The Fragmented Open Source Landscape (Traditional Linux):** While traditional Linux distributions offer freedom, they have forced users into polarizing extremes. Immutable gaming distributions (e.g., SteamOS, Bazzite) lock down the root filesystem, crippling developers who require native compilation and custom system services. Point-release enterprise distributions (e.g., Ubuntu, Debian) force outdated compilers and unwanted Snap packages. Conversely, enthusiast distributions (e.g., Vanilla Arch) erect daunting terminal installation barriers that demand hours of manual configuration.
 
-**Caelaris Linux** dissolves this false dichotomy. Built upon an optimized, rolling-release Arch Linux baseline, Caelaris delivers an uncompromised, esports-grade gaming stack, bleeding-edge developer toolchains, and a dual-identity Wayland desktop environment (KDE Plasma 6 and GNOME 47), wrapped in an intuitive, fail-safe graphical installer. Caelaris is completely free of telemetry, ads, and forced cloud dependencies, returning absolute ownership of the machine to the user.
+**Caelaris Linux** dissolves this false dichotomy. Built upon an optimized, rolling-release Arch Linux baseline, Caelaris delivers an uncompromised, esports-grade gaming stack, bleeding-edge developer toolchains, and a tri-identity Wayland desktop architecture (KDE Plasma 6, GNOME 47, and Caelestia Shell powered by Hyprland dynamic tiling), wrapped in an intuitive, fail-safe graphical installer. Caelaris is completely free of telemetry, ads, and forced cloud dependencies, returning absolute ownership of the machine to the user.
 
 | Metric | Caelaris Linux | Industry Standard / Windows 11 |
 | :--- | :--- | :--- |
@@ -95,7 +95,7 @@ Caelaris deploys an enterprise-grade **Btrfs subvolume layout** (`@` root, `@hom
 | **Fedora** | RPM + Flatpak | Semi-annual Fixed | Anaconda | Single (GNOME) | Flexible | None (Standard) |
 | **Vanilla Arch** | Pacman + AUR | Rolling Release | Manual CLI / archinstall | None (Manual build) | 100% Root Access | Manual Tuning |
 | **Bazzite** | rpm-ostree + Flatpak | Rolling Image Layer | Web / Anaconda | Single (KDE or GNOME) | Immutable / Locked | Pre-Tuned |
-| **Caelaris Linux** | **Pacman + AUR (yay)** | **Rolling Release** | **Native PyQt6 GUI** | **Dual (KDE + GNOME)** | **100% Root + Btrfs CoW** | **Pro-Tuned (Esports)** |
+| **Caelaris Linux** | **Pacman + AUR (yay)** | **Rolling Release** | **Native PyQt6 GUI** | **Tri-Desktop (KDE + GNOME + Caelestia Shell)** | **100% Root + Btrfs CoW** | **Pro-Tuned (Esports)** |
 
 ---
 
@@ -115,8 +115,13 @@ Caelaris deploys an enterprise-grade **Btrfs subvolume layout** (`@` root, `@hom
 - **Hardware-Accelerated Virtualization:** Native QEMU/KVM virtualization stack pre-configured with `virt-manager` and `vhost-net` kernel modules, providing near-bare-metal performance for Windows and Linux guest VMs.
 - **Wayland Multi-Monitor Productivity:** Per-monitor fractional scaling and independent refresh rates (e.g., 240Hz primary gaming monitor paired with a 60Hz 4K code editing display) run simultaneously without X11 compositor stutter or screen tearing.
 
-### Pillar 3: Everyday Desktop Excellence
-- **Dual Flagship Wayland Desktops:** Caelaris ships both **KDE Plasma 6.3** (configured with modern glass minimalism, ultra-fast application launching, and rich widget support) and **GNOME 47** (focused, gesture-driven workflow). Users can switch between them in 2 seconds via our live hot-switcher or through the SDDM display manager with zero config collisions.
+### Pillar 3: Everyday Desktop Excellence & Tri-Desktop Freedom
+- **Tri-Desktop Wayland Flagships:** Caelaris ships three distinct Wayland environments on a single ISO:
+  1. **KDE Plasma 6.3:** Traditional floating desktop with modern glass minimalism, ultra-fast application launching, and rich widget support.
+  2. **GNOME 47:** Gesture-driven, distraction-free workflow ideal for focused laptop navigation.
+  3. **Caelestia Shell (Hyprland):** A dynamic tiling Wayland compositor engineered for keyboard-centric power users and esports latency minimization.
+- **Why Caelestia Shell is Used:** Manual dynamic tiling compositor setup on Linux notoriously suffers from an intimidating "ricing barrier"—demanding 30+ hours of writing custom dotfiles, debugging IPC scripts, designing status bars, and configuring hotkeys. Caelestia Shell completely eradicates this hurdle by supplying an out-of-the-box, professionally curated Hyprland environment with fluid Bezier curve animations, glassmorphism, pre-configured keybinds (`Super+Return` terminal, `Super+Space` rofi launcher, `Super+S` switcher), and integrated Waybar.
+- **What is the Use of Adding It:** Caelestia Shell provides an ultra-lightweight environment consuming under **400 MB idle RAM** with near-zero compositor input latency, giving competitive gamers maximum FPS and developers 100% screen real estate with zero window overlap. Users can seamlessly switch between Caelestia Shell, KDE Plasma, and GNOME in 2 seconds via `caelaris-switch-desktop` without rebooting.
 - **Silent Direct Boot:** Traditional Linux distributions flood the display with hundreds of lines of kernel diagnostic text or fragile Plymouth splash screens that flicker during resolution changes. Caelaris implements a clean, silent UEFI direct boot that transitions seamlessly from hardware power-on straight to the desktop in 5 to 7 seconds.
 - **PipeWire Studio-Grade Audio:** A completely unified low-latency audio subsystem handling desktop audio, DAW production, and Bluetooth devices with native LDAC, aptX HD, and AAC codecs.
 - **Universal Multi-Architecture Support:** Whether deployed on a high-end multi-GPU AMD/NVIDIA workstation, an Apple Silicon MacBook (M1–M4), a Snapdragon X Elite laptop, or an affordable Raspberry Pi 4/5, Caelaris delivers an identical, high-performance user experience.
@@ -126,13 +131,13 @@ Caelaris deploys an enterprise-grade **Btrfs subvolume layout** (`@` root, `@hom
 ## 5. Uniqueness & The Main Value Proposition
 
 > **The Main Selling Point of Caelaris Linux:**  
-> **"The First Frictionless, Dual-Identity, Uncompromising Arch Operating System."**  
-> Caelaris eliminates the painful trade-offs of modern computing. You no longer have to choose between the gaming optimizations of Nobara, the developer depth of Arch, the user-friendliness of Ubuntu, or the stability of Btrfs snapshots. Caelaris unifies all of them into a single, cohesive, private, and high-performance operating system.
+> **"The First Frictionless, Tri-Identity, Uncompromising Arch Operating System."**  
+> Caelaris eliminates the painful trade-offs of modern computing. You no longer have to choose between the gaming optimizations of Nobara, the developer depth of Arch, the user-friendliness of Ubuntu, the ricing aesthetics of custom Hyprland setups, or the stability of Btrfs snapshots. Caelaris unifies all of them into a single, cohesive, private, and high-performance operating system.
 
-### The Breakthrough: Zero-Friction Dual Desktop Architecture
-Historically, installing multiple desktop environments on Linux led to catastrophic configuration collisions—shared settings files overwritten, duplicated menu entries, conflicting theme engines, and display manager crashes. 
+### The Breakthrough: Zero-Friction Tri-Desktop Architecture
+Historically, installing multiple desktop environments or tiling window managers on Linux led to catastrophic configuration collisions—shared settings files overwritten, duplicated menu entries, conflicting theme engines, and display manager crashes. 
 
-Caelaris solves this through **strict XDG desktop profile isolation**. KDE Plasma 6 and GNOME 47 run side-by-side with independent configuration namespaces, shared media subvolumes, and a unified dark glass aesthetic. A user can work in GNOME's distraction-free gesture environment during morning coding sprints, and hot-switch to KDE Plasma's multi-display gaming dashboard in the evening in **2 seconds flat**, without closing applications or rebooting.
+Caelaris solves this through **strict XDG desktop profile isolation**. KDE Plasma 6, GNOME 47, and Caelestia Shell run side-by-side with independent configuration namespaces, shared media subvolumes, and a unified dark glass aesthetic. A user can work in GNOME's gesture environment for laptop reading, hot-switch to Caelestia Shell for ultra-dense keyboard-driven coding sprints, and hot-switch to KDE Plasma's multi-display gaming dashboard in the evening in **2 seconds flat**, without closing applications or rebooting.
 
 ---
 
@@ -161,7 +166,8 @@ Proprietary platforms actively restrict how software is distributed, forcing use
 | :--- | :--- | :--- |
 | **Competitive PC Gamer** | Windows micro-stutters, background updates interrupting games, high idle RAM usage. | Pro-tuned `vm.max_map_count`, Feral GameMode, sub-850MB idle RAM for maximum FPS and lowest 1% low latency. |
 | **Software Engineer** | Outdated Ubuntu packages, WSL2 filesystem bottlenecks, slow Docker performance. | Direct rolling Arch packages, 90,000+ AUR tools via `yay`, native Btrfs container snapshots, and bleeding-edge GCC/Clang/Rust toolchains. |
-| **Daily Desktop User** | Windows 11 ads in Start Menu, forced Recall AI, telemetry, slow boot times. | Clean, silent direct boot, zero ads, zero telemetry, beautiful dual Wayland desktops (KDE & GNOME), and rock-solid Btrfs disaster recovery. |
+| **Daily Desktop User** | Windows 11 ads in Start Menu, forced Recall AI, telemetry, slow boot times. | Clean, silent direct boot, zero ads, zero telemetry, beautiful tri-desktop Wayland suite (KDE, GNOME, Caelestia), and rock-solid Btrfs disaster recovery. |
+| **Tiling WM & Power User** | Spends dozens of hours manually writing Hyprland dotfiles, debugging Waybar CSS, or stuck in heavy floating DEs. | Pre-configured Caelestia Shell out-of-the-box with glassmorphism, instant hotkey velocity, <400MB idle RAM, zero window overlap, and 2s hot-switchability. |
 | **Raspberry Pi & ARM User** | Bloated, sluggish desktop environments on ARM SBCs and laptops. | Dedicated ARM64 PC and Raspberry Pi builds with zRAM compression and Box64/FEX-Emu x86 translation layers. |
 
 ---

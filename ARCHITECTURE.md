@@ -14,15 +14,15 @@
 Caelaris Linux is organized into distinct, modular subsystem layers that separate base operating system packages, custom desktop environments, kernel/sysctl performance optimizations, and runtime installer automation:
 
 ```
-+-------------------------------------------------------------------------+
-|                         USER EXPERIENCE LAYER                           |
-|   KDE Plasma 6 (Wayland) [Default]   |   GNOME 4x (Wayland) [Alternative] |
-|   Caelaris Welcome Assistant (GTK3)  |   Desktop Session Hot-Switcher     |
-+-------------------------------------------------------------------------+
-|                      DISPLAY & SESSION MANAGEMENT                       |
-|   Simple Desktop Display Manager (SDDM) with Breeze Theme & Autologin   |
-|   AccountsService User Session Tracking & Polkit Privilege Agent       |
-+-------------------------------------------------------------------------+
++---------------------------------------------------------------------------------------+
+|                                USER EXPERIENCE LAYER                                  |
+|   KDE Plasma 6 (Wayland)   |   GNOME 4x (Wayland)   |  Caelestia Shell (Hyprland)     |
+|   Caelaris Welcome (GTK3)  |   Tri-Desktop Hot-Switcher (caelaris-switch-desktop)     |
++---------------------------------------------------------------------------------------+
+|                      DISPLAY & SESSION MANAGEMENT                                     |
+|   Simple Desktop Display Manager (SDDM) with Breeze Theme & Dynamic Autologin         |
+|   AccountsService Tri-Session Tracking & Polkit Privilege Agent                       |
++---------------------------------------------------------------------------------------+
 |                  APPLICATIONS & GAMING INFRASTRUCTURE                   |
 |   Steam Client (Native / Proton)  |  MangoHud (32 & 64-bit) |  GameMode |
 |   VKD3D DirectX 12 Translation    |  PipeWire Pro-Audio Graph & ALSA/Pulse|
@@ -158,11 +158,18 @@ Caelaris Linux standardizes on **SDDM (Simple Desktop Display Manager)** running
   Session=plasma
   Relogin=false
   ```
-- **Wayland First:** Both desktop sessions execute natively on Wayland:
+- **Wayland First:** All three desktop sessions execute natively on Wayland:
   - KDE Plasma 6: `/usr/share/wayland-sessions/plasma.desktop`
   - GNOME 4x: `/usr/share/wayland-sessions/gnome.desktop`
+  - Caelestia Shell (Hyprland): `/usr/share/wayland-sessions/caelestia.desktop` (executing `/usr/bin/caelestia-session`)
 
-### 4.2 Single User Profile Architecture
+### 4.2 Caelestia Shell & Hyprland Subsystem Architecture
+- **Compositor Engine:** Hyprland dynamic tiling Wayland compositor written in modern C++, featuring custom bezier curve animations, hardware-accelerated dual-layer blur, and 0ms window splitting.
+- **Why It Is Used:** Solves the traditional window stacking bottleneck. Eliminates the barrier of manual Hyprland configuration ("ricing") by providing a pre-configured, cohesive glassmorphic desktop layer with Waybar, Rofi Wayland, Dunst, and Polkit KDE Agent out of the box.
+- **What Is the Use of Adding It:** Provides power users, software engineers, and gamers with an ultra-lightweight environment consuming <400MB RAM at idle, minimizing compositor latency for high-framerate competitive gaming and heavy compilation, while remaining fully hot-switchable with KDE and GNOME in under 2 seconds.
+- **Session Pipeline:** Executed via `/usr/bin/caelestia-session`, which initializes Wayland environment flags (`QT_QPA_PLATFORM=wayland;xcb`, `GDK_BACKEND=wayland,x11`, `MOZ_ENABLE_WAYLAND=1`), checks for user customizations in `~/.config/hypr/hyprland.conf`, and falls back to global system configurations at `/etc/caelestia/hyprland.conf`.
+
+### 4.3 Single User Profile Architecture
 To prevent profile duplication on installed systems:
 1. **Live User Removal:** During installer Step 6, `userdel -r -f liveuser` is executed within the target chroot jail.
 2. **Sysusers Purge:** `/etc/sysusers.d/caelaris-liveuser.conf` is deleted from the target disk, preventing `systemd-sysusers` from re-provisioning `liveuser` on subsequent reboots.

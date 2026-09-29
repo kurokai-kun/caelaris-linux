@@ -21,8 +21,8 @@
 ==================================================================================
                      CAELARIS LINUX FEATURE HIGHLIGHTS
 ==================================================================================
-  [1] Dual Desktop Environments   -> KDE Plasma 6 (Default) + GNOME 4x on Wayland
-  [2] Live Session Hot-Switcher   -> Switch between KDE & GNOME in 2 seconds
+  [1] Tri-Desktop Wayland Stack   -> KDE Plasma 6 + GNOME 4x + Caelestia Shell (Hyprland)
+  [2] Tri-Desktop Hot-Switcher    -> Toggle Plasma, GNOME, & Caelestia in 2s (GUI / CLI)
   [3] Native Graphical Installer  -> Python/PyQt6 wizard with guided Btrfs & Ext4
   [4] Silent Direct Bootloader    -> Clean single "Caelaris Linux" entry to SDDM
   [5] Single User Profile Purity  -> Zero leftover liveuser profiles after setup
@@ -36,21 +36,37 @@
 
 ---
 
-## 3. Desktop Environments & User Interface
+## 3. Tri-Desktop Architecture & User Interfaces
 
-### 3.1 KDE Plasma 6 (Default Environment)
+Caelaris Linux provides an unprecedented **Tri-Desktop Wayland Architecture**, acknowledging that no single desktop paradigm fits every workflow. Rather than forcing users into a single environment, Caelaris integrates three premier interfaces out of the box.
+
+### 3.1 KDE Plasma 6 (Default Flagship Desktop)
 - **Wayland Native:** Driven by KWin Wayland compositor, providing stutter-free fractional display scaling, touchpad gestures, and zero screen-tearing.
 - **Caelaris Dark Breeze Styling:** Customized visual aesthetic with elegant translucency, dark panels, and bespoke Caelaris wallpapers and icons.
 - **Application Suite:** Includes Dolphin file manager, Konsole terminal, Kate text editor, Spectacle screenshot tool, and System Settings.
 
-### 3.2 GNOME 4x (Alternative Environment)
+### 3.2 GNOME 4x (Workflow & Touch/Gesture Desktop)
 - **Fluid Gestures & Navigation:** Powered by Mutter Wayland compositor with full three-finger touchpad gesture navigation.
 - **Modern Workflow:** Streamlined Activities Overview, dynamic workspaces, and integrated search.
-- **Included Applications:** Nautilus file manager, GNOME Terminal, Loupe image viewer, and Text Editor.
+- **Included Applications:** Nautilus file manager, Ptyxis terminal, Loupe image viewer, and GNOME Text Editor.
 
-### 3.3 Live Preview Desktop Switcher
-- **Instant Hot-Switching:** Run `caelaris-switch-desktop` directly from the live preview desktop to toggle between KDE Plasma 6 and GNOME in under 2 seconds without restarting the virtual machine or PC.
-- **Dual Session at Login:** Post-installation, users can freely toggle between Plasma (Wayland) and GNOME (Wayland) from the SDDM session menu at any time.
+### 3.3 Caelestia Shell — Hyprland Dynamic Tiling Environment
+Caelestia Shell is a next-generation, animated, dynamic tiling desktop environment designed specifically for the **Hyprland** Wayland compositor.
+
+#### Why It Is Used (The Engineering Rationale):
+1. **Eliminating the "Linux Ricing" Barrier:** Setting up a dynamic tiling window manager like Hyprland on standard Arch or other distros typically requires dozens of hours of hunting for dotfiles, writing custom shell configs, fixing Waybar scripts, and resolving package incompatibilities. Caelestia Shell provides an out-of-the-box, show-stopping tiling experience with frosted glassmorphism, blur, and fluid bezier animations.
+2. **Keyboard-Driven Velocity:** Traditional floating desktops (KDE/GNOME) require constant mouse dragging, minimizing, and window re-centering. Caelestia Shell automatically tiles windows into optimal split grids as they open. Every essential workflow action is bound to ergonomic hotkeys (`Super + Return` for terminal, `Super + Space` for app launcher, `Super + E` for file manager, `Super + S` for Hot Switcher).
+3. **Overcoming Window Overlap Bottlenecks:** In multi-window development and server administration, floating windows constantly obscure critical terminal outputs. Dynamic tiling ensures 100% of display real estate is utilized without a single wasted pixel.
+
+#### What Is the Use of Adding It (Practical Advantages & Use Cases):
+1. **Ultra-Low Compositor Latency for Competitive Gaming:** Hyprland is written in modern C++ with an exceptionally lean footprint. At idle, the Caelestia session consumes under **400 MB of RAM**—freeing up massive system memory, CPU cycles, and GPU resources for high-framerate competitive gaming and heavy Docker/Rust compilations.
+2. **Tri-Desktop Freedom & Coexistence:** Users are never trapped in a tiling-only OS. If a user needs a full desktop suite for creative work, they can use KDE Plasma; for minimalist laptop trackpad gestures, GNOME; and for coding or gaming sprints, Caelestia Shell.
+3. **Selectable Post-Installation & At Every Login:** Users can choose Caelestia Shell as their default desktop during the graphical installation wizard (`caelaris-installer-gui`) or select it from the SDDM display manager session dropdown on every boot.
+
+### 3.4 Interactive Tri-Desktop Hot-Switcher (`caelaris-switch-desktop`)
+- **Instant Hot-Switching:** Run `caelaris-switch-desktop` (or press `Super + S` in Caelestia) to open a modern glassmorphic selector dialog allowing instant 2-second switching between KDE Plasma 6, GNOME, and Caelestia Shell.
+- **Universal Availability:** Works seamlessly in the Live ISO preview session, inside installed systems, and is directly accessible from the Caelaris Welcome Assistant.
+- **State Preservation:** Updates both SDDM autologin and AccountsService records so your choice persists cleanly across reboots.
 
 ---
 

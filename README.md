@@ -12,7 +12,7 @@
   <a href="https://caelaris.vercel.app"><img src="https://img.shields.io/badge/Website-caelaris.vercel.app-8b5cf6?style=for-the-badge&logo=vercel&logoColor=white" alt="Official Website"></a>
   <a href="https://github.com/kurokai-kun/caelaris-linux/releases"><img src="https://img.shields.io/badge/Architecture-x86__64%20%7C%20AArch64-blue?style=for-the-badge" alt="Architecture"></a>
   <a href="https://archlinux.org"><img src="https://img.shields.io/badge/Base-Arch%20Linux%20Rolling-1793d1?style=for-the-badge&logo=arch-linux&logoColor=white" alt="Arch Linux Base"></a>
-  <img src="https://img.shields.io/badge/Desktops-KDE%20Plasma%206%20%2B%20GNOME%204x-6366f1?style=for-the-badge" alt="Desktops">
+  <img src="https://img.shields.io/badge/Desktops-Plasma%206%20%7C%20GNOME%20%7C%20Caelestia%20(Hyprland)-6366f1?style=for-the-badge" alt="Desktops">
   <img src="https://img.shields.io/badge/Filesystem-Btrfs%20%7C%20Ext4-10b981?style=for-the-badge" alt="Filesystem">
   <img src="https://img.shields.io/badge/License-GPL--3.0-orange?style=for-the-badge" alt="License">
 </p>
@@ -21,7 +21,7 @@
 
 ## 🌌 Overview
 
-**Caelaris Linux** is a modern, rolling-release operating system built upon the rock-solid foundation of Arch Linux. Engineered for enthusiasts, gamers, creators, and developers, Caelaris delivers out-of-the-box hardware acceleration, low-latency responsiveness, and a unified dual-desktop experience across modern x86_64 PCs and ARM64 devices.
+**Caelaris Linux** is a modern, rolling-release operating system built upon the rock-solid foundation of Arch Linux. Engineered for enthusiasts, gamers, creators, and developers, Caelaris delivers out-of-the-box hardware acceleration, low-latency responsiveness, and a unified tri-desktop experience (KDE Plasma 6, GNOME 4x, and Caelestia Shell on Hyprland) across modern x86_64 PCs and ARM64 devices.
 
 <p align="center">
   <img src="assets/preview.png" alt="Caelaris Linux Desktop Preview" width="100%">
@@ -31,10 +31,14 @@
 
 ## ⚡ Key Highlights
 
-### 🎨 Dual Desktop Experience in One System
-* **KDE Plasma 6 & GNOME 4x Included**: Both premier desktop environments come pre-installed. Select your preferred environment directly from the modern SDDM login screen at any time.
-* **Zero Application Clutter**: Intelligent desktop filtering ensures KDE-specific apps don't clutter your GNOME launcher, and GNOME utilities don't clutter your KDE launcher.
-* **Modern Wayland by Default**: Ultra-smooth animations, fractional scaling, and multi-monitor variable refresh rate (VRR) support.
+### 🎨 Tri-Desktop Architecture in One Operating System
+* **KDE Plasma 6, GNOME 4x, and Caelestia Shell (Hyprland)**: All three distinct desktop environments are packaged out of the box. Select your preferred environment directly from the modern SDDM login screen, the installer, or hot-switch on the fly.
+* **Caelestia Shell (Hyprland Dynamic Tiling)**:
+  * **Why It Is Used**: Traditional stacking desktops (KDE/GNOME) often create window clutter and rely heavily on manual mouse window management. Caelestia Shell brings automated dynamic window tiling, fluid bezier animations, and extreme keyboard-driven efficiency (`Super + Return` for terminal, `Super + Space` for launcher, `Super + S` for Hot Switcher). It eliminates the dozens of hours normally required to manually configure and "rice" Hyprland on Arch Linux.
+  * **What Is the Use of Adding It**: Provides developers, sysadmins, and competitive gamers with an ultra-low-latency Wayland environment consuming under 400MB RAM at idle, freeing maximum CPU/GPU resources for compilation and gaming while giving users the freedom to switch back to traditional KDE or GNOME at any moment.
+* **Interactive Hot Switcher (`caelaris-switch-desktop`)**: Instantly toggle between KDE Plasma 6, GNOME, and Caelestia Shell in under 2 seconds during live preview or on your installed system without rebooting.
+* **Zero Application Clutter**: Intelligent desktop filtering ensures desktop-specific applications don't clutter alternative application drawers.
+* **Modern Wayland by Default**: Ultra-smooth animations, fractional scaling, and multi-monitor variable refresh rate (VRR) support across all three environments.
 
 ### 🎮 High-Performance Gaming & Low-Latency Tuning
 * **Low-Latency Scheduling & Responsiveness**: Dynamic kernel preemption and real-time process priority dispatching (`rtkit`) ensure competitive input responsiveness.

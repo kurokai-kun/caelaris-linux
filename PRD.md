@@ -14,12 +14,12 @@
 ### 1.1 Vision Statement
 **Caelaris Linux** is engineered to eliminate the friction and compromise between bleeding-edge Linux software access and immediate, out-of-the-box desktop usability. Arch Linux provides an unmatched rolling package ecosystem, but its manual installation and unconfigured baseline create steep friction for developers, gamers, and testers. Conversely, existing turnkey distributions often introduce unwanted system bloat, unoptimized kernels, heavy background telemetry, or inflexible desktop lock-in.
 
-Caelaris Linux delivers an ultra-responsive, modern, and gaming-optimized computing platform built upon Arch Linux. It features out-of-the-box dual graphical sessions (**KDE Plasma 6** as default and **GNOME 4x** as an alternative), instant session switching, an intuitive custom graphical installer, deep virtualization guest acceleration (VMware, VirtualBox, QEMU/SPICE), complete GPU driver stacks (AMD, Intel, NVIDIA with DRM modesetting), and pro-grade performance tuning without unnecessary bloat.
+Caelaris Linux delivers an ultra-responsive, modern, and gaming-optimized computing platform built upon Arch Linux. It features an out-of-the-box tri-desktop Wayland architecture (**KDE Plasma 6** as default, **GNOME 4x**, and **Caelestia Shell** powered by Hyprland dynamic tiling), instant 2-second session switching, an intuitive custom graphical installer with desktop selection, deep virtualization guest acceleration (VMware, VirtualBox, QEMU/SPICE), complete GPU driver stacks (AMD, Intel, NVIDIA with DRM modesetting), and pro-grade performance tuning without unnecessary bloat.
 
 ### 1.2 Core Value Proposition
 - **Turnkey Live Preview & Installation:** Zero-setup live preview featuring instant 1080p display auto-resizing, pre-configured live user, and full sudo permissions.
-- **Dual Desktop Flexibility:** Boot into KDE Plasma 6 or GNOME directly from the bootloader, switch seamlessly during live preview, and select your preferred desktop at every SDDM login post-installation.
-- **Custom Native Graphical Installer:** A dedicated Python/PyQt6 installer (`caelaris-installer-gui`) supporting automated Btrfs subvolume partitioning, ext4, UEFI/BIOS GRUB deployment, hardware driver enablement, and pristine post-install system sanitization.
+- **Tri-Desktop Flexibility & Hot Switcher:** Boot into KDE Plasma 6, GNOME, or Caelestia Shell (Hyprland) directly from the bootloader, hot-switch seamlessly in 2 seconds during live preview via `caelaris-switch-desktop` (`Super + S`), and select your preferred desktop at installation or every SDDM login.
+- **Custom Native Graphical Installer:** A dedicated Python/PyQt6 installer (`caelaris-installer-gui`) supporting automated Btrfs subvolume partitioning, ext4, desktop environment selection (Plasma, GNOME, Caelestia), UEFI/BIOS GRUB deployment, hardware driver enablement, and pristine post-install system sanitization.
 - **Pro-Grade Gaming Performance:** Pre-configured kernel sysctl tuning (`vm.max_map_count=2147483642`, `vm.swappiness=10`, Google BBR TCP congestion, CAKE packet scheduling), PipeWire low-latency audio, GameMode, MangoHud, Steam, and 32-bit Vulkan drivers.
 - **Universal Hardware & Hypervisor Integration:** Automatic detection and service configuration for physical GPUs (AMD, Intel, NVIDIA proprietary) and hypervisors (`open-vm-tools`, `vboxservice`, `spice-vdagentd`, `qemu-guest-agent`).
 - **Clean Boot & Single User Profile:** Silent, uncluttered bootloader entry labeled strictly **`Caelaris Linux`** booting directly to the graphical login screen with zero scrolling terminal clutter, guaranteeing that only the user-created account exists on the target disk.
@@ -34,6 +34,7 @@ Caelaris Linux delivers an ultra-responsive, modern, and gaming-optimized comput
 | :--- | :--- | :--- |
 | **The Linux Gamer** | Demands maximum FPS, zero frame-time stutter, seamless Steam/Proton/Wine compatibility, and easy hardware telemetry. | Pre-configured high `max_map_count`, GameMode, MangoHud, Steam, 32-bit Vulkan drivers, and low-latency PipeWire audio stack. |
 | **The Developer & Power User** | Requires bleeding-edge toolchains, rapid compilation, AUR access, and responsive terminal environments. | Bundled `yay` AUR helper, modern Zsh/Bash configurations with autosuggestions, Fastfetch, btop, Git, and complete build toolchains. |
+| **The Tiling WM Enthusiast** | Wants Hyprland efficiency without spending weeks ricing dotfiles or breaking Waybar configurations. | Pre-configured Caelestia Shell (Hyprland) out-of-the-box with glassmorphism, auto-tiling, Waybar, and hotkeys. |
 | **The Virtualization & OS Tester** | Evaluates Linux inside VMware Workstation, VirtualBox, or UTM/QEMU, struggling with display resolution and clipboard failures. | Pre-activated `open-vm-tools`, `vboxservice`, `spice-vdagentd`, and dynamic userspace geometry auto-resizer (`caelaris-autoresize`). |
 | **The Modern Desktop Enthusiast** | Wants a clean, aesthetic desktop without maintaining complex dotfiles or fighting broken desktop updates. | Pure KDE Plasma 6 (Wayland) with custom Caelaris branding, alongside GNOME 4x, switchable at will with zero profile pollution. |
 
@@ -84,14 +85,18 @@ caelaris-linux/
 
 ## 4. Detailed Functional Requirements
 
-### 4.1 Dual Desktop Environments & Session Switcher (FR-1)
-- **Default Session:** KDE Plasma 6 running on Wayland composited by KWin.
-- **Alternative Session:** GNOME 4x running on Wayland composited by Mutter.
-- **Session Selection:** Available on the installed system via the SDDM session selection dropdown at every login.
-- **Live Preview Hot-Switching:** Users can switch between KDE and GNOME in the live environment using `caelaris-switch-desktop` without rebooting, taking less than 2 seconds.
+### 4.1 Tri-Desktop Wayland Architecture & Hot Switcher (FR-1)
+- **Flagship Sessions:**
+  1. **KDE Plasma 6:** Default modern floating desktop running on Wayland composited by KWin.
+  2. **GNOME 4x:** Focused gesture-driven Wayland environment composited by Mutter.
+  3. **Caelestia Shell (Hyprland):** Dynamic tiling Wayland compositor engineered for keyboard efficiency and ultra-low latency.
+- **Why Caelestia Shell is Used:** Traditional setup of dynamic tiling compositors like Hyprland suffers from severe complexity barriers—requiring extensive manual ricing, complex IPC wiring, font configuration, and status bar CSS theming. Caelestia Shell solves this by offering a turnkey, beautifully themed Hyprland environment with fluid Bezier curves, glassmorphism, pre-mapped hotkeys (`Super+Return` terminal, `Super+Space` rofi launcher, `Super+S` switcher), and integrated Waybar.
+- **What is the Use of Adding It:** Caelestia Shell provides a hyper-lean (<400MB idle RAM), zero-overlap, keyboard-driven workspace for developers and esports gamers seeking maximum framerates, zero compositor input latency, and total screen utilization.
+- **Session Selection & Hot-Switching:** Users can hot-switch between all three desktops in under 2 seconds via `caelaris-switch-desktop` (or `Super + S`), select their daily driver in the graphical installer, and switch at every SDDM login.
 
 ### 4.2 Caelaris Graphical Installer (FR-2)
 - **Technology:** Custom Python 3 and PyQt6 application (`caelaris-installer-gui`) running with root privileges.
+- **Desktop Environment Selection (Step 6):** Allows users to choose their installed default desktop: KDE Plasma 6 (default), GNOME 4x, or Caelestia Shell (Hyprland). Automatically configures SDDM session target (`/etc/sddm.conf.d/caelaris-session.conf`) and provisions user desktop configurations (`~/.config/hypr/hyprland.conf`).
 - **Storage & Partitioning:**
   - Automated Btrfs setup with standard subvolume layout (`@` for root, `@home` for home directories, `@cache`, and `@snapshots`).
   - Automated Ext4 setup as an alternative for legacy or simple storage environments.
