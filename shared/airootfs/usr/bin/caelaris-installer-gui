@@ -461,6 +461,17 @@ class InstallWorker(QThread):
             with open("/mnt/etc/sddm.conf.d/10-caelaris.conf", "w") as f:
                 f.write(sddm_cfg)
 
+            # Ensure target SDDM displays "Caelestia Shell (Hyprland)" and launches caelestia-session
+            if os.path.exists("/mnt/usr/share/wayland-sessions/hyprland.desktop"):
+                self.run_cmd("sed -i 's/^Name=.*/Name=Caelestia Shell (Hyprland)/' /mnt/usr/share/wayland-sessions/hyprland.desktop", check=False)
+                self.run_cmd("sed -i 's|^Exec=.*|Exec=/usr/bin/caelestia-session|' /mnt/usr/share/wayland-sessions/hyprland.desktop", check=False)
+                self.run_cmd("sed -i 's|^TryExec=.*|TryExec=/usr/bin/caelestia-session|' /mnt/usr/share/wayland-sessions/hyprland.desktop", check=False)
+            if os.path.exists("/mnt/usr/share/wayland-sessions/caelestia.desktop"):
+                try:
+                    os.remove("/mnt/usr/share/wayland-sessions/caelestia.desktop")
+                except OSError:
+                    pass
+
             # ── Ensure Linux Kernel & Microcodes exist in /mnt/boot ──────────
             self.progress_changed.emit(85, "Installing Linux Kernel & Microcode binaries...")
             os.makedirs("/mnt/boot", exist_ok=True)

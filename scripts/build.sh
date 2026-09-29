@@ -256,10 +256,11 @@ fi
 chmod +x "${BUILD_PROFILE}/airootfs/usr/bin/"* 2>/dev/null || true
 chmod +x "${BUILD_PROFILE}/airootfs/etc/skel/Desktop/"*.desktop 2>/dev/null || true
 
-# Clean up any lingering switch-desktop entries and duplicate wayland sessions
+# Clean up any lingering switch-desktop entries, duplicate wayland sessions, or conflicting package files
 rm -f "${BUILD_PROFILE}/airootfs/etc/skel/Desktop/switch-desktop.desktop" \
       "${BUILD_PROFILE}/airootfs/usr/share/applications/caelaris-switch-desktop.desktop" \
-      "${BUILD_PROFILE}/airootfs/usr/share/wayland-sessions/caelestia.desktop" 2>/dev/null || true
+      "${BUILD_PROFILE}/airootfs/usr/share/wayland-sessions/caelestia.desktop" \
+      "${BUILD_PROFILE}/airootfs/usr/share/wayland-sessions/hyprland.desktop" 2>/dev/null || true
 
 # Remove console autologin on tty1 so graphical display manager takes the screen
 rm -rf "${BUILD_PROFILE}/airootfs/etc/systemd/system/getty@tty1.service.d"

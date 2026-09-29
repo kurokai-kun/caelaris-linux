@@ -40,4 +40,12 @@ blacklist pcspkr
 blacklist snd_pcsp
 EOF
 
+# 7. Update Hyprland session entry to Caelestia Shell (Hyprland) and clean up duplicates
+if [ -f /usr/share/wayland-sessions/hyprland.desktop ]; then
+    sed -i 's/^Name=.*/Name=Caelestia Shell (Hyprland)/' /usr/share/wayland-sessions/hyprland.desktop
+    sed -i 's|^Exec=.*|Exec=/usr/bin/caelestia-session|' /usr/share/wayland-sessions/hyprland.desktop
+    sed -i 's|^TryExec=.*|TryExec=/usr/bin/caelestia-session|' /usr/share/wayland-sessions/hyprland.desktop
+fi
+rm -f /usr/share/wayland-sessions/caelestia.desktop 2>/dev/null || true
+
 echo "=== customize_airootfs.sh completed successfully ==="

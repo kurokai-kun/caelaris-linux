@@ -477,6 +477,14 @@ chmod +x "${ROOTFS_DIR}/home/liveuser/Desktop/"*.desktop 2>/dev/null || true
 chmod +x "${ROOTFS_DIR}/usr/bin/caelaris-"* 2>/dev/null || true
 chown -R 1000:100 "${ROOTFS_DIR}/home/liveuser" 2>/dev/null || true
 
+# Update Hyprland wayland session entry to Caelestia Shell (Hyprland) and clean up duplicates
+if [ -f "${ROOTFS_DIR}/usr/share/wayland-sessions/hyprland.desktop" ]; then
+    sed -i 's/^Name=.*/Name=Caelestia Shell (Hyprland)/' "${ROOTFS_DIR}/usr/share/wayland-sessions/hyprland.desktop"
+    sed -i 's|^Exec=.*|Exec=/usr/bin/caelestia-session|' "${ROOTFS_DIR}/usr/share/wayland-sessions/hyprland.desktop"
+    sed -i 's|^TryExec=.*|TryExec=/usr/bin/caelestia-session|' "${ROOTFS_DIR}/usr/share/wayland-sessions/hyprland.desktop"
+fi
+rm -f "${ROOTFS_DIR}/usr/share/wayland-sessions/caelestia.desktop" 2>/dev/null || true
+
 # Isolate KDE and GNOME application menus to avoid clutter in both environments
 for kapp in org.kde.dolphin dolphin org.kde.konsole konsole org.kde.kate kate \
              org.kde.kwrite kwrite org.kde.ark ark org.kde.spectacle spectacle \

@@ -1,9 +1,0 @@
-[Desktop Entry]
-Name=Caelestia Shell (Hyprland)
-Comment=Modern fluid dynamic tiling Wayland interface powered by Caelestia and Hyprland
-Exec=/usr/bin/caelestia-session
-TryExec=/usr/bin/caelestia-session
-Type=Application
-DesktopNames=Hyprland;Caelestia
-Keywords=tiling;wayland;compositor;caelestia;hyprland;
-Icon=caelaris-logo
