@@ -155,11 +155,52 @@ if [ -f "$SYNC_DIR/shared/airootfs/etc/systemd/zram-generator.conf" ]; then
     echo -e "   -> Updated: ZRAM compressed swap settings"
 fi
 
+# G. Synchronize Caelestia Shell configuration & wallpaper
+if [ -d "$SYNC_DIR/shared/airootfs/etc/caelestia" ]; then
+    mkdir -p /etc/caelestia
+    cp -rf "$SYNC_DIR/shared/airootfs/etc/caelestia/"* /etc/caelestia/ 2>/dev/null || true
+    echo -e "   -> Updated: Caelestia Shell configs, Waybar theme, and Rofi styles"
+fi
+if [ -d "$SYNC_DIR/shared/airootfs/usr/share/backgrounds" ]; then
+    mkdir -p /usr/share/backgrounds
+    cp -rf "$SYNC_DIR/shared/airootfs/usr/share/backgrounds/"* /usr/share/backgrounds/ 2>/dev/null || true
+    echo -e "   -> Updated: Caelestia wallpapers"
+fi
+
 # Refresh desktop, icon, and fontconfig caches
 gtk-update-icon-cache -f /usr/share/pixmaps >/dev/null 2>&1 || true
 update-desktop-database /usr/share/applications >/dev/null 2>&1 || true
 echo -e "   -> Refreshing system font caches (preventing glycin-svg sandbox crashes)..."
 fc-cache -r >/dev/null 2>&1 || true
+
+# Enforce strictly 3 SDDM sessions: Plasma, GNOME, Caelestia
+echo -e "   -> Normalizing SDDM sessions to Plasma, GNOME, and Caelestia (purging X11 duplicates)..."
+rm -rf /usr/share/xsessions/* 2>/dev/null || true
+rm -f /usr/share/wayland-sessions/caelestia.desktop 2>/dev/null || true
+
+if [ -f /usr/share/wayland-sessions/plasma.desktop ]; then
+    sed -i 's/^Name=.*/Name=Plasma/' /usr/share/wayland-sessions/plasma.desktop
+fi
+if [ -f /usr/share/wayland-sessions/gnome.desktop ]; then
+    sed -i 's/^Name=.*/Name=GNOME/' /usr/share/wayland-sessions/gnome.desktop
+fi
+if [ -f /usr/share/wayland-sessions/hyprland.desktop ]; then
+    sed -i 's/^Name=.*/Name=Caelestia/' /usr/share/wayland-sessions/hyprland.desktop
+    sed -i 's|^Exec=.*|Exec=/usr/bin/caelestia-session|' /usr/share/wayland-sessions/hyprland.desktop
+    sed -i 's|^TryExec=.*|TryExec=/usr/bin/caelestia-session|' /usr/share/wayland-sessions/hyprland.desktop
+fi
+
+mkdir -p /etc/sddm.conf.d
+cat > /etc/sddm.conf.d/10-wayland-only.conf << 'EOF'
+[General]
+DisplayServer=wayland
+
+[Wayland]
+SessionDir=/usr/share/wayland-sessions
+
+[X11]
+SessionDir=/dev/null
+EOF
 
 # Enforce desktop application separation and remove menu clutter across all environments
 if [ -x /usr/bin/caelaris-sanitize-apps ]; then

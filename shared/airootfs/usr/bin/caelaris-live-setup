@@ -82,21 +82,36 @@ EOF
 
 cat > /etc/sddm.conf.d/10-general.conf << 'EOF'
 [General]
+DisplayServer=wayland
 HaltCommand=/usr/bin/systemctl poweroff
 RebootCommand=/usr/bin/systemctl reboot
 
 [Theme]
 Current=breeze
 CursorTheme=breeze_cursors
+
+[Wayland]
+SessionDir=/usr/share/wayland-sessions
+
+[X11]
+SessionDir=/dev/null
 EOF
 
-# Ensure SDDM displays "Caelestia Shell (Hyprland)" and launches caelestia-session
+# Ensure SDDM strictly displays only the 3 Wayland options: Plasma, GNOME, Caelestia
+rm -rf /usr/share/xsessions/* 2>/dev/null || true
+rm -f /usr/share/wayland-sessions/caelestia.desktop 2>/dev/null || true
+
+if [ -f /usr/share/wayland-sessions/plasma.desktop ]; then
+    sed -i 's/^Name=.*/Name=Plasma/' /usr/share/wayland-sessions/plasma.desktop
+fi
+if [ -f /usr/share/wayland-sessions/gnome.desktop ]; then
+    sed -i 's/^Name=.*/Name=GNOME/' /usr/share/wayland-sessions/gnome.desktop
+fi
 if [ -f /usr/share/wayland-sessions/hyprland.desktop ]; then
-    sed -i 's/^Name=.*/Name=Caelestia Shell (Hyprland)/' /usr/share/wayland-sessions/hyprland.desktop
+    sed -i 's/^Name=.*/Name=Caelestia/' /usr/share/wayland-sessions/hyprland.desktop
     sed -i 's|^Exec=.*|Exec=/usr/bin/caelestia-session|' /usr/share/wayland-sessions/hyprland.desktop
     sed -i 's|^TryExec=.*|TryExec=/usr/bin/caelestia-session|' /usr/share/wayland-sessions/hyprland.desktop
 fi
-rm -f /usr/share/wayland-sessions/caelestia.desktop 2>/dev/null || true
 
 # 4. Copy skeleton files & desktop shortcuts
 if [ -d /etc/skel ]; then

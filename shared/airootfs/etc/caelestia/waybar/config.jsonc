@@ -1,69 +1,83 @@
 {
     "layer": "top",
-    "position": "top",
-    "height": 38,
-    "margin-top": 8,
+    "position": "left",
+    "width": 52,
+    "margin-top": 12,
+    "margin-bottom": 12,
     "margin-left": 12,
-    "margin-right": 12,
     "spacing": 8,
     "modules-left": [
         "custom/launcher",
+        "custom/dashboard",
+        "custom/media",
         "hyprland/workspaces"
     ],
     "modules-center": [
-        "hyprland/window"
+        "custom/desktop-label"
     ],
     "modules-right": [
-        "pulseaudio",
         "network",
+        "pulseaudio",
         "battery",
         "clock",
         "custom/power"
     ],
     "custom/launcher": {
-        "format": "✦ Caelestia",
-        "on-click": "rofi -show drun -theme /etc/caelestia/rofi.rasi || wofi --show drun",
-        "tooltip": false
+        "format": "✦",
+        "on-click": "caelestia-dashboard || rofi -show drun -theme /etc/caelestia/rofi.rasi || wofi --show drun",
+        "tooltip": "Caelestia Shell"
+    },
+    "custom/dashboard": {
+        "format": "󰕮",
+        "on-click": "caelestia-dashboard || rofi -show drun -theme /etc/caelestia/rofi.rasi",
+        "tooltip": "Dashboard"
+    },
+    "custom/media": {
+        "format": "",
+        "on-click": "feishin || vlc || elisa || playerctl play-pause",
+        "tooltip": "Media Player"
     },
     "hyprland/workspaces": {
         "disable-scroll": true,
         "all-outputs": true,
         "format": "{name}"
     },
-    "hyprland/window": {
-        "format": "{title}",
-        "max-length": 45,
-        "separate-outputs": true
-    },
-    "pulseaudio": {
-        "format": "{icon} {volume}%",
-        "format-muted": "🔇 Muted",
-        "format-icons": {
-            "default": ["🔈", "🔉", "🔊"]
-        },
-        "on-click": "pavucontrol"
+    "custom/desktop-label": {
+        "format": "󰍹",
+        "tooltip": "Desktop"
     },
     "network": {
-        "format-wifi": " {essid}",
-        "format-ethernet": "󰈀 {ipaddr}",
-        "format-disconnected": "⚠ Disconnected",
+        "format-wifi": "",
+        "format-ethernet": "󰈀",
+        "format-disconnected": "⚠",
+        "tooltip-format": "{essid} ({signalStrength}%)",
         "on-click": "nm-connection-editor || konsole -e nmtui"
+    },
+    "pulseaudio": {
+        "format": "{icon}",
+        "format-muted": "󰝟",
+        "format-icons": {
+            "default": ["", "", ""]
+        },
+        "tooltip-format": "{volume}%",
+        "on-click": "pavucontrol"
     },
     "battery": {
         "states": {
             "warning": 30,
             "critical": 15
         },
-        "format": "{icon} {capacity}%",
-        "format-icons": ["", "", "", "", ""]
+        "format": "{icon}",
+        "format-icons": ["", "", "", "", ""],
+        "tooltip-format": "{capacity}%"
     },
     "clock": {
-        "format": "{:%a, %b %d  %I:%M %p}",
+        "format": "{:%H\n%M}",
         "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>"
     },
     "custom/power": {
         "format": "⏻",
         "on-click": "wlogout || systemctl poweroff",
-        "tooltip": false
+        "tooltip": "Power Menu"
     }
 }

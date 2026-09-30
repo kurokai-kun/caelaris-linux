@@ -358,12 +358,19 @@ EOF
 mkdir -p "${ROOTFS_DIR}/etc/sddm.conf.d"
 cat << 'EOF' > "${ROOTFS_DIR}/etc/sddm.conf.d/10-caelaris.conf"
 [General]
+DisplayServer=wayland
 HaltCommand=/usr/bin/systemctl poweroff
 RebootCommand=/usr/bin/systemctl reboot
 
 [Theme]
 Current=breeze
 CursorTheme=breeze_cursors
+
+[Wayland]
+SessionDir=/usr/share/wayland-sessions
+
+[X11]
+SessionDir=/dev/null
 EOF
 
 SESSION_NAME="plasma"
@@ -477,13 +484,21 @@ chmod +x "${ROOTFS_DIR}/home/liveuser/Desktop/"*.desktop 2>/dev/null || true
 chmod +x "${ROOTFS_DIR}/usr/bin/caelaris-"* 2>/dev/null || true
 chown -R 1000:100 "${ROOTFS_DIR}/home/liveuser" 2>/dev/null || true
 
-# Update Hyprland wayland session entry to Caelestia Shell (Hyprland) and clean up duplicates
+# Strictly configure 3 SDDM sessions: Plasma, GNOME, and Caelestia
+rm -rf "${ROOTFS_DIR}/usr/share/xsessions"/* 2>/dev/null || true
+rm -f "${ROOTFS_DIR}/usr/share/wayland-sessions/caelestia.desktop" 2>/dev/null || true
+
+if [ -f "${ROOTFS_DIR}/usr/share/wayland-sessions/plasma.desktop" ]; then
+    sed -i 's/^Name=.*/Name=Plasma/' "${ROOTFS_DIR}/usr/share/wayland-sessions/plasma.desktop"
+fi
+if [ -f "${ROOTFS_DIR}/usr/share/wayland-sessions/gnome.desktop" ]; then
+    sed -i 's/^Name=.*/Name=GNOME/' "${ROOTFS_DIR}/usr/share/wayland-sessions/gnome.desktop"
+fi
 if [ -f "${ROOTFS_DIR}/usr/share/wayland-sessions/hyprland.desktop" ]; then
-    sed -i 's/^Name=.*/Name=Caelestia Shell (Hyprland)/' "${ROOTFS_DIR}/usr/share/wayland-sessions/hyprland.desktop"
+    sed -i 's/^Name=.*/Name=Caelestia/' "${ROOTFS_DIR}/usr/share/wayland-sessions/hyprland.desktop"
     sed -i 's|^Exec=.*|Exec=/usr/bin/caelestia-session|' "${ROOTFS_DIR}/usr/share/wayland-sessions/hyprland.desktop"
     sed -i 's|^TryExec=.*|TryExec=/usr/bin/caelestia-session|' "${ROOTFS_DIR}/usr/share/wayland-sessions/hyprland.desktop"
 fi
-rm -f "${ROOTFS_DIR}/usr/share/wayland-sessions/caelestia.desktop" 2>/dev/null || true
 
 # Isolate KDE and GNOME application menus to avoid clutter in both environments
 for kapp in org.kde.dolphin dolphin org.kde.konsole konsole org.kde.kate kate \

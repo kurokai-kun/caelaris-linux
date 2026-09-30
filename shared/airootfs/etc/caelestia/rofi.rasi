@@ -9,12 +9,12 @@ configuration {
 @theme "/dev/null"
 
 * {
-    bg: rgba(15, 23, 42, 0.88);
-    bg-alt: rgba(30, 41, 59, 0.75);
-    fg: #f8fafc;
-    fg-alt: #94a3b8;
-    accent: #38bdf8;
-    border-col: rgba(56, 189, 248, 0.35);
+    bg: rgba(249, 245, 239, 0.96);
+    bg-alt: rgba(238, 230, 220, 0.9);
+    fg: #2c2520;
+    fg-alt: #7d7065;
+    accent: #e07a5f;
+    border-col: rgba(218, 206, 194, 0.85);
 
     background-color: transparent;
     text-color: @fg;
@@ -23,11 +23,11 @@ configuration {
 }
 
 window {
-    width: 620px;
-    height: 480px;
+    width: 640px;
+    height: 500px;
     background-color: @bg;
     border: 2px solid @border-col;
-    border-radius: 16px;
+    border-radius: 24px;
     padding: 24px;
 }
 
@@ -81,5 +81,5 @@ element-text {
 
 element selected {
     background-color: @accent;
-    text-color: #0f172a;
+    text-color: #ffffff;
 }

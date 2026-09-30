@@ -214,12 +214,19 @@ EOF
 
 cat > "${BUILD_PROFILE}/airootfs/etc/sddm.conf.d/10-general.conf" << 'EOF'
 [General]
+DisplayServer=wayland
 HaltCommand=/usr/bin/systemctl poweroff
 RebootCommand=/usr/bin/systemctl reboot
 
 [Theme]
 Current=breeze
 CursorTheme=breeze_cursors
+
+[Wayland]
+SessionDir=/usr/share/wayland-sessions
+
+[X11]
+SessionDir=/dev/null
 EOF
 rm -f "${BUILD_PROFILE}/airootfs/etc/sddm.conf.d/10-wayland.conf" 2>/dev/null || true
 
@@ -261,6 +268,7 @@ rm -f "${BUILD_PROFILE}/airootfs/etc/skel/Desktop/switch-desktop.desktop" \
       "${BUILD_PROFILE}/airootfs/usr/share/applications/caelaris-switch-desktop.desktop" \
       "${BUILD_PROFILE}/airootfs/usr/share/wayland-sessions/caelestia.desktop" \
       "${BUILD_PROFILE}/airootfs/usr/share/wayland-sessions/hyprland.desktop" 2>/dev/null || true
+rm -rf "${BUILD_PROFILE}/airootfs/usr/share/xsessions"/* 2>/dev/null || true
 
 # Remove console autologin on tty1 so graphical display manager takes the screen
 rm -rf "${BUILD_PROFILE}/airootfs/etc/systemd/system/getty@tty1.service.d"

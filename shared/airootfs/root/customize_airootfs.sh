@@ -40,13 +40,34 @@ blacklist pcspkr
 blacklist snd_pcsp
 EOF
 
-# 7. Update Hyprland session entry to Caelestia Shell (Hyprland) and clean up duplicates
+# 7. Configure SDDM sessions: Strictly Plasma, GNOME, and Caelestia (No duplicate Plasma, No X11)
+rm -rf /usr/share/xsessions/* 2>/dev/null || true
+rm -f /usr/share/wayland-sessions/caelestia.desktop 2>/dev/null || true
+
+if [ -f /usr/share/wayland-sessions/plasma.desktop ]; then
+    sed -i 's/^Name=.*/Name=Plasma/' /usr/share/wayland-sessions/plasma.desktop
+fi
+if [ -f /usr/share/wayland-sessions/gnome.desktop ]; then
+    sed -i 's/^Name=.*/Name=GNOME/' /usr/share/wayland-sessions/gnome.desktop
+fi
 if [ -f /usr/share/wayland-sessions/hyprland.desktop ]; then
-    sed -i 's/^Name=.*/Name=Caelestia Shell (Hyprland)/' /usr/share/wayland-sessions/hyprland.desktop
+    sed -i 's/^Name=.*/Name=Caelestia/' /usr/share/wayland-sessions/hyprland.desktop
     sed -i 's|^Exec=.*|Exec=/usr/bin/caelestia-session|' /usr/share/wayland-sessions/hyprland.desktop
     sed -i 's|^TryExec=.*|TryExec=/usr/bin/caelestia-session|' /usr/share/wayland-sessions/hyprland.desktop
 fi
-rm -f /usr/share/wayland-sessions/caelestia.desktop 2>/dev/null || true
+
+# Instruct SDDM to only look for Wayland sessions and ignore X11 sessions
+mkdir -p /etc/sddm.conf.d
+cat > /etc/sddm.conf.d/10-wayland-only.conf << 'EOF'
+[General]
+DisplayServer=wayland
+
+[Wayland]
+SessionDir=/usr/share/wayland-sessions
+
+[X11]
+SessionDir=/dev/null
+EOF
 
 # 8. Pre-generate system-wide fontconfig cache to prevent glycin-svg sandbox seccomp crashes
 echo "Generating fontconfig cache..."

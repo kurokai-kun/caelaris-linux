@@ -1,0 +1,455 @@
+#!/usr/bin/env python3
+# ==============================================================================
+# Caelestia Shell Dashboard - Modern Material You Quick Settings & Control Center
+# Inspired by Caelestia Quickshell: Weather, System Vitals, Calendar, & Media
+# ==============================================================================
+import sys
+import os
+import time
+import datetime
+import calendar
+import shutil
+import subprocess
+from PyQt6.QtCore import Qt, QTimer, QSize, QRectF
+from PyQt6.QtGui import QFont, QIcon, QPixmap, QPainter, QColor, QPen, QBrush, QPainterPath
+from PyQt6.QtWidgets import (
+    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
+    QPushButton, QStackedWidget, QProgressBar, QFrame, QGridLayout
+)
+
+class CaelestiaDashboard(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Caelestia Dashboard")
+        self.setObjectName("caelestia-dashboard")
+        self.setFixedSize(760, 440)
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Dialog)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+
+        self.init_ui()
+        self.start_timers()
+
+    def init_ui(self):
+        # Outer layout
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(16, 16, 16, 16)
+
+        # Card container with rounded borders and warm cream glassmorphic styling
+        self.card = QFrame()
+        self.card.setObjectName("DashboardCard")
+        self.card.setStyleSheet("""
+            QFrame#DashboardCard {
+                background-color: rgba(250, 246, 241, 0.96);
+                border: 2px solid rgba(226, 214, 202, 0.85);
+                border-radius: 28px;
+            }
+        """)
+        card_layout = QVBoxLayout(self.card)
+        card_layout.setContentsMargins(24, 18, 24, 22)
+        card_layout.setSpacing(14)
+
+        # ── 1. Top Navigation Bar (Tabs) ───────────────────────────────────
+        nav_layout = QHBoxLayout()
+        nav_layout.setSpacing(18)
+        nav_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.tab_dashboard = QPushButton("  ⊞ Dashboard")
+        self.tab_media = QPushButton("  ♫ Media")
+        self.tab_perf = QPushButton("  ⚡ Performance")
+        self.tab_workspaces = QPushButton("  ⚏ Workspaces")
+
+        self.tabs = [self.tab_dashboard, self.tab_media, self.tab_perf, self.tab_workspaces]
+        tab_style_base = """
+            QPushButton {
+                background: transparent;
+                color: #7d7065;
+                font-size: 13px;
+                font-weight: 700;
+                padding: 6px 14px;
+                border-radius: 12px;
+                border: none;
+            }
+            QPushButton:hover {
+                background: rgba(224, 122, 95, 0.12);
+                color: #e07a5f;
+            }
+        """
+        for i, tab in enumerate(self.tabs):
+            tab.setStyleSheet(tab_style_base)
+            tab.setCursor(Qt.CursorShape.PointingHandCursor)
+            tab.clicked.connect(lambda checked, idx=i: self.switch_tab(idx))
+
+        nav_layout.addWidget(self.tab_dashboard)
+        nav_layout.addWidget(self.tab_media)
+        nav_layout.addWidget(self.tab_perf)
+        nav_layout.addWidget(self.tab_workspaces)
+        card_layout.addLayout(nav_layout)
+
+        # Divider line
+        divider = QFrame()
+        divider.setFrameShape(QFrame.Shape.HLine)
+        divider.setStyleSheet("background-color: rgba(220, 208, 196, 0.6); max-height: 1px;")
+        card_layout.addWidget(divider)
+
+        # ── 2. Stacked Content Views ───────────────────────────────────────
+        self.stacked = QStackedWidget()
+        self.stacked.addWidget(self.create_dashboard_view())
+        self.stacked.addWidget(self.create_media_view())
+        self.stacked.addWidget(self.create_perf_view())
+        self.stacked.addWidget(self.create_workspaces_view())
+
+        card_layout.addWidget(self.stacked)
+        main_layout.addWidget(self.card)
+
+        self.switch_tab(0)
+
+    def switch_tab(self, idx):
+        self.stacked.setCurrentIndex(idx)
+        for i, tab in enumerate(self.tabs):
+            if i == idx:
+                tab.setStyleSheet("""
+                    QPushButton {
+                        background: rgba(224, 122, 95, 0.16);
+                        color: #e07a5f;
+                        font-size: 13px;
+                        font-weight: 800;
+                        padding: 6px 16px;
+                        border-radius: 12px;
+                        border-bottom: 2px solid #e07a5f;
+                    }
+                """)
+            else:
+                tab.setStyleSheet("""
+                    QPushButton {
+                        background: transparent;
+                        color: #7d7065;
+                        font-size: 13px;
+                        font-weight: 600;
+                        padding: 6px 14px;
+                        border-radius: 12px;
+                        border: none;
+                    }
+                    QPushButton:hover {
+                        background: rgba(224, 122, 95, 0.12);
+                        color: #e07a5f;
+                    }
+                """)
+
+    def create_dashboard_view(self):
+        page = QWidget()
+        page_layout = QHBoxLayout(page)
+        page_layout.setContentsMargins(0, 4, 0, 0)
+        page_layout.setSpacing(16)
+
+        # Left Column: Weather + Clock + Calendar + Resource Bars
+        left_col = QVBoxLayout()
+        left_col.setSpacing(10)
+
+        # Weather Box
+        weather_box = QFrame()
+        weather_box.setStyleSheet("background: rgba(240, 232, 222, 0.7); border-radius: 18px;")
+        w_layout = QHBoxLayout(weather_box)
+        w_layout.setContentsMargins(14, 10, 14, 10)
+        
+        w_icon = QLabel("☀️")
+        w_icon.setFont(QFont("Noto Sans", 24))
+        w_text_layout = QVBoxLayout()
+        w_temp = QLabel("18°C")
+        w_temp.setStyleSheet("font-size: 18px; font-weight: 800; color: #2d2621;")
+        w_cond = QLabel("Clear Sky")
+        w_cond.setStyleSheet("font-size: 12px; font-weight: 600; color: #7d7065;")
+        w_text_layout.addWidget(w_temp)
+        w_text_layout.addWidget(w_cond)
+        w_layout.addWidget(w_icon)
+        w_layout.addLayout(w_text_layout)
+        w_layout.addStretch()
+
+        # Date & Calendar Container
+        cal_box = QFrame()
+        cal_box.setStyleSheet("background: rgba(240, 232, 222, 0.7); border-radius: 18px;")
+        c_main_layout = QHBoxLayout(cal_box)
+        c_main_layout.setContentsMargins(14, 10, 14, 10)
+        c_main_layout.setSpacing(14)
+
+        # Large Digital Time on Left of Calendar
+        time_layout = QVBoxLayout()
+        time_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.lbl_clock = QLabel("12:00")
+        self.lbl_clock.setStyleSheet("font-size: 26px; font-weight: 800; color: #2d2621;")
+        self.lbl_date = QLabel("Today")
+        self.lbl_date.setStyleSheet("font-size: 12px; font-weight: 600; color: #7d7065;")
+        time_layout.addWidget(self.lbl_clock)
+        time_layout.addWidget(self.lbl_date)
+        c_main_layout.addLayout(time_layout)
+
+        # Mini Month Calendar Grid
+        cal_grid = QGridLayout()
+        cal_grid.setSpacing(4)
+        days = ["M", "T", "W", "T", "F", "S", "S"]
+        for col_idx, d in enumerate(days):
+            header = QLabel(d)
+            header.setStyleSheet("color: #9c8e82; font-size: 10px; font-weight: 700;")
+            header.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            cal_grid.addWidget(header, 0, col_idx)
+
+        now = datetime.datetime.now()
+        cal_matrix = calendar.monthcalendar(now.year, now.month)
+        for r_idx, week in enumerate(cal_matrix[:4]):
+            for c_idx, day_num in enumerate(week):
+                if day_num != 0:
+                    lbl_day = QLabel(str(day_num))
+                    lbl_day.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                    if day_num == now.day:
+                        lbl_day.setStyleSheet("background: #e07a5f; color: #ffffff; border-radius: 9px; font-size: 10px; font-weight: 800; min-width: 18px; min-height: 18px;")
+                    else:
+                        lbl_day.setStyleSheet("color: #4a4037; font-size: 10px; font-weight: 600;")
+                    cal_grid.addWidget(lbl_day, r_idx + 1, c_idx)
+        c_main_layout.addLayout(cal_grid)
+
+        # 3 Vertical Resource Level Bars
+        v_bars_layout = QHBoxLayout()
+        v_bars_layout.setSpacing(10)
+        self.bar_cpu = QProgressBar()
+        self.bar_ram = QProgressBar()
+        self.bar_disk = QProgressBar()
+
+        bar_style = """
+            QProgressBar {
+                border: none;
+                border-radius: 6px;
+                background-color: rgba(225, 215, 203, 0.7);
+                width: 10px;
+                text-align: center;
+            }
+            QProgressBar::chunk {
+                background-color: #e07a5f;
+                border-radius: 6px;
+            }
+        """
+        for b in [self.bar_cpu, self.bar_ram, self.bar_disk]:
+            b.setOrientation(Qt.Orientation.Vertical)
+            b.setStyleSheet(bar_style)
+            b.setTextVisible(False)
+            b.setFixedHeight(80)
+            b.setValue(35)
+            v_bars_layout.addWidget(b)
+        c_main_layout.addLayout(v_bars_layout)
+
+        left_col.addWidget(weather_box)
+        left_col.addWidget(cal_box)
+        page_layout.addLayout(left_col, 5)
+
+        # Right Column: Profile + Media Quick Card
+        right_col = QVBoxLayout()
+        right_col.setSpacing(10)
+
+        # Profile Card
+        profile_box = QFrame()
+        profile_box.setStyleSheet("background: rgba(240, 232, 222, 0.7); border-radius: 18px;")
+        p_layout = QHBoxLayout(profile_box)
+        p_layout.setContentsMargins(14, 10, 14, 10)
+        p_layout.setSpacing(12)
+
+        avatar = QLabel("🌸")
+        avatar.setStyleSheet("background: #f7ebe1; border: 2px solid #e07a5f; border-radius: 20px; font-size: 22px; padding: 4px;")
+        avatar.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        avatar.setFixedSize(44, 44)
+
+        p_info = QVBoxLayout()
+        lbl_os = QLabel("Caelaris Linux  •  Hyprland")
+        lbl_os.setStyleSheet("font-size: 13px; font-weight: 800; color: #2d2621;")
+        self.lbl_uptime = QLabel("up 1 hour, 23 minutes")
+        self.lbl_uptime.setStyleSheet("font-size: 11px; font-weight: 600; color: #7d7065;")
+        p_info.addWidget(lbl_os)
+        p_info.addWidget(self.lbl_uptime)
+
+        p_layout.addWidget(avatar)
+        p_layout.addLayout(p_info)
+        p_layout.addStretch()
+
+        # Media Player Card with Bongo Cat
+        media_box = QFrame()
+        media_box.setStyleSheet("background: rgba(240, 232, 222, 0.7); border-radius: 18px;")
+        m_layout = QVBoxLayout(media_box)
+        m_layout.setContentsMargins(16, 12, 16, 12)
+        m_layout.setSpacing(8)
+
+        m_top = QHBoxLayout()
+        m_art = QLabel("💿")
+        m_art.setStyleSheet("background: #2b2623; color: white; border-radius: 22px; font-size: 24px;")
+        m_art.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        m_art.setFixedSize(48, 48)
+
+        m_track_info = QVBoxLayout()
+        self.lbl_track = QLabel("Bad Apple!! feat. nomico")
+        self.lbl_track.setStyleSheet("font-size: 13px; font-weight: 800; color: #2d2621;")
+        self.lbl_artist = QLabel("Alstroemeria Records — THE GAME")
+        self.lbl_artist.setStyleSheet("font-size: 11px; font-weight: 600; color: #7d7065;")
+        m_track_info.addWidget(self.lbl_track)
+        m_track_info.addWidget(self.lbl_artist)
+
+        m_top.addWidget(m_art)
+        m_top.addLayout(m_track_info)
+        m_top.addStretch()
+        m_layout.addLayout(m_top)
+
+        # Controls & Bongo Cat Mascot
+        m_bot = QHBoxLayout()
+        btn_prev = QPushButton("⏮")
+        self.btn_play = QPushButton("▶")
+        btn_next = QPushButton("⏭")
+        ctrl_style = """
+            QPushButton {
+                background: #e07a5f;
+                color: white;
+                font-size: 12px;
+                border-radius: 12px;
+                min-width: 28px;
+                min-height: 28px;
+                border: none;
+            }
+            QPushButton:hover {
+                background: #f28a6f;
+            }
+        """
+        for b in [btn_prev, self.btn_play, btn_next]:
+            b.setStyleSheet(ctrl_style)
+            b.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_play.clicked.connect(self.toggle_media)
+        btn_prev.clicked.connect(lambda: self.run_playerctl("previous"))
+        btn_next.clicked.connect(lambda: self.run_playerctl("next"))
+
+        m_bot.addWidget(btn_prev)
+        m_bot.addWidget(self.btn_play)
+        m_bot.addWidget(btn_next)
+        m_bot.addStretch()
+
+        bongo_cat = QLabel("(=^ ◡ ^=) 🐾")
+        bongo_cat.setStyleSheet("color: #e07a5f; font-size: 12px; font-weight: 800;")
+        m_bot.addWidget(bongo_cat)
+        m_layout.addLayout(m_bot)
+
+        right_col.addWidget(profile_box)
+        right_col.addWidget(media_box)
+        page_layout.addLayout(right_col, 5)
+
+        return page
+
+    def create_media_view(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lbl = QLabel("🎵 Caelestia Audio & Media Control")
+        lbl.setStyleSheet("font-size: 18px; font-weight: 800; color: #2d2621;")
+        sub = QLabel("Launch your preferred music player or control active streams")
+        sub.setStyleSheet("font-size: 12px; color: #7d7065; margin-bottom: 16px;")
+        
+        btn_box = QHBoxLayout()
+        btn_vlc = QPushButton("Launch VLC")
+        btn_elisa = QPushButton("Launch Elisa / Player")
+        for b in [btn_vlc, btn_elisa]:
+            b.setStyleSheet("background: #e07a5f; color: white; padding: 10px 18px; border-radius: 14px; font-weight: 700; border: none;")
+            b.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn_box.addWidget(b)
+        btn_vlc.clicked.connect(lambda: os.system("vlc &"))
+        btn_elisa.clicked.connect(lambda: os.system("elisa || konsole &"))
+
+        layout.addWidget(lbl)
+        layout.addWidget(sub)
+        layout.addLayout(btn_box)
+        return page
+
+    def create_perf_view(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lbl = QLabel("⚡ System Performance & Diagnostics")
+        lbl.setStyleSheet("font-size: 18px; font-weight: 800; color: #2d2621;")
+        
+        btn_mon = QPushButton("Open Plasma System Monitor")
+        btn_mon.setStyleSheet("background: #e07a5f; color: white; padding: 10px 18px; border-radius: 14px; font-weight: 700; border: none;")
+        btn_mon.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_mon.clicked.connect(lambda: os.system("plasma-systemmonitor || gnome-system-monitor &"))
+
+        layout.addWidget(lbl)
+        layout.addWidget(btn_mon)
+        return page
+
+    def create_workspaces_view(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lbl = QLabel("⚏ Hyprland Workspaces Overview")
+        lbl.setStyleSheet("font-size: 18px; font-weight: 800; color: #2d2621;")
+        sub = QLabel("Quick jump between workspaces 1 to 9")
+        sub.setStyleSheet("font-size: 12px; color: #7d7065; margin-bottom: 12px;")
+
+        grid = QHBoxLayout()
+        for i in range(1, 6):
+            btn_ws = QPushButton(f"WS {i}")
+            btn_ws.setStyleSheet("background: #f0e8de; color: #3d352e; border: 1px solid #d5c7b8; padding: 10px 14px; border-radius: 12px; font-weight: 700;")
+            btn_ws.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn_ws.clicked.connect(lambda checked, w=i: os.system(f"hyprctl dispatch workspace {w}"))
+            grid.addWidget(btn_ws)
+
+        layout.addWidget(lbl)
+        layout.addWidget(sub)
+        layout.addLayout(grid)
+        return page
+
+    def start_timers(self):
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_stats)
+        self.timer.start(1000)
+        self.update_stats()
+
+    def update_stats(self):
+        now = datetime.datetime.now()
+        self.lbl_clock.setText(now.strftime("%H:%M"))
+        self.lbl_date.setText(now.strftime("%a, %b %d"))
+
+        # Update uptime
+        try:
+            with open("/proc/uptime", "r") as f:
+                uptime_seconds = float(f.readline().split()[0])
+                hours = int(uptime_seconds // 3600)
+                minutes = int((uptime_seconds % 3600) // 60)
+                self.lbl_uptime.setText(f"up {hours} hour{'s' if hours != 1 else ''}, {minutes} min")
+        except Exception:
+            pass
+
+        # Update CPU / RAM
+        try:
+            with open("/proc/meminfo", "r") as f:
+                lines = f.readlines()
+                total = int(lines[0].split()[1])
+                avail = int(lines[2].split()[1])
+                ram_pct = int(((total - avail) / total) * 100)
+                self.bar_ram.setValue(ram_pct)
+        except Exception:
+            pass
+
+    def toggle_media(self):
+        self.run_playerctl("play-pause")
+        if self.btn_play.text() == "▶":
+            self.btn_play.setText("⏸")
+        else:
+            self.btn_play.setText("▶")
+
+    def run_playerctl(self, cmd):
+        subprocess.run(["playerctl", cmd], stderr=subprocess.DEVNULL)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Escape:
+            self.close()
+        else:
+            super().keyPressEvent(event)
+
+def main():
+    app = QApplication(sys.argv)
+    dashboard = CaelestiaDashboard()
+    dashboard.show()
+    sys.exit(app.exec())
+
+if __name__ == "__main__":
+    main()

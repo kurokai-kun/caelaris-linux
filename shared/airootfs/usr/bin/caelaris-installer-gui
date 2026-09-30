@@ -454,16 +454,24 @@ class InstallWorker(QThread):
                 "DisplayServer=wayland\n"
                 "GreeterEnvironment=QT_WAYLAND_SHELL_INTEGRATION=layer-shell\n\n"
                 "[Wayland]\n"
-                "CompositorCommand=kwin_wayland --no-lockscreen --no-global-shortcuts --locale1\n"
+                "SessionDir=/usr/share/wayland-sessions\n"
+                "CompositorCommand=kwin_wayland --no-lockscreen --no-global-shortcuts --locale1\n\n"
+                "[X11]\n"
+                "SessionDir=/dev/null\n"
             )
             if autologin:
                 sddm_cfg += f"\n[Autologin]\nUser={user}\nSession={sess_name}\nRelogin=false\n"
             with open("/mnt/etc/sddm.conf.d/10-caelaris.conf", "w") as f:
                 f.write(sddm_cfg)
 
-            # Ensure target SDDM displays "Caelestia Shell (Hyprland)" and launches caelestia-session
+            # Ensure target SDDM displays only Plasma, GNOME, and Caelestia
+            self.run_cmd("rm -rf /mnt/usr/share/xsessions/* 2>/dev/null || true", check=False)
+            if os.path.exists("/mnt/usr/share/wayland-sessions/plasma.desktop"):
+                self.run_cmd("sed -i 's/^Name=.*/Name=Plasma/' /mnt/usr/share/wayland-sessions/plasma.desktop", check=False)
+            if os.path.exists("/mnt/usr/share/wayland-sessions/gnome.desktop"):
+                self.run_cmd("sed -i 's/^Name=.*/Name=GNOME/' /mnt/usr/share/wayland-sessions/gnome.desktop", check=False)
             if os.path.exists("/mnt/usr/share/wayland-sessions/hyprland.desktop"):
-                self.run_cmd("sed -i 's/^Name=.*/Name=Caelestia Shell (Hyprland)/' /mnt/usr/share/wayland-sessions/hyprland.desktop", check=False)
+                self.run_cmd("sed -i 's/^Name=.*/Name=Caelestia/' /mnt/usr/share/wayland-sessions/hyprland.desktop", check=False)
                 self.run_cmd("sed -i 's|^Exec=.*|Exec=/usr/bin/caelestia-session|' /mnt/usr/share/wayland-sessions/hyprland.desktop", check=False)
                 self.run_cmd("sed -i 's|^TryExec=.*|TryExec=/usr/bin/caelestia-session|' /mnt/usr/share/wayland-sessions/hyprland.desktop", check=False)
             if os.path.exists("/mnt/usr/share/wayland-sessions/caelestia.desktop"):
