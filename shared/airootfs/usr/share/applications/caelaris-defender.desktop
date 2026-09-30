@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Caelaris Defender
+GenericName=Security & Threat Shield
+Comment=Privacy-preserving in-memory malware, virus, and rootkit scanner
+Exec=/usr/bin/caelaris-defender
+Icon=security-high
+Terminal=false
+Type=Application
+Categories=System;Security;Settings;
+StartupNotify=true
+Keywords=antivirus;virus;malware;defender;scanner;security;privacy;protect;

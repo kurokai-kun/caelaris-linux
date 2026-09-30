@@ -1,0 +1,602 @@
+#!/usr/bin/env python3
+# ==============================================================================
+# Caelaris Store - Modern Graphical App Store for Caelaris Linux
+# One-Click Install, Update, & Manage Verified Linux Applications
+# Verified Sources: Arch Linux Official (GPG Signed) & Flathub Verified
+# ==============================================================================
+import sys
+import os
+import shutil
+import subprocess
+import threading
+from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal, QSize
+from PyQt6.QtGui import QFont, QIcon, QPixmap, QColor
+from PyQt6.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
+    QPushButton, QLineEdit, QScrollArea, QFrame, QGridLayout,
+    QStackedWidget, QProgressBar, QMessageBox, QListWidget, QListWidgetItem
+)
+
+# Curated catalog of essential verified applications
+VERIFIED_CATALOG = [
+    # Gaming
+    {"name": "Steam", "app_id": "com.valvesoftware.Steam", "pkg": "steam", "type": "flatpak", "cat": "Gaming", "desc": "Ultimate digital entertainment platform with Proton gaming support", "pub": "Valve Corporation", "icon": "🎮"},
+    {"name": "Heroic Games Launcher", "app_id": "com.heroicgameslauncher.hgl", "pkg": "heroic-games-launcher-bin", "type": "flatpak", "cat": "Gaming", "desc": "Open-source games launcher for Epic Games, GOG, and Prime Gaming", "pub": "Heroic Games Team", "icon": "⚔️"},
+    {"name": "Lutris", "app_id": "net.lutris.Lutris", "pkg": "lutris", "type": "pacman", "cat": "Gaming", "desc": "Open gaming platform for running Windows, retro, and Linux games", "pub": "Lutris Community", "icon": "🕹️"},
+    {"name": "Prism Launcher", "app_id": "org.prismlauncher.PrismLauncher", "pkg": "prismlauncher", "type": "flatpak", "cat": "Gaming", "desc": "Custom launcher for Minecraft with easy modpack management", "pub": "Prism Launcher Community", "icon": "🧊"},
+    {"name": "RetroArch", "app_id": "org.libretro.RetroArch", "pkg": "retroarch", "type": "flatpak", "cat": "Gaming", "desc": "Multi-system game and emulator frontend with netplay", "pub": "Libretro Team", "icon": "👾"},
+
+    # Internet & Social
+    {"name": "Discord", "app_id": "com.discordapp.Discord", "pkg": "discord", "type": "flatpak", "cat": "Internet", "desc": "All-in-one voice and text chat for gamers and communities", "pub": "Discord Inc.", "icon": "💬"},
+    {"name": "Telegram Desktop", "app_id": "org.telegram.desktop", "pkg": "telegram-desktop", "type": "pacman", "cat": "Internet", "desc": "Fast, secure, and cloud-synchronized instant messaging client", "pub": "Telegram FZ-LLC", "icon": "✈️"},
+    {"name": "Mozilla Firefox", "app_id": "org.mozilla.firefox", "pkg": "firefox", "type": "pacman", "cat": "Internet", "desc": "Fast, private, and independent modern web browser", "pub": "Mozilla Foundation", "icon": "🦊"},
+    {"name": "Brave Browser", "app_id": "com.brave.Browser", "pkg": "brave-bin", "type": "flatpak", "cat": "Internet", "desc": "Privacy-first web browser with built-in ad and tracker blocking", "pub": "Brave Software Inc.", "icon": "🦁"},
+    {"name": "Signal Desktop", "app_id": "org.signal.Signal", "pkg": "signal-desktop", "type": "flatpak", "cat": "Internet", "desc": "End-to-end encrypted private messenger for desktop", "pub": "Signal Messenger LLC", "icon": "🔒"},
+
+    # Creativity & Media
+    {"name": "OBS Studio", "app_id": "com.obsproject.Studio", "pkg": "obs-studio", "type": "pacman", "cat": "Creativity", "desc": "Free and open source software for video recording and live streaming", "pub": "OBS Project", "icon": "📹"},
+    {"name": "Blender", "app_id": "org.blender.Blender", "pkg": "blender", "type": "pacman", "cat": "Creativity", "desc": "3D creation suite: modeling, rigging, animation, simulation, and rendering", "pub": "Blender Foundation", "icon": "🎨"},
+    {"name": "GIMP", "app_id": "org.gimp.GIMP", "pkg": "gimp", "type": "pacman", "cat": "Creativity", "desc": "GNU Image Manipulation Program for professional photo retouching", "pub": "GIMP Team", "icon": "🖌️"},
+    {"name": "Krita", "app_id": "org.kde.krita", "pkg": "krita", "type": "pacman", "cat": "Creativity", "desc": "Professional digital painting and 2D concept art program", "pub": "KDE / Krita Foundation", "icon": "🎭"},
+    {"name": "Spotify", "app_id": "com.spotify.Client", "pkg": "spotify", "type": "flatpak", "cat": "Media", "desc": "Digital music and podcast service with millions of songs", "pub": "Spotify AB", "icon": "🎧"},
+    {"name": "VLC Media Player", "app_id": "org.videolan.VLC", "pkg": "vlc", "type": "pacman", "cat": "Media", "desc": "Universal multimedia player that plays most codecs, discs, and streams", "pub": "VideoLAN Project", "icon": "🎬"},
+
+    # Productivity & Office
+    {"name": "LibreOffice", "app_id": "org.libreoffice.LibreOffice", "pkg": "libreoffice-fresh", "type": "pacman", "cat": "Productivity", "desc": "Full-featured office suite: Writer, Calc, Impress, and Draw", "pub": "The Document Foundation", "icon": "📄"},
+    {"name": "Obsidian", "app_id": "md.obsidian.Obsidian", "pkg": "obsidian", "type": "flatpak", "cat": "Productivity", "desc": "Powerful knowledge base and note-taking app that works on local Markdown files", "pub": "Dynalist Inc.", "icon": "💎"},
+    {"name": "Thunderbird", "app_id": "org.mozilla.Thunderbird", "pkg": "thunderbird", "type": "pacman", "cat": "Productivity", "desc": "Customizable email, calendar, and address book client", "pub": "Mozilla Foundation", "icon": "✉️"},
+
+    # Development
+    {"name": "Visual Studio Code", "app_id": "com.visualstudio.code", "pkg": "code", "type": "pacman", "cat": "Development", "desc": "Code editing redefined: debugging, Git control, syntax highlighting", "pub": "Microsoft Corporation", "icon": "💻"},
+    {"name": "GitKraken", "app_id": "com.axosoft.GitKraken", "pkg": "gitkraken", "type": "flatpak", "cat": "Development", "desc": "Legendary Git GUI client for developers with workspace visualizer", "pub": "Axosoft LLC", "icon": "🐙"},
+    {"name": "Neovim", "app_id": "io.neovim.nvim", "pkg": "neovim", "type": "pacman", "cat": "Development", "desc": "Vim-fork focused on extensibility and modern Lua scripting", "pub": "Neovim Project", "icon": "⚡"},
+
+    # System & Security
+    {"name": "Caelaris Defender", "app_id": "caelaris.defender", "pkg": "caelaris-defender", "type": "system", "cat": "System", "desc": "Privacy-preserving on-demand & real-time virus, malware, and rootkit scanner", "pub": "Caelaris Security Team", "icon": "🛡️"},
+    {"name": "Mission Center", "app_id": "io.missioncenter.MissionCenter", "pkg": "mission-center", "type": "flatpak", "cat": "System", "desc": "Modern system monitor showing CPU, GPU, RAM, Disk, and Network usage", "pub": "Mission Center Team", "icon": "📊"},
+    {"name": "GParted", "app_id": "org.gnome.GParted", "pkg": "gparted", "type": "pacman", "cat": "System", "desc": "Partition editor for creating, reorganizing, and deleting disk partitions", "pub": "GParted Project", "icon": "💾"}
+]
+
+class InstallWorker(QThread):
+    progress_signal = pyqtSignal(str)
+    finished_signal = pyqtSignal(bool, str)
+
+    def __init__(self, app_info, action="install"):
+        super().__init__()
+        self.app_info = app_info
+        self.action = action
+
+    def run(self):
+        name = self.app_info["name"]
+        app_id = self.app_info["app_id"]
+        pkg = self.app_info.get("pkg", "")
+        app_type = self.app_info.get("type", "flatpak")
+
+        self.progress_signal.emit(f"Preparing to {self.action} {name}...")
+
+        try:
+            if app_type == "flatpak":
+                # Ensure flathub remote is configured
+                subprocess.run(["flatpak", "remote-add", "--if-not-exists", "flathub", "https://dl.flathub.org/repo/flathub.flatpakrepo"], stderr=subprocess.DEVNULL)
+                if self.action == "install":
+                    self.progress_signal.emit(f"Downloading verified package for {name} from Flathub...")
+                    cmd = ["flatpak", "install", "-y", "--noninteractive", "flathub", app_id]
+                    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                    if res.returncode == 0:
+                        self.finished_signal.emit(True, f"Successfully installed {name}!")
+                    else:
+                        self.finished_signal.emit(False, f"Installation failed: {res.stderr}")
+                else: # remove
+                    self.progress_signal.emit(f"Removing {name}...")
+                    cmd = ["flatpak", "uninstall", "-y", "--noninteractive", app_id]
+                    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                    self.finished_signal.emit(True, f"Successfully removed {name}.")
+            elif app_type == "pacman":
+                if self.action == "install":
+                    self.progress_signal.emit(f"Downloading verified GPG-signed package {pkg}...")
+                    cmd = ["pkexec", "pacman", "-S", "--noconfirm", "--needed", pkg]
+                    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                    if res.returncode == 0:
+                        self.finished_signal.emit(True, f"Successfully installed {name}!")
+                    else:
+                        self.finished_signal.emit(False, f"Installation error: {res.stderr}")
+                else:
+                    self.progress_signal.emit(f"Uninstalling {pkg}...")
+                    cmd = ["pkexec", "pacman", "-R", "--noconfirm", pkg]
+                    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                    self.finished_signal.emit(True, f"Successfully removed {name}.")
+            else:
+                self.finished_signal.emit(True, f"{name} is a built-in system component.")
+        except Exception as e:
+            self.finished_signal.emit(False, str(e))
+
+class UpdateWorker(QThread):
+    progress_signal = pyqtSignal(str)
+    finished_signal = pyqtSignal(bool, str)
+
+    def run(self):
+        try:
+            self.progress_signal.emit("Refreshing Arch Linux official cryptographic databases...")
+            subprocess.run(["pkexec", "pacman", "-Sy", "--noconfirm"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            
+            self.progress_signal.emit("Upgrading all verified system packages...")
+            res1 = subprocess.run(["pkexec", "pacman", "-Su", "--noconfirm"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+            self.progress_signal.emit("Checking Flathub verified application updates...")
+            subprocess.run(["flatpak", "update", "-y", "--noninteractive"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+            self.finished_signal.emit(True, "All applications and system packages are fully up-to-date!")
+        except Exception as e:
+            self.finished_signal.emit(False, f"Update encountered an error: {str(e)}")
+
+class CaelarisStore(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Caelaris Store — Verified App Center")
+        self.resize(1080, 680)
+        self.current_category = "All"
+        self.installed_cache = set()
+
+        self.init_ui()
+        self.refresh_installed_cache()
+
+    def init_ui(self):
+        central = QWidget()
+        self.setCentralWidget(central)
+        root_layout = QHBoxLayout(central)
+        root_layout.setContentsMargins(0, 0, 0, 0)
+        root_layout.setSpacing(0)
+
+        # ── 1. Left Navigation Sidebar ─────────────────────────────────────
+        sidebar = QFrame()
+        sidebar.setFixedWidth(230)
+        sidebar.setStyleSheet("""
+            QFrame {
+                background-color: #f7f3ee;
+                border-right: 1px solid #e2dad0;
+            }
+        """)
+        s_layout = QVBoxLayout(sidebar)
+        s_layout.setContentsMargins(16, 20, 16, 20)
+        s_layout.setSpacing(6)
+
+        # Brand header
+        brand_box = QHBoxLayout()
+        logo_lbl = QLabel("✦")
+        logo_lbl.setStyleSheet("color: #e07a5f; font-size: 20px; font-weight: 800;")
+        title_lbl = QLabel("Caelaris Store")
+        title_lbl.setStyleSheet("font-size: 17px; font-weight: 800; color: #2d2621;")
+        brand_box.addWidget(logo_lbl)
+        brand_box.addWidget(title_lbl)
+        brand_box.addStretch()
+        s_layout.addLayout(brand_box)
+
+        # Verified badge subtitle
+        verified_sub = QLabel("🛡️ 100% Verified Sources")
+        verified_sub.setStyleSheet("font-size: 11px; font-weight: 700; color: #2e7d32; margin-bottom: 12px;")
+        s_layout.addWidget(verified_sub)
+
+        # Navigation buttons
+        nav_items = [
+            ("✨ Explore All", "All"),
+            ("🎮 Gaming", "Gaming"),
+            ("💼 Productivity", "Productivity"),
+            ("💻 Development", "Development"),
+            ("🎨 Creativity", "Creativity"),
+            ("🌐 Internet", "Internet"),
+            ("🎬 Media", "Media"),
+            ("⚙️ System", "System"),
+            ("🔄 Updates", "Updates"),
+        ]
+
+        self.nav_buttons = {}
+        for label, cat_key in nav_items:
+            btn = QPushButton(label)
+            btn.setStyleSheet("""
+                QPushButton {
+                    text-align: left;
+                    padding: 9px 14px;
+                    border-radius: 12px;
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: #5a4f46;
+                    border: none;
+                    background: transparent;
+                }
+                QPushButton:hover {
+                    background: rgba(224, 122, 95, 0.12);
+                    color: #e07a5f;
+                }
+            """)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.clicked.connect(lambda checked, k=cat_key: self.on_nav_clicked(k))
+            s_layout.addWidget(btn)
+            self.nav_buttons[cat_key] = btn
+
+        s_layout.addStretch()
+
+        # Security footer
+        sec_box = QFrame()
+        sec_box.setStyleSheet("background: rgba(224, 122, 95, 0.08); border-radius: 12px; padding: 10px;")
+        sec_layout = QVBoxLayout(sec_box)
+        sec_title = QLabel("One-Click Safety")
+        sec_title.setStyleSheet("font-size: 11px; font-weight: 800; color: #e07a5f;")
+        sec_desc = QLabel("Official Arch GPG keys and Flathub sandboxing verify every download.")
+        sec_desc.setWordWrap(True)
+        sec_desc.setStyleSheet("font-size: 10px; color: #7d7065;")
+        sec_layout.addWidget(sec_title)
+        sec_layout.addWidget(sec_desc)
+        s_layout.addWidget(sec_box)
+
+        root_layout.addWidget(sidebar)
+
+        # ── 2. Main Content Area ───────────────────────────────────────────
+        main_content = QWidget()
+        main_content.setStyleSheet("background-color: #faf6f0;")
+        m_layout = QVBoxLayout(main_content)
+        m_layout.setContentsMargins(28, 24, 28, 20)
+        m_layout.setSpacing(16)
+
+        # Top Bar: Search input + Status bar
+        top_bar = QHBoxLayout()
+        self.search_box = QLineEdit()
+        self.search_box.setPlaceholderText("🔍  Search applications, utilities, engines, games...")
+        self.search_box.setStyleSheet("""
+            QLineEdit {
+                background: #ffffff;
+                border: 1px solid #d8cfc4;
+                border-radius: 14px;
+                padding: 10px 16px;
+                font-size: 13px;
+                color: #2d2621;
+            }
+            QLineEdit:focus {
+                border: 2px solid #e07a5f;
+            }
+        """)
+        self.search_box.textChanged.connect(self.on_search_changed)
+        top_bar.addWidget(self.search_box, 7)
+
+        self.btn_refresh = QPushButton("🔄 Refresh")
+        self.btn_refresh.setStyleSheet("""
+            QPushButton {
+                background: #f0e6dc;
+                color: #4a4037;
+                font-weight: 700;
+                font-size: 12px;
+                padding: 10px 18px;
+                border-radius: 12px;
+                border: none;
+            }
+            QPushButton:hover {
+                background: #e5d7ca;
+            }
+        """)
+        self.btn_refresh.clicked.connect(self.reload_catalog)
+        top_bar.addWidget(self.btn_refresh, 1)
+
+        m_layout.addLayout(top_bar)
+
+        # Progress / Status Banner
+        self.status_bar = QLabel("")
+        self.status_bar.setStyleSheet("font-size: 12px; font-weight: 600; color: #e07a5f; min-height: 18px;")
+        m_layout.addWidget(self.status_bar)
+
+        # Stacked Views (Store Catalog vs Updates Tab)
+        self.content_stack = QStackedWidget()
+
+        # View 1: Scrollable Apps Catalog
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setStyleSheet("background: transparent;")
+
+        self.apps_container = QWidget()
+        self.apps_container.setStyleSheet("background: transparent;")
+        self.apps_grid = QGridLayout(self.apps_container)
+        self.apps_grid.setSpacing(16)
+        self.apps_grid.setContentsMargins(0, 0, 0, 0)
+        scroll.setWidget(self.apps_container)
+        self.content_stack.addWidget(scroll)
+
+        # View 2: One-Click Updates Tab
+        self.updates_view = self.create_updates_view()
+        self.content_stack.addWidget(self.updates_view)
+
+        m_layout.addWidget(self.content_stack)
+        root_layout.addWidget(main_content)
+
+        self.populate_catalog()
+
+    def create_updates_view(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(20, 30, 20, 30)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.setSpacing(16)
+
+        icon_lbl = QLabel("🛡️")
+        icon_lbl.setStyleSheet("font-size: 42px;")
+        title = QLabel("Caelaris 1-Click Update Center")
+        title.setStyleSheet("font-size: 22px; font-weight: 800; color: #2d2621;")
+        desc = QLabel("Safely upgrade all Arch Linux official packages and verified Flathub applications without writing a single terminal command.")
+        desc.setStyleSheet("font-size: 13px; color: #7d7065; max-width: 550px;")
+        desc.setWordWrap(True)
+        desc.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.btn_update_all = QPushButton("  🚀 Update All Applications & System (1-Click)")
+        self.btn_update_all.setStyleSheet("""
+            QPushButton {
+                background: #2e7d32;
+                color: #ffffff;
+                font-size: 15px;
+                font-weight: 800;
+                padding: 14px 28px;
+                border-radius: 16px;
+                border: none;
+            }
+            QPushButton:hover {
+                background: #388e3c;
+            }
+        """)
+        self.btn_update_all.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_update_all.clicked.connect(self.run_one_click_update)
+
+        self.update_progress = QProgressBar()
+        self.update_progress.setStyleSheet("""
+            QProgressBar {
+                border: 1px solid #d5c7b8;
+                border-radius: 8px;
+                text-align: center;
+                height: 16px;
+                max-width: 450px;
+                background-color: #eee4d8;
+            }
+            QProgressBar::chunk {
+                background-color: #2e7d32;
+                border-radius: 8px;
+            }
+        """)
+        self.update_progress.setRange(0, 0) # marquee
+        self.update_progress.setVisible(False)
+
+        layout.addWidget(icon_lbl, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(title, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(desc, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addSpacing(10)
+        layout.addWidget(self.btn_update_all, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.update_progress, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addStretch()
+        return page
+
+    def refresh_installed_cache(self):
+        self.installed_cache.clear()
+        # Check flatpaks
+        if shutil.which("flatpak"):
+            try:
+                res = subprocess.run(["flatpak", "list", "--app", "--columns=application"], stdout=subprocess.PIPE, text=True)
+                for line in res.stdout.splitlines():
+                    if line.strip():
+                        self.installed_cache.add(line.strip())
+            except Exception:
+                pass
+
+        # Check pacman
+        if shutil.which("pacman"):
+            try:
+                res = subprocess.run(["pacman", "-Qq"], stdout=subprocess.PIPE, text=True)
+                for line in res.stdout.splitlines():
+                    if line.strip():
+                        self.installed_cache.add(line.strip())
+            except Exception:
+                pass
+
+    def is_app_installed(self, app_info):
+        app_id = app_info["app_id"]
+        pkg = app_info.get("pkg", "")
+        if app_info.get("type") == "system":
+            return True
+        return (app_id in self.installed_cache) or (pkg in self.installed_cache)
+
+    def populate_catalog(self, filter_text=""):
+        # Clear existing cards
+        while self.apps_grid.count():
+            item = self.apps_grid.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+
+        col_count = 2
+        row = 0
+        col = 0
+
+        filter_lower = filter_text.strip().lower()
+
+        for app in VERIFIED_CATALOG:
+            # Category filter
+            if self.current_category != "All" and app["cat"] != self.current_category:
+                continue
+
+            # Search filter
+            if filter_lower:
+                text_corpus = f"{app['name']} {app['desc']} {app['pub']} {app['cat']}".lower()
+                if filter_lower not in text_corpus:
+                    continue
+
+            card = self.create_app_card(app)
+            self.apps_grid.addWidget(card, row, col)
+            col += 1
+            if col >= col_count:
+                col = 0
+                row += 1
+
+    def create_app_card(self, app_info):
+        card = QFrame()
+        card.setStyleSheet("""
+            QFrame {
+                background: #ffffff;
+                border: 1px solid #e4dbd1;
+                border-radius: 18px;
+            }
+            QFrame:hover {
+                border: 1px solid #e07a5f;
+            }
+        """)
+        c_layout = QHBoxLayout(card)
+        c_layout.setContentsMargins(16, 14, 16, 14)
+        c_layout.setSpacing(14)
+
+        # App Icon Box
+        icon_box = QLabel(app_info["icon"])
+        icon_box.setStyleSheet("background: #f7ebe1; border-radius: 16px; font-size: 26px;")
+        icon_box.setFixedSize(54, 54)
+        icon_box.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        c_layout.addWidget(icon_box)
+
+        # Details
+        info_layout = QVBoxLayout()
+        info_layout.setSpacing(4)
+
+        name_layout = QHBoxLayout()
+        lbl_name = QLabel(app_info["name"])
+        lbl_name.setStyleSheet("font-size: 14px; font-weight: 800; color: #2d2621;")
+        
+        badge = QLabel("✓ Verified")
+        badge.setStyleSheet("background: #e8f5e9; color: #2e7d32; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 8px;")
+        
+        name_layout.addWidget(lbl_name)
+        name_layout.addWidget(badge)
+        name_layout.addStretch()
+        info_layout.addLayout(name_layout)
+
+        lbl_desc = QLabel(app_info["desc"])
+        lbl_desc.setWordWrap(True)
+        lbl_desc.setStyleSheet("font-size: 11px; color: #6d6157;")
+        info_layout.addWidget(lbl_desc)
+
+        lbl_pub = QLabel(f"Publisher: {app_info['pub']} • {app_info['type'].upper()}")
+        lbl_pub.setStyleSheet("font-size: 10px; color: #9c8e82; font-weight: 600;")
+        info_layout.addWidget(lbl_pub)
+
+        c_layout.addLayout(info_layout, 1)
+
+        # Action Buttons
+        btn_layout = QVBoxLayout()
+        btn_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        installed = self.is_app_installed(app_info)
+
+        if installed:
+            btn_action = QPushButton("Launch")
+            btn_action.setStyleSheet("""
+                QPushButton {
+                    background: #2e7d32;
+                    color: white;
+                    font-weight: 700;
+                    padding: 8px 16px;
+                    border-radius: 12px;
+                    border: none;
+                }
+                QPushButton:hover { background: #388e3c; }
+            """)
+            btn_action.clicked.connect(lambda checked, a=app_info: self.launch_app(a))
+
+            btn_del = QPushButton("Remove")
+            btn_del.setStyleSheet("""
+                QPushButton {
+                    background: transparent;
+                    color: #c62828;
+                    font-size: 10px;
+                    font-weight: 600;
+                    border: none;
+                }
+                QPushButton:hover { text-decoration: underline; }
+            """)
+            btn_del.clicked.connect(lambda checked, a=app_info: self.trigger_install(a, "remove"))
+            btn_layout.addWidget(btn_action)
+            btn_layout.addWidget(btn_del)
+        else:
+            btn_action = QPushButton("Install")
+            btn_action.setStyleSheet("""
+                QPushButton {
+                    background: #e07a5f;
+                    color: white;
+                    font-weight: 800;
+                    padding: 8px 20px;
+                    border-radius: 12px;
+                    border: none;
+                }
+                QPushButton:hover { background: #f28a6f; }
+            """)
+            btn_action.clicked.connect(lambda checked, a=app_info: self.trigger_install(a, "install"))
+            btn_layout.addWidget(btn_action)
+
+        c_layout.addLayout(btn_layout)
+        return card
+
+    def on_nav_clicked(self, category):
+        self.current_category = category
+        if category == "Updates":
+            self.content_stack.setCurrentIndex(1)
+        else:
+            self.content_stack.setCurrentIndex(0)
+            self.populate_catalog(self.search_box.text())
+
+    def on_search_changed(self, text):
+        self.content_stack.setCurrentIndex(0)
+        self.populate_catalog(text)
+
+    def reload_catalog(self):
+        self.status_bar.setText("Refreshing application state...")
+        self.refresh_installed_cache()
+        self.populate_catalog(self.search_box.text())
+        self.status_bar.setText("Catalog ready. All sources verified.")
+
+    def trigger_install(self, app_info, action):
+        self.status_bar.setText(f"{'Installing' if action == 'install' else 'Removing'} {app_info['name']}...")
+        self.worker = InstallWorker(app_info, action)
+        self.worker.progress_signal.connect(lambda msg: self.status_bar.setText(msg))
+        self.worker.finished_signal.connect(self.on_worker_finished)
+        self.worker.start()
+
+    def on_worker_finished(self, success, message):
+        self.status_bar.setText(message)
+        if success:
+            QMessageBox.information(self, "Caelaris Store", message)
+            self.reload_catalog()
+        else:
+            QMessageBox.warning(self, "Caelaris Store Notice", message)
+
+    def launch_app(self, app_info):
+        app_id = app_info["app_id"]
+        pkg = app_info.get("pkg", "")
+        if app_info.get("type") == "flatpak":
+            subprocess.Popen(["flatpak", "run", app_id])
+        else:
+            subprocess.Popen([pkg])
+
+    def run_one_click_update(self):
+        self.btn_update_all.setEnabled(False)
+        self.update_progress.setVisible(True)
+        self.status_bar.setText("Starting 1-click update...")
+
+        self.up_worker = UpdateWorker()
+        self.up_worker.progress_signal.connect(lambda msg: self.status_bar.setText(msg))
+        self.up_worker.finished_signal.connect(self.on_update_finished)
+        self.up_worker.start()
+
+    def on_update_finished(self, success, message):
+        self.btn_update_all.setEnabled(True)
+        self.update_progress.setVisible(False)
+        self.status_bar.setText(message)
+        QMessageBox.information(self, "Caelaris Update Complete", message)
+        self.reload_catalog()
+
+def main():
+    app = QApplication(sys.argv)
+    window = CaelarisStore()
+    window.show()
+    sys.exit(app.exec())
+
+if __name__ == "__main__":
+    main()

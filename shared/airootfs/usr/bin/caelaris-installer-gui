@@ -766,7 +766,7 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
 
             # ── Step 5: Install & Enable All Hardware & Virtualization Drivers ───
             self.progress_changed.emit(96, "Installing and enabling hardware drivers & guest tools...")
-            self.run_cmd("arch-chroot /mnt systemctl enable NetworkManager sddm pipewire wireplumber systemd-timesyncd ananicy-cpp 2>/dev/null || true", check=False)
+            self.run_cmd("arch-chroot /mnt systemctl enable NetworkManager sddm pipewire wireplumber systemd-timesyncd ananicy-cpp caelaris-defender 2>/dev/null || true", check=False)
             for guest_srv in ["vmtoolsd", "vmware-vmblock-fuse", "vboxservice", "spice-vdagentd", "qemu-guest-agent"]:
                 if os.path.isfile(f"/mnt/usr/lib/systemd/system/{guest_srv}.service"):
                     self.run_cmd(f"arch-chroot /mnt systemctl enable {guest_srv} 2>/dev/null || true", check=False)

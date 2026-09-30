@@ -133,19 +133,27 @@ if [ -d "$SYNC_DIR/shared/airootfs/usr/share/applications" ]; then
     done
 fi
 
-# D. Synchronize sysctl & performance configs
-if [ -f "$SYNC_DIR/shared/airootfs/etc/sysctl.d/99-caelaris-gaming.conf" ]; then
+# D. Synchronize sysctl & performance / kernel hardening configs
+if [ -d "$SYNC_DIR/shared/airootfs/etc/sysctl.d" ]; then
     mkdir -p /etc/sysctl.d
-    cp -f "$SYNC_DIR/shared/airootfs/etc/sysctl.d/99-caelaris-gaming.conf" /etc/sysctl.d/
+    cp -rf "$SYNC_DIR/shared/airootfs/etc/sysctl.d/"*.conf /etc/sysctl.d/ 2>/dev/null || true
     sysctl --system >/dev/null 2>&1 || true
-    echo -e "   -> Updated: Gaming and low-latency sysctl rules"
+    echo -e "   -> Updated: Kernel self-protection & gaming sysctl rules"
 fi
 
-# E. Synchronize nobeep & hardware modprobe configs
-if [ -f "$SYNC_DIR/shared/airootfs/etc/modprobe.d/nobeep.conf" ]; then
+# E. Synchronize security module blacklists & modprobe configs
+if [ -d "$SYNC_DIR/shared/airootfs/etc/modprobe.d" ]; then
     mkdir -p /etc/modprobe.d
-    cp -f "$SYNC_DIR/shared/airootfs/etc/modprobe.d/nobeep.conf" /etc/modprobe.d/
-    echo -e "   -> Updated: Motherboard speaker & audio silencing configs"
+    cp -rf "$SYNC_DIR/shared/airootfs/etc/modprobe.d/"*.conf /etc/modprobe.d/ 2>/dev/null || true
+    echo -e "   -> Updated: Kernel attack surface reduction & module blacklists"
+fi
+
+# E2. Synchronize Caelaris Defender systemd service
+if [ -f "$SYNC_DIR/shared/airootfs/etc/systemd/system/caelaris-defender.service" ]; then
+    cp -f "$SYNC_DIR/shared/airootfs/etc/systemd/system/caelaris-defender.service" /etc/systemd/system/
+    systemctl daemon-reload >/dev/null 2>&1 || true
+    systemctl enable --now caelaris-defender.service >/dev/null 2>&1 || true
+    echo -e "   -> Activated: Caelaris Defender real-time shield service"
 fi
 
 # F. Synchronize ZRAM generator settings

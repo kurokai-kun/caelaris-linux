@@ -1,0 +1,14 @@
+[Unit]
+Description=Caelaris Defender Real-Time Zero-Knowledge Guard
+After=local-fs.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python /usr/bin/caelaris-defender-guard
+Restart=always
+RestartSec=5
+User=root
+Nice=-5
+
+[Install]
+WantedBy=multi-user.target

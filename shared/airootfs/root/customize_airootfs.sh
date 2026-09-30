@@ -78,4 +78,7 @@ if [ -x /usr/bin/caelaris-sanitize-apps ]; then
     /usr/bin/caelaris-sanitize-apps
 fi
 
+# 10. Enable Caelaris Defender Real-Time Security Guard
+systemctl enable caelaris-defender.service 2>/dev/null || true
+
 echo "=== customize_airootfs.sh completed successfully ==="

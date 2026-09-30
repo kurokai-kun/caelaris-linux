@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+# ==============================================================================
+# Caelaris Defender Real-Time Guard Daemon
+# Actively protects Downloads and /tmp with in-memory zero-knowledge heuristics
+# ==============================================================================
+import os
+import sys
+import time
+import glob
+import subprocess
+
+# Import scanner functions from caelaris-defender
+sys.path.insert(0, "/usr/bin")
+try:
+    from caelaris_defender import scan_file, quarantine_file
+except ImportError:
+    # Direct import if file is without underscore
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("caelaris_defender", "/usr/bin/caelaris-defender")
+    caelaris_defender = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(caelaris_defender)
+    scan_file = caelaris_defender.scan_file
+    quarantine_file = caelaris_defender.quarantine_file
+
+def send_notification(urgency, title, message):
+    try:
+        subprocess.run(["notify-send", "-u", urgency, "-i", "security-high", title, message], stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
+def get_watch_dirs():
+    dirs = ["/tmp", "/dev/shm"]
+    for home in glob.glob("/home/*"):
+        dl = os.path.join(home, "Downloads")
+        if os.path.isdir(dl):
+            dirs.append(dl)
+    return dirs
+
+def main():
+    seen_files = set()
+
+    # Initial indexing so we only scan newly added files
+    for d in get_watch_dirs():
+        if os.path.isdir(d):
+            try:
+                for f in os.listdir(d):
+                    seen_files.add(os.path.join(d, f))
+            except Exception:
+                pass
+
+    while True:
+        try:
+            time.sleep(3)
+            current_dirs = get_watch_dirs()
+            for d in current_dirs:
+                if not os.path.isdir(d):
+                    continue
+                try:
+                    entries = os.listdir(d)
+                except Exception:
+                    continue
+
+                for fname in entries:
+                    fpath = os.path.join(d, fname)
+                    if fpath not in seen_files:
+                        seen_files.add(fpath)
+                        if os.path.isfile(fpath):
+                            status, desc, level = scan_file(fpath)
+                            if status == "DETECTED":
+                                if level == "CRITICAL":
+                                    # Auto-block severe threats without asking permission
+                                    quarantine_file(fpath, desc)
+                                    send_notification(
+                                        "critical",
+                                        "🚨 Caelaris Defender: Threat Auto-Blocked!",
+                                        f"Blocked: {fname}\nReason: {desc}\nNeutralized immediately to prevent kernel/system compromise."
+                                    )
+                                else:
+                                    # Suspicious: notify user
+                                    send_notification(
+                                        "normal",
+                                        "⚠️ Caelaris Defender: Warning",
+                                        f"Suspicious file detected: {fname}\nRisk: {desc}\nLaunch Caelaris Defender to review or quarantine."
+                                    )
+        except Exception:
+            time.sleep(5)
+
+if __name__ == "__main__":
+    main()

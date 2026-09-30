@@ -32,6 +32,9 @@ file_permissions=(
   ["/usr/bin/caelestia-session"]="0:0:755"
   ["/usr/bin/caelestia-dashboard"]="0:0:755"
   ["/usr/bin/caelaris-sanitize-apps"]="0:0:755"
+  ["/usr/bin/caelaris-store"]="0:0:755"
+  ["/usr/bin/caelaris-defender"]="0:0:755"
+  ["/usr/bin/caelaris-defender-guard"]="0:0:755"
   ["/usr/bin/yay"]="0:0:755"
   ["/usr/bin/caelaris-install"]="0:0:755"
 )
