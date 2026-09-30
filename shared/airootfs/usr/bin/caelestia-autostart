@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# ==========================================================
+# Caelestia Shell Autostart Supervisor
+# Reliably manages daemons, wallpaper, and Waybar
+# ==========================================================
+set +e
+
+# 1. Register display environment with D-Bus and systemd user session
+dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP 2>/dev/null || true
+systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP 2>/dev/null || true
+
+# 2. Polkit authentication agent
+if [ -x /usr/lib/polkit-kde-authentication-agent-1 ]; then
+    /usr/lib/polkit-kde-authentication-agent-1 &
+elif [ -x /usr/libexec/polkit-kde-authentication-agent-1 ]; then
+    /usr/libexec/polkit-kde-authentication-agent-1 &
+fi
+
+# 3. Audio & Network system tray applets
+command -v pipewire >/dev/null 2>&1 && pipewire &
+command -v wireplumber >/dev/null 2>&1 && wireplumber &
+nm-applet --indicator &
+
+# 4. Set Caelestia Wallpaper (Eliminates Anime Splash Screen)
+WALLPAPER="/usr/share/backgrounds/caelestia-wallpaper.jpg"
+[ ! -f "$WALLPAPER" ] && WALLPAPER="/usr/share/pixmaps/caelaris-logo.png"
+
+if command -v swaybg >/dev/null 2>&1 && [ -f "$WALLPAPER" ]; then
+    killall swaybg 2>/dev/null || true
+    swaybg -m fill -i "$WALLPAPER" &
+elif command -v hyprpaper >/dev/null 2>&1; then
+    hyprpaper &
+fi
+
+# 5. Notification Daemon
+if command -v mako >/dev/null 2>&1; then
+    killall mako 2>/dev/null || true
+    mako &
+elif command -v dunst >/dev/null 2>&1; then
+    killall dunst 2>/dev/null || true
+    dunst &
+fi
+
+# 6. Waybar / Caelestia Top Bar
+killall waybar 2>/dev/null || true
+if [ -f /etc/caelestia/waybar/config.jsonc ]; then
+    waybar -c /etc/caelestia/waybar/config.jsonc -s /etc/caelestia/waybar/style.css &
+elif command -v waybar >/dev/null 2>&1; then
+    waybar &
+fi

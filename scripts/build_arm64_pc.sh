@@ -488,6 +488,7 @@ if [ -f "${ROOTFS_DIR}/usr/share/applications/install-caelaris.desktop" ]; then
     chmod +x "${ROOTFS_DIR}/home/liveuser/Desktop/install-caelaris.desktop" 2>/dev/null || true
 fi
 chmod +x "${ROOTFS_DIR}/usr/bin/caelaris-"* 2>/dev/null || true
+chmod +x "${ROOTFS_DIR}/usr/bin/caelestia-"* 2>/dev/null || true
 chown -R 1000:100 "${ROOTFS_DIR}/home/liveuser" 2>/dev/null || true
 
 # Strictly configure 3 SDDM sessions: Plasma, GNOME, and Caelestia

@@ -33,6 +33,7 @@ CLUTTER_APPS=(
     gcr-viewer gcr-prompter geoclue-where-am-i
     rygel rygel-preferences
     nm-connection-editor pavucontrol
+    rofi rofi-theme-selector
     # GNOME Clutter / Redundant Builtins
     org.gnome.Tour org.gnome.Characters org.gnome.font-viewer org.gnome.Logs
     # KDE Clutter / Redundant Subsystem Launchers
@@ -121,6 +122,10 @@ rm -f "${TARGET_PREFIX}/usr/share/applications/vim.desktop" \
 # Remove any legacy switch-desktop launcher shortcuts
 rm -f "${TARGET_PREFIX}/usr/share/applications/switch-desktop.desktop" \
       "${TARGET_PREFIX}/usr/share/applications/caelaris-switch-desktop.desktop" 2>/dev/null || true
+
+# Purge standalone window-manager launchers from desktop app drawers (GNOME & KDE have native menus)
+rm -f "${TARGET_PREFIX}/usr/share/applications/rofi.desktop" \
+      "${TARGET_PREFIX}/usr/share/applications/rofi-theme-selector.desktop" 2>/dev/null || true
 
 # Clean Desktop Policy: Ensure no icons or software exist in advance
 mkdir -p "${TARGET_PREFIX}/etc/skel/Desktop"
