@@ -261,11 +261,20 @@ fi
 
 # Ensure all scripts are executable
 chmod +x "${BUILD_PROFILE}/airootfs/usr/bin/"* 2>/dev/null || true
-chmod +x "${BUILD_PROFILE}/airootfs/etc/skel/Desktop/"*.desktop 2>/dev/null || true
+# Clean Desktop Policy: No icons or software in advance; skel Desktop is empty
+mkdir -p "${BUILD_PROFILE}/airootfs/etc/skel/Desktop"
+rm -rf "${BUILD_PROFILE}/airootfs/etc/skel/Desktop"/* 2>/dev/null || true
+
+# Live Preview: ONLY the install option is kept on liveuser desktop
+mkdir -p "${BUILD_PROFILE}/airootfs/home/liveuser/Desktop"
+rm -rf "${BUILD_PROFILE}/airootfs/home/liveuser/Desktop"/* 2>/dev/null || true
+if [ -f "${BUILD_PROFILE}/airootfs/usr/share/applications/install-caelaris.desktop" ]; then
+    cp -f "${BUILD_PROFILE}/airootfs/usr/share/applications/install-caelaris.desktop" "${BUILD_PROFILE}/airootfs/home/liveuser/Desktop/install-caelaris.desktop"
+    chmod +x "${BUILD_PROFILE}/airootfs/home/liveuser/Desktop/install-caelaris.desktop" 2>/dev/null || true
+fi
 
 # Clean up any lingering switch-desktop entries, duplicate wayland sessions, or conflicting package files
-rm -f "${BUILD_PROFILE}/airootfs/etc/skel/Desktop/switch-desktop.desktop" \
-      "${BUILD_PROFILE}/airootfs/usr/share/applications/caelaris-switch-desktop.desktop" \
+rm -f "${BUILD_PROFILE}/airootfs/usr/share/applications/caelaris-switch-desktop.desktop" \
       "${BUILD_PROFILE}/airootfs/usr/share/wayland-sessions/caelestia.desktop" \
       "${BUILD_PROFILE}/airootfs/usr/share/wayland-sessions/hyprland.desktop" 2>/dev/null || true
 rm -rf "${BUILD_PROFILE}/airootfs/usr/share/xsessions"/* 2>/dev/null || true

@@ -476,12 +476,17 @@ for unit in plymouth-start.service plymouth-quit.service plymouth-quit-wait.serv
     ln -sf /dev/null "${ROOTFS_DIR}/etc/systemd/system/${unit}" 2>/dev/null || true
 done
 
-# Place and make executable "Install Caelaris Linux" desktop launcher for liveuser
+# Clean Desktop Policy: No icons or software in advance; skel Desktop is empty
+mkdir -p "${ROOTFS_DIR}/etc/skel/Desktop"
+rm -rf "${ROOTFS_DIR}/etc/skel/Desktop"/* 2>/dev/null || true
+
+# Place and make executable ONLY "Install Caelaris Linux" desktop launcher for liveuser in live preview
 mkdir -p "${ROOTFS_DIR}/home/liveuser/Desktop"
-if [ -f "${ROOTFS_DIR}/etc/skel/Desktop/install-caelaris.desktop" ]; then
-    cp -f "${ROOTFS_DIR}/etc/skel/Desktop/install-caelaris.desktop" "${ROOTFS_DIR}/home/liveuser/Desktop/"
+rm -rf "${ROOTFS_DIR}/home/liveuser/Desktop"/* 2>/dev/null || true
+if [ -f "${ROOTFS_DIR}/usr/share/applications/install-caelaris.desktop" ]; then
+    cp -f "${ROOTFS_DIR}/usr/share/applications/install-caelaris.desktop" "${ROOTFS_DIR}/home/liveuser/Desktop/install-caelaris.desktop"
+    chmod +x "${ROOTFS_DIR}/home/liveuser/Desktop/install-caelaris.desktop" 2>/dev/null || true
 fi
-chmod +x "${ROOTFS_DIR}/home/liveuser/Desktop/"*.desktop 2>/dev/null || true
 chmod +x "${ROOTFS_DIR}/usr/bin/caelaris-"* 2>/dev/null || true
 chown -R 1000:100 "${ROOTFS_DIR}/home/liveuser" 2>/dev/null || true
 

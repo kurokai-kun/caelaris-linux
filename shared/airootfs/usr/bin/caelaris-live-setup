@@ -127,16 +127,26 @@ elif [ -f /usr/share/pixmaps/caelaris-logo.svg ]; then
     cp -f /usr/share/pixmaps/caelaris-logo.svg /home/liveuser/.face.icon 2>/dev/null || true
 fi
 
-# Ensure Desktop directory exists and shortcuts are executable & trusted
+# Clean Desktop Policy: No icons or software in advance, ONLY install option in live preview
 mkdir -p /home/liveuser/Desktop
-for dfile in /home/liveuser/Desktop/*.desktop; do
-    if [ -f "$dfile" ]; then
-        chmod +x "$dfile" 2>/dev/null || true
-        if which gio >/dev/null 2>&1; then
-            gio set "$dfile" metadata::trusted true 2>/dev/null || true
-        fi
+rm -rf /home/liveuser/Desktop/* 2>/dev/null || true
+
+# Place ONLY the install option in the live preview
+if [ -f /usr/share/applications/install-caelaris.desktop ]; then
+    cp -f /usr/share/applications/install-caelaris.desktop /home/liveuser/Desktop/install-caelaris.desktop
+fi
+
+# Ensure the install option is executable and trusted
+if [ -f /home/liveuser/Desktop/install-caelaris.desktop ]; then
+    chmod +x /home/liveuser/Desktop/install-caelaris.desktop 2>/dev/null || true
+    if command -v gio >/dev/null 2>&1; then
+        gio set /home/liveuser/Desktop/install-caelaris.desktop metadata::trusted true 2>/dev/null || true
     fi
-done
+fi
+
+# Ensure /etc/skel/Desktop is pristine and empty (no icons in advance for installed users)
+mkdir -p /etc/skel/Desktop
+rm -rf /etc/skel/Desktop/* 2>/dev/null || true
 
 chmod +x /usr/bin/caelaris-* 2>/dev/null || true
 chmod +x /usr/bin/yay 2>/dev/null || true

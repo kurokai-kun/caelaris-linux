@@ -122,6 +122,24 @@ rm -f "${TARGET_PREFIX}/usr/share/applications/vim.desktop" \
 rm -f "${TARGET_PREFIX}/usr/share/applications/switch-desktop.desktop" \
       "${TARGET_PREFIX}/usr/share/applications/caelaris-switch-desktop.desktop" 2>/dev/null || true
 
+# Clean Desktop Policy: Ensure no icons or software exist in advance
+mkdir -p "${TARGET_PREFIX}/etc/skel/Desktop"
+rm -rf "${TARGET_PREFIX}/etc/skel/Desktop"/* 2>/dev/null || true
+
+# If executing on installed system, remove installer & switch-desktop shortcuts from user desktops
+if [ -z "$TARGET_PREFIX" ] || [ "$TARGET_PREFIX" = "/" ]; then
+    if [ ! -d /run/archiso ]; then
+        for udir in /home/*; do
+            if [ -d "$udir/Desktop" ]; then
+                rm -f "$udir/Desktop/install-caelaris.desktop" \
+                      "$udir/Desktop/caelaris-installer"*.desktop \
+                      "$udir/Desktop/switch-desktop.desktop" \
+                      "$udir/Desktop/switch-"*.desktop 2>/dev/null || true
+            fi
+        done
+    fi
+fi
+
 # Rebuild desktop database and icon caches if executing on live or running system
 if [ -z "$TARGET_PREFIX" ] || [ "$TARGET_PREFIX" = "/" ]; then
     if command -v update-desktop-database >/dev/null 2>&1; then

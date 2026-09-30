@@ -267,6 +267,13 @@ class CaelestiaDashboard(QWidget):
         p_layout.addLayout(p_info)
         p_layout.addStretch()
 
+        if os.path.exists("/run/archiso") or os.environ.get("USER") == "liveuser":
+            btn_inst = QPushButton("💿 Install Caelaris")
+            btn_inst.setStyleSheet("background: #059669; color: white; padding: 8px 14px; border-radius: 12px; font-weight: 800; font-size: 11px; border: none;")
+            btn_inst.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn_inst.clicked.connect(lambda: os.system("caelaris-installer &"))
+            p_layout.addWidget(btn_inst)
+
         # Media Player Card with Bongo Cat
         media_box = QFrame()
         media_box.setStyleSheet("background: rgba(240, 232, 222, 0.7); border-radius: 18px;")

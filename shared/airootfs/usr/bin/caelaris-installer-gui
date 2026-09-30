@@ -812,10 +812,13 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
                     except OSError:
                         pass
 
-            # Remove any stray switch-*.desktop
-            for shortcut in glob.glob(f"/mnt/home/{user}/Desktop/switch-*.desktop") + glob.glob("/mnt/etc/skel/Desktop/switch-*.desktop") + glob.glob("/mnt/usr/share/applications/*switch-desktop*.desktop"):
+            # Clean Desktop Policy: Ensure no icons or software exist on installed desktop
+            for shortcut in glob.glob(f"/mnt/home/{user}/Desktop/*") + glob.glob("/mnt/etc/skel/Desktop/*") + glob.glob("/mnt/usr/share/applications/*switch-desktop*.desktop"):
                 try:
-                    os.remove(shortcut)
+                    if os.path.isfile(shortcut) or os.path.islink(shortcut):
+                        os.remove(shortcut)
+                    elif os.path.isdir(shortcut):
+                        shutil.rmtree(shortcut, ignore_errors=True)
                 except OSError:
                     pass
 
