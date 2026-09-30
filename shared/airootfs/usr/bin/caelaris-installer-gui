@@ -819,8 +819,11 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
                 "org.kde.ark", "ark", "org.kde.spectacle", "spectacle",
                 "org.kde.gwenview", "gwenview", "org.kde.kcalc", "kcalc",
                 "org.kde.plasma-systemmonitor", "plasma-systemmonitor",
-                "systemsettings", "kinfocenter", "org.kde.discover",
-                "org.kde.drkonqi", "org.kde.plasma.vault", "org.kde.kfind", "org.kde.plasma.emojier"
+                "systemsettings", "kinfocenter", "org.kde.discover", "discover",
+                "org.kde.drkonqi", "org.kde.plasma.vault", "org.kde.plasma.vault-desktopenv",
+                "org.kde.kfind", "org.kde.plasma.emojier", "org.kde.knetattach",
+                "org.kde.kwalletmanager5", "kwalletmanager5", "org.kde.plasma-welcome",
+                "kcm_networkmanagement", "kcm_firewall", "kcm_disks"
             ]
             gnome_exclusive_apps = [
                 "org.gnome.Nautilus", "nautilus", "org.gnome.Ptyxis", "ptyxis",
@@ -829,52 +832,64 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
                 "org.gnome.SystemMonitor", "gnome-system-monitor",
                 "org.gnome.DiskUtility", "gnome-disk-utility",
                 "gnome-control-center", "org.gnome.Settings",
-                "org.gnome.Characters", "org.gnome.font-viewer",
-                "org.gnome.Logs", "org.gnome.Software", "org.gnome.Tour",
-                "org.gnome.Console", "org.gnome.Terminal"
+                "org.gnome.Console", "org.gnome.Terminal", "org.gnome.Software"
             ]
             utility_clutter = [
                 "avahi-discover", "bssh", "bvnc", "qv4l2", "qvidcap",
-                "lstopo", "cmake-gui", "electron", "electron31", "electron32", "electron33"
+                "lstopo", "cmake-gui", "electron", "electron31", "electron32", "electron33",
+                "vim", "nvim", "vi", "nano", "htop", "btop", "nvtop",
+                "archinstall", "caelaris-autoresize",
+                "cups", "print-manager", "system-config-printer",
+                "gcr-viewer", "gcr-prompter", "geoclue-where-am-i",
+                "rygel", "rygel-preferences", "nm-connection-editor", "pavucontrol",
+                "org.gnome.Tour", "org.gnome.Characters", "org.gnome.font-viewer", "org.gnome.Logs",
+                "org.kde.kfind", "org.kde.plasma.emojier", "org.kde.plasma.vault",
+                "org.kde.knetattach", "org.kde.drkonqi", "org.kde.ksshaskpass"
             ]
 
             for kapp in kde_exclusive_apps:
-                df = f"/mnt/usr/share/applications/{kapp}.desktop"
-                if os.path.isfile(df):
-                    try:
-                        with open(df, "r") as f:
-                            c = f.read()
-                        lines = [l for l in c.splitlines() if not l.startswith("NotShowIn=") and not l.startswith("OnlyShowIn=")]
-                        lines.append("NotShowIn=GNOME;")
-                        with open(df, "w") as f:
-                            f.write("\n".join(lines) + "\n")
-                    except Exception:
-                        pass
+                for app_dir in ["/mnt/usr/share/applications", "/mnt/usr/local/share/applications"]:
+                    df = f"{app_dir}/{kapp}.desktop"
+                    if os.path.isfile(df):
+                        try:
+                            with open(df, "r") as f:
+                                c = f.read()
+                            lines = [l for l in c.splitlines() if not l.startswith("NotShowIn=") and not l.startswith("OnlyShowIn=")]
+                            lines.append("NotShowIn=GNOME;")
+                            with open(df, "w") as f:
+                                f.write("\n".join(lines) + "\n")
+                        except Exception:
+                            pass
 
             for gapp in gnome_exclusive_apps:
-                df = f"/mnt/usr/share/applications/{gapp}.desktop"
-                if os.path.isfile(df):
-                    try:
-                        with open(df, "r") as f:
-                            c = f.read()
-                        lines = [l for l in c.splitlines() if not l.startswith("NotShowIn=") and not l.startswith("OnlyShowIn=")]
-                        lines.append("NotShowIn=KDE;")
-                        with open(df, "w") as f:
-                            f.write("\n".join(lines) + "\n")
-                    except Exception:
-                        pass
+                for app_dir in ["/mnt/usr/share/applications", "/mnt/usr/local/share/applications"]:
+                    df = f"{app_dir}/{gapp}.desktop"
+                    if os.path.isfile(df):
+                        try:
+                            with open(df, "r") as f:
+                                c = f.read()
+                            lines = [l for l in c.splitlines() if not l.startswith("NotShowIn=") and not l.startswith("OnlyShowIn=")]
+                            lines.append("OnlyShowIn=GNOME;")
+                            with open(df, "w") as f:
+                                f.write("\n".join(lines) + "\n")
+                        except Exception:
+                            pass
 
             for util in utility_clutter:
-                df = f"/mnt/usr/share/applications/{util}.desktop"
-                if os.path.isfile(df):
-                    try:
-                        with open(df, "r") as f:
-                            c = f.read()
-                        if "NoDisplay=true" not in c:
-                            with open(df, "a") as f:
-                                f.write("\nNoDisplay=true\n")
-                    except Exception:
-                        pass
+                for app_dir in ["/mnt/usr/share/applications", "/mnt/usr/local/share/applications"]:
+                    df = f"{app_dir}/{util}.desktop"
+                    if os.path.isfile(df):
+                        try:
+                            with open(df, "r") as f:
+                                c = f.read()
+                            if "NoDisplay=true" not in c:
+                                with open(df, "a") as f:
+                                    f.write("\nNoDisplay=true\n")
+                        except Exception:
+                            pass
+
+            # Execute global sanitizer script inside target chroot as authoritative pass
+            self.run_cmd("arch-chroot /mnt /usr/bin/caelaris-sanitize-apps 2>/dev/null || true", check=False)
 
             # Ensure clean per-device uniqueness: sanitize /etc/machine-id and SSH host keys
             try:

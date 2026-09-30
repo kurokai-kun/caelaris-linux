@@ -533,18 +533,10 @@ if [ -f "${ROOT_DIR}/assets/logo.png" ]; then
     done
 fi
 
-# Hide terminal text editors (vim, nvim, vi, nano) and utility clutter from GUI application launcher
-for util in vim nvim vi nano avahi-discover bssh bvnc qv4l2 qvidcap lstopo cmake-gui \
-            electron electron31 electron32 electron33; do
-    for dir in "${ROOTFS_DIR}/usr/share/applications" "${ROOTFS_DIR}/usr/local/share/applications"; do
-        df="${dir}/${util}.desktop"
-        if [ -f "$df" ]; then
-            sed -i '/^NoDisplay=/d' "$df" 2>/dev/null || true
-            echo "NoDisplay=true" >> "$df"
-        fi
-    done
-done
-rm -f "${ROOTFS_DIR}/usr/share/applications/vim.desktop" "${ROOTFS_DIR}/usr/share/applications/nvim.desktop" 2>/dev/null || true
+# Enforce desktop application separation across KDE, GNOME, and Caelestia Shell and purge clutter
+if [ -x "${ROOTFS_DIR}/usr/bin/caelaris-sanitize-apps" ]; then
+    "${ROOTFS_DIR}/usr/bin/caelaris-sanitize-apps" "${ROOTFS_DIR}" 2>/dev/null || true
+fi
 
 # Rebuild icon cache and desktop database in chroot
 if which qemu-aarch64-static >/dev/null 2>&1; then

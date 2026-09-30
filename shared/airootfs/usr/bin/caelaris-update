@@ -161,6 +161,12 @@ update-desktop-database /usr/share/applications >/dev/null 2>&1 || true
 echo -e "   -> Refreshing system font caches (preventing glycin-svg sandbox crashes)..."
 fc-cache -r >/dev/null 2>&1 || true
 
+# Enforce desktop application separation and remove menu clutter across all environments
+if [ -x /usr/bin/caelaris-sanitize-apps ]; then
+    echo -e "   -> Isolating KDE, GNOME, & Caelestia Shell menus and purging clutter..."
+    /usr/bin/caelaris-sanitize-apps >/dev/null 2>&1 || true
+fi
+
 # Step 4: Arch Linux Rolling Release Package Upgrade
 echo
 echo -e "${CYAN}[4/4] Performing Arch Linux rolling-release package upgrades...${NC}"

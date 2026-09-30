@@ -52,4 +52,9 @@ rm -f /usr/share/wayland-sessions/caelestia.desktop 2>/dev/null || true
 echo "Generating fontconfig cache..."
 fc-cache -r >/dev/null 2>&1 || true
 
+# 9. Enforce complete application menu separation and clutter removal across all environments
+if [ -x /usr/bin/caelaris-sanitize-apps ]; then
+    /usr/bin/caelaris-sanitize-apps
+fi
+
 echo "=== customize_airootfs.sh completed successfully ==="
