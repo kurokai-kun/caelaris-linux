@@ -48,4 +48,8 @@ if [ -f /usr/share/wayland-sessions/hyprland.desktop ]; then
 fi
 rm -f /usr/share/wayland-sessions/caelestia.desktop 2>/dev/null || true
 
+# 8. Pre-generate system-wide fontconfig cache to prevent glycin-svg sandbox seccomp crashes
+echo "Generating fontconfig cache..."
+fc-cache -r >/dev/null 2>&1 || true
+
 echo "=== customize_airootfs.sh completed successfully ==="

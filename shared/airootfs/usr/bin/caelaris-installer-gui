@@ -897,6 +897,12 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
                 except Exception:
                     pass
 
+            # Pre-generate fontconfig and icon caches to prevent sandboxed loaders (glycin-svg) seccomp crashes
+            self.progress_changed.emit(98, "Building system font and application caches...")
+            self.run_cmd("arch-chroot /mnt fc-cache -r", check=False)
+            self.run_cmd("arch-chroot /mnt gtk-update-icon-cache -f -t /usr/share/icons/hicolor", check=False)
+            self.run_cmd("arch-chroot /mnt update-desktop-database /usr/share/applications", check=False)
+
             self.progress_changed.emit(100, "Installation complete!")
             self.installation_finished.emit(True, "Caelaris Linux installed successfully!")
 

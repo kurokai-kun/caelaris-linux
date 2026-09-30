@@ -186,6 +186,9 @@ done
 
 chown -R liveuser:users /home/liveuser
 
+# Ensure system font caches are indexed to prevent glycin-svg sandbox crashes
+fc-cache -f >/dev/null 2>&1 || true
+
 # 6. Clean up releng residue
 touch /root/.automated_script.sh
 chmod +x /root/.automated_script.sh
