@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=About System
+GenericName=System Info & OS Updates
+Comment=View detailed hardware and software specifications, check for updates, and update Caelaris Linux
+Exec=/usr/bin/caelaris-about
+Icon=help-about
+Terminal=false
+Type=Application
+Categories=Settings;System;HardwareSettings;
+StartupNotify=true
+Keywords=about;system;hardware;software;info;specs;update;os;kernel;cpu;ram;gpu;

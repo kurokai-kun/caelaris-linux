@@ -366,13 +366,23 @@ class CaelestiaDashboard(QWidget):
         lbl = QLabel("⚡ System Performance & Diagnostics")
         lbl.setStyleSheet("font-size: 18px; font-weight: 800; color: #2d2621;")
         
-        btn_mon = QPushButton("Open Plasma System Monitor")
-        btn_mon.setStyleSheet("background: #e07a5f; color: white; padding: 10px 18px; border-radius: 14px; font-weight: 700; border: none;")
+        btn_mon = QPushButton("📊 Open System Monitor")
+        btn_mon.setStyleSheet("background: #f0e6dc; color: #4a4037; padding: 10px 18px; border-radius: 14px; font-weight: 700; border: none;")
         btn_mon.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_mon.clicked.connect(lambda: os.system("plasma-systemmonitor || gnome-system-monitor &"))
 
+        btn_about = QPushButton("ℹ️ About System & OS Updates")
+        btn_about.setStyleSheet("background: #e07a5f; color: white; padding: 10px 18px; border-radius: 14px; font-weight: 700; border: none;")
+        btn_about.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_about.clicked.connect(lambda: os.system("caelaris-about &"))
+
+        btn_box = QHBoxLayout()
+        btn_box.setSpacing(12)
+        btn_box.addWidget(btn_mon)
+        btn_box.addWidget(btn_about)
+
         layout.addWidget(lbl)
-        layout.addWidget(btn_mon)
+        layout.addLayout(btn_box)
         return page
 
     def create_workspaces_view(self):

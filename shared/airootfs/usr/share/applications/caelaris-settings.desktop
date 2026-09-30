@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Caelaris Settings
+GenericName=System Settings & About
+Comment=System control center, hardware and software specifications, and 1-click OS updates
+Exec=/usr/bin/caelaris-about
+Icon=preferences-system
+Terminal=false
+Type=Application
+Categories=Settings;
+StartupNotify=true
+Keywords=settings;preferences;about;system;hardware;software;update;

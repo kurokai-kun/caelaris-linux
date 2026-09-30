@@ -103,9 +103,9 @@ echo -e "${GREEN}[OK]${NC} Synced to commit: ${BOLD}${COMMIT_HASH}${NC} (${COMMI
 echo
 echo -e "${CYAN}[3/4] Updating Caelaris system tools, desktop integrations, and artwork...${NC}"
 
-# A. Synchronize /usr/bin/caelaris-* utilities
+# A. Synchronize /usr/bin/ system utilities & sessions
 if [ -d "$SYNC_DIR/shared/airootfs/usr/bin" ]; then
-    for tool in "$SYNC_DIR/shared/airootfs/usr/bin"/caelaris-*; do
+    for tool in "$SYNC_DIR/shared/airootfs/usr/bin"/*; do
         if [ -f "$tool" ]; then
             bname=$(basename "$tool")
             cp -f "$tool" "/usr/bin/$bname"
