@@ -14,7 +14,7 @@ from PyQt6.QtGui import QFont, QIcon, QPixmap, QColor
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QFrame, QProgressBar, QGridLayout, QScrollArea,
-    QStackedWidget, QMessageBox
+    QStackedWidget, QMessageBox, QSizePolicy
 )
 
 def get_cpu_info():
@@ -43,7 +43,6 @@ def get_ram_info():
     return "Unknown RAM"
 
 def get_gpu_info():
-    # 1. Try lspci
     try:
         res = subprocess.run(["lspci"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
         gpus = []
@@ -52,7 +51,6 @@ def get_gpu_info():
                 parts = line.split(":", 2)
                 if len(parts) >= 3:
                     gpu_name = parts[2].strip()
-                    # Clean common prefixes
                     gpu_name = re.sub(r'\(rev \w+\)', '', gpu_name).strip()
                     gpus.append(gpu_name)
         if gpus:
@@ -60,7 +58,6 @@ def get_gpu_info():
     except Exception:
         pass
 
-    # 2. Try glxinfo
     try:
         res = subprocess.run(["glxinfo", "-B"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
         for line in res.stdout.splitlines():
@@ -78,7 +75,6 @@ def get_storage_info():
         free_gb = usage.free / (1024 ** 3)
         used_gb = usage.used / (1024 ** 3)
         
-        # Check filesystem type
         fstype = "Btrfs"
         try:
             res = subprocess.run(["findmnt", "-n", "-o", "FSTYPE", "/"], stdout=subprocess.PIPE, text=True)
@@ -106,7 +102,6 @@ def get_motherboard_info():
     except Exception:
         pass
 
-    # Check device tree for ARM
     try:
         if os.path.isfile("/proc/device-tree/model"):
             with open("/proc/device-tree/model", "r") as f:
@@ -151,7 +146,7 @@ class UpdateWorker(QThread):
                 return
 
             self.step_signal.emit(55, f"Downloading and applying {len(updates)} verified package updates...")
-            res_up = subprocess.run(["pkexec", "pacman", "-Su", "--noconfirm"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            subprocess.run(["pkexec", "pacman", "-Su", "--noconfirm"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
             self.step_signal.emit(75, "Updating verified Flathub application runtimes...")
             subprocess.run(["flatpak", "update", "-y", "--noninteractive"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -181,7 +176,14 @@ class CaelarisAbout(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Settings — About This System")
-        self.resize(960, 640)
+        self.resize(1020, 700)
+        self.setMinimumSize(860, 580)
+
+        # Set dedicated Settings icon
+        for icon_path in ["/usr/share/pixmaps/caelaris-about.png", "/usr/share/pixmaps/caelaris-settings.png"]:
+            if os.path.isfile(icon_path):
+                self.setWindowIcon(QIcon(icon_path))
+                break
 
         self.init_ui()
 
@@ -194,7 +196,7 @@ class CaelarisAbout(QMainWindow):
 
         # ── 1. Left Sidebar ────────────────────────────────────────────────
         sidebar = QFrame()
-        sidebar.setFixedWidth(220)
+        sidebar.setFixedWidth(230)
         sidebar.setStyleSheet("background-color: #f7f3ee; border-right: 1px solid #e2dad0;")
         s_layout = QVBoxLayout(sidebar)
         s_layout.setContentsMargins(16, 20, 16, 20)
@@ -202,8 +204,15 @@ class CaelarisAbout(QMainWindow):
 
         # Header
         brand_box = QHBoxLayout()
-        icon_lbl = QLabel("⚙️")
-        icon_lbl.setStyleSheet("font-size: 20px;")
+        icon_lbl = QLabel()
+        for p in ["/usr/share/pixmaps/caelaris-about.png", "/usr/share/pixmaps/caelaris-settings.png"]:
+            if os.path.isfile(p):
+                icon_lbl.setPixmap(QPixmap(p).scaled(28, 28, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+                break
+        if icon_lbl.pixmap() is None:
+            icon_lbl.setText("⚙️")
+            icon_lbl.setStyleSheet("font-size: 20px;")
+
         title_lbl = QLabel("Settings")
         title_lbl.setStyleSheet("font-size: 18px; font-weight: 800; color: #2d2621;")
         brand_box.addWidget(icon_lbl)
@@ -217,7 +226,7 @@ class CaelarisAbout(QMainWindow):
 
         # Navigation Buttons
         self.btn_about = self.create_nav_btn("ℹ️ About System", 0, active=True)
-        self.btn_security = self.create_nav_btn("🛡️ Security & Kernel", 1)
+        self.btn_security = self.create_nav_btn("🛡️ System Security", 1)
         self.btn_perf = self.create_nav_btn("⚡ Performance & Tuning", 2)
 
         s_layout.addWidget(self.btn_about)
@@ -225,19 +234,19 @@ class CaelarisAbout(QMainWindow):
         s_layout.addWidget(self.btn_perf)
         s_layout.addStretch()
 
-        # Update button shortcut
-        btn_quick_store = QPushButton("🛍️ Open Caelaris Store")
+        # Quick Launchers
+        btn_quick_store = QPushButton("🛍️ Open App Store")
         btn_quick_store.setStyleSheet("""
             QPushButton {
-                background: #e07a5f;
+                background: #0284c7;
                 color: white;
-                font-size: 12px;
-                font-weight: 700;
-                padding: 10px;
+                padding: 10px 14px;
                 border-radius: 12px;
+                font-weight: 700;
+                font-size: 12px;
                 border: none;
             }
-            QPushButton:hover { background: #f28a6f; }
+            QPushButton:hover { background: #0369a1; }
         """)
         btn_quick_store.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_quick_store.clicked.connect(lambda: os.system("caelaris-store &"))
@@ -264,13 +273,13 @@ class CaelarisAbout(QMainWindow):
                 border-radius: 12px;
                 font-size: 13px;
                 font-weight: {'800' if active else '600'};
-                color: {'#e07a5f' if active else '#5a4f46'};
-                background: {'rgba(224, 122, 95, 0.12)' if active else 'transparent'};
+                color: {'#0284c7' if active else '#5a4f46'};
+                background: {'rgba(2, 132, 199, 0.12)' if active else 'transparent'};
                 border: none;
             }}
             QPushButton:hover {{
-                background: rgba(224, 122, 95, 0.12);
-                color: #e07a5f;
+                background: rgba(2, 132, 199, 0.12);
+                color: #0284c7;
             }}
         """)
         btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -288,8 +297,8 @@ class CaelarisAbout(QMainWindow):
                         border-radius: 12px;
                         font-size: 13px;
                         font-weight: 800;
-                        color: #e07a5f;
-                        background: rgba(224, 122, 95, 0.12);
+                        color: #0284c7;
+                        background: rgba(2, 132, 199, 0.12);
                         border: none;
                     }
                 """)
@@ -306,8 +315,8 @@ class CaelarisAbout(QMainWindow):
                         border: none;
                     }
                     QPushButton:hover {
-                        background: rgba(224, 122, 95, 0.12);
-                        color: #e07a5f;
+                        background: rgba(2, 132, 199, 0.12);
+                        color: #0284c7;
                     }
                 """)
 
@@ -324,21 +333,30 @@ class CaelarisAbout(QMainWindow):
 
         # ── Header Banner ──────────────────────────────────────────────────
         header_card = QFrame()
+        header_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         header_card.setStyleSheet("background: #ffffff; border: 1px solid #e4dbd1; border-radius: 20px; padding: 18px;")
         h_layout = QHBoxLayout(header_card)
         h_layout.setSpacing(18)
 
-        logo_lbl = QLabel("✦")
-        logo_lbl.setStyleSheet("color: #e07a5f; font-size: 48px; font-weight: 900;")
+        logo_lbl = QLabel()
+        for p in ["/usr/share/pixmaps/caelaris-logo.png", "/usr/share/icons/hicolor/256x256/apps/caelaris-logo.png"]:
+            if os.path.isfile(p):
+                logo_lbl.setPixmap(QPixmap(p).scaled(64, 64, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+                break
+        if logo_lbl.pixmap() is None:
+            logo_lbl.setText("✦")
+            logo_lbl.setStyleSheet("color: #0284c7; font-size: 48px; font-weight: 900;")
         h_layout.addWidget(logo_lbl)
 
         os_title_box = QVBoxLayout()
+        os_title_box.setSpacing(3)
         lbl_os_name = QLabel("Caelaris Linux")
         lbl_os_name.setStyleSheet("font-size: 22px; font-weight: 800; color: #2d2621;")
         lbl_os_version = QLabel("Edition: Tri-Desktop 2026.09 (Rolling Release)")
         lbl_os_version.setStyleSheet("font-size: 13px; font-weight: 600; color: #7d7065;")
         lbl_os_desc = QLabel("Pure Wayland architecture with KDE Plasma 6, GNOME 4x, and Caelestia Shell.")
-        lbl_os_desc.setStyleSheet("font-size: 11px; color: #9c8e82;")
+        lbl_os_desc.setWordWrap(True)
+        lbl_os_desc.setStyleSheet("font-size: 12px; color: #9c8e82;")
         os_title_box.addWidget(lbl_os_name)
         os_title_box.addWidget(lbl_os_version)
         os_title_box.addWidget(lbl_os_desc)
@@ -346,8 +364,9 @@ class CaelarisAbout(QMainWindow):
 
         layout.addWidget(header_card)
 
-        # ── Direct OS Updates Section (with Progress Bar) ───────────────────
+        # ── 1-Click OS Updates Card ────────────────────────────────────────
         update_card = QFrame()
+        update_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         update_card.setStyleSheet("background: #ffffff; border: 1px solid #e4dbd1; border-radius: 20px; padding: 20px;")
         u_layout = QVBoxLayout(update_card)
         u_layout.setSpacing(12)
@@ -359,13 +378,13 @@ class CaelarisAbout(QMainWindow):
         lbl_u_title = QLabel("Caelaris Operating System Updates")
         lbl_u_title.setStyleSheet("font-size: 15px; font-weight: 800; color: #2d2621;")
         self.lbl_u_status = QLabel("Ready to check for verified updates.")
+        self.lbl_u_status.setWordWrap(True)
         self.lbl_u_status.setStyleSheet("font-size: 12px; color: #7d7065;")
         u_header.addWidget(lbl_u_title)
         u_header.addWidget(self.lbl_u_status)
         u_top.addWidget(u_icon)
         u_top.addLayout(u_header, 1)
 
-        # Update Buttons
         self.btn_check_up = QPushButton("Check for Updates")
         self.btn_check_up.setStyleSheet("""
             QPushButton {
@@ -385,7 +404,7 @@ class CaelarisAbout(QMainWindow):
         self.btn_run_up = QPushButton("🚀 Update OS Directly")
         self.btn_run_up.setStyleSheet("""
             QPushButton {
-                background: #2e7d32;
+                background: #0284c7;
                 color: #ffffff;
                 font-weight: 800;
                 font-size: 12px;
@@ -393,7 +412,7 @@ class CaelarisAbout(QMainWindow):
                 border-radius: 12px;
                 border: none;
             }
-            QPushButton:hover { background: #388e3c; }
+            QPushButton:hover { background: #0369a1; }
         """)
         self.btn_run_up.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_run_up.clicked.connect(self.run_os_update)
@@ -402,7 +421,6 @@ class CaelarisAbout(QMainWindow):
         u_top.addWidget(self.btn_run_up)
         u_layout.addLayout(u_top)
 
-        # Real-Time Progress Bar
         self.update_progress = QProgressBar()
         self.update_progress.setStyleSheet("""
             QProgressBar {
@@ -415,7 +433,7 @@ class CaelarisAbout(QMainWindow):
                 font-weight: 700;
             }
             QProgressBar::chunk {
-                background-color: #e07a5f;
+                background-color: #0284c7;
                 border-radius: 8px;
             }
         """)
@@ -425,20 +443,16 @@ class CaelarisAbout(QMainWindow):
 
         layout.addWidget(update_card)
 
-        # ── Hardware & Software Specifications Grid ────────────────────────
-        specs_grid = QGridLayout()
-        specs_grid.setSpacing(16)
-
-        # Software Card
+        # ── Hardware & Software Specifications (Stacked to prevent text cut) ──
+        # Software Card (Kernel Info REMOVED as requested)
         sw_card = self.create_spec_card("💻 Software Specifications", [
-            ("Operating System", "Caelaris Linux (Rolling)"),
-            ("Kernel Version", platform.release()),
-            ("Architecture", platform.machine()),
+            ("Operating System", "Caelaris Linux (Rolling Release)"),
+            ("Architecture Platform", platform.machine()),
             ("Desktop Environment", get_desktop_info()),
-            ("Windowing System", "Wayland (Native)"),
-            ("Package Repositories", "Arch Linux Official (Signed) + Flathub Verified"),
+            ("Display & Windowing System", "Wayland (Native Hardware Compositor)"),
+            ("Package Repositories", "Arch Linux Official (Cryptographically Signed) + Flathub Verified"),
         ])
-        specs_grid.addWidget(sw_card, 0, 0)
+        layout.addWidget(sw_card)
 
         # Hardware Card
         hw_card = self.create_spec_card("⚙️ Hardware Specifications", [
@@ -448,9 +462,8 @@ class CaelarisAbout(QMainWindow):
             ("Storage Partition", get_storage_info()),
             ("Motherboard / Platform", get_motherboard_info()),
         ])
-        specs_grid.addWidget(hw_card, 0, 1)
+        layout.addWidget(hw_card)
 
-        layout.addLayout(specs_grid)
         layout.addStretch()
 
         scroll.setWidget(container)
@@ -458,27 +471,27 @@ class CaelarisAbout(QMainWindow):
 
     def create_spec_card(self, title, items):
         card = QFrame()
-        card.setStyleSheet("background: #ffffff; border: 1px solid #e4dbd1; border-radius: 20px; padding: 18px;")
+        card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        card.setStyleSheet("background: #ffffff; border: 1px solid #e4dbd1; border-radius: 20px; padding: 20px;")
         layout = QVBoxLayout(card)
-        layout.setSpacing(12)
+        layout.setSpacing(14)
 
         lbl_t = QLabel(title)
-        lbl_t.setStyleSheet("font-size: 15px; font-weight: 800; color: #2d2621; margin-bottom: 4px;")
+        lbl_t.setStyleSheet("font-size: 15px; font-weight: 800; color: #2d2621; margin-bottom: 2px;")
         layout.addWidget(lbl_t)
 
         for key, val in items:
             row = QVBoxLayout()
-            row.setSpacing(2)
+            row.setSpacing(3)
             k_lbl = QLabel(key)
             k_lbl.setStyleSheet("font-size: 11px; font-weight: 700; color: #7d7065;")
             v_lbl = QLabel(val)
             v_lbl.setWordWrap(True)
-            v_lbl.setStyleSheet("font-size: 12px; font-weight: 600; color: #2d2621;")
+            v_lbl.setStyleSheet("font-size: 13px; font-weight: 600; color: #2d2621; line-height: 1.4;")
             row.addWidget(k_lbl)
             row.addWidget(v_lbl)
             layout.addLayout(row)
 
-        layout.addStretch()
         return card
 
     def create_security_view(self):
@@ -487,28 +500,31 @@ class CaelarisAbout(QMainWindow):
         layout.setContentsMargins(32, 28, 32, 28)
         layout.setSpacing(16)
 
-        title = QLabel("Security & Kernel Self-Protection")
+        title = QLabel("System Security & Privacy Protection")
         title.setStyleSheet("font-size: 20px; font-weight: 800; color: #2d2621;")
         layout.addWidget(title)
 
         card = QFrame()
+        card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         card.setStyleSheet("background: #ffffff; border: 1px solid #e4dbd1; border-radius: 20px; padding: 20px;")
         c_layout = QVBoxLayout(card)
         c_layout.setSpacing(14)
 
         sec_items = [
-            ("Kernel Pointer Shield", "kptr_restrict=2 (Kernel symbols obfuscated from unprivileged apps)"),
-            ("Memory Corruption Defenses", "mmap_min_addr=65536, ASLR randomization entropy max"),
-            ("Process Tracing Restriction", "YAMA ptrace_scope=1 (Blocks memory dumpers and code injectors)"),
-            ("BPF Speculative Defense", "unprivileged_bpf_disabled=1, bpf_jit_harden=2"),
-            ("Real-Time Guard Daemon", "Caelaris Defender inotify active (Zero-Knowledge In-Memory)"),
+            ("Rootkit & Code Injection Shield", "Memory space write protections and code injector blocking active"),
+            ("Address Space Layout Randomization", "ASLR entropy randomization maximum"),
+            ("Process Isolation Guard", "ptrace_scope active (Prevents unprivileged process snooping)"),
+            ("Speculative Execution Hardening", "Hardened unprivileged execution protections enabled"),
+            ("Real-Time Threat Scanner", "Caelaris Defender active (Zero-Knowledge In-Memory)"),
         ]
         for k, v in sec_items:
             row = QVBoxLayout()
+            row.setSpacing(2)
             k_lbl = QLabel(f"✓ {k}")
-            k_lbl.setStyleSheet("font-size: 13px; font-weight: 800; color: #2e7d32;")
+            k_lbl.setStyleSheet("font-size: 13px; font-weight: 800; color: #0284c7;")
             v_lbl = QLabel(v)
-            v_lbl.setStyleSheet("font-size: 11px; color: #6d6157;")
+            v_lbl.setWordWrap(True)
+            v_lbl.setStyleSheet("font-size: 12px; color: #6d6157;")
             row.addWidget(k_lbl)
             row.addWidget(v_lbl)
             c_layout.addLayout(row)
@@ -516,7 +532,7 @@ class CaelarisAbout(QMainWindow):
         layout.addWidget(card)
 
         btn_def = QPushButton("🛡️ Open Caelaris Defender")
-        btn_def.setStyleSheet("background: #e07a5f; color: white; padding: 12px 22px; border-radius: 14px; font-weight: 700; border: none;")
+        btn_def.setStyleSheet("background: #0284c7; color: white; padding: 12px 22px; border-radius: 14px; font-weight: 700; border: none;")
         btn_def.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_def.clicked.connect(lambda: os.system("caelaris-defender &"))
         layout.addWidget(btn_def, alignment=Qt.AlignmentFlag.AlignLeft)
@@ -530,78 +546,85 @@ class CaelarisAbout(QMainWindow):
         layout.setContentsMargins(32, 28, 32, 28)
         layout.setSpacing(16)
 
-        title = QLabel("Performance, Gaming & Memory Tuning")
+        title = QLabel("System Tuning & Gaming Optimizations")
         title.setStyleSheet("font-size: 20px; font-weight: 800; color: #2d2621;")
         layout.addWidget(title)
 
         card = QFrame()
+        card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         card.setStyleSheet("background: #ffffff; border: 1px solid #e4dbd1; border-radius: 20px; padding: 20px;")
         c_layout = QVBoxLayout(card)
         c_layout.setSpacing(14)
 
         perf_items = [
-            ("Pro-Grade Gaming Memory", "vm.max_map_count = 2147483642 (Prevents Unreal Engine 5 & Proton memory crashes)"),
-            ("Low Latency Network Queue", "CAKE active queue discipline + BBR congestion control algorithm"),
-            ("RAM & ZRAM Optimization", "vm.swappiness = 10 with zstd compressed in-memory swap"),
-            ("Ananicy-Cpp Dynamic Rules", "Automated gaming process priority auto-elevation"),
+            ("ZRAM Memory Engine", "zstd compressed in-memory swap enabled (High throughput, no disk thrashing)"),
+            ("Gaming Memory Limits", "vm.max_map_count=2147483642 (DirectX 12 & Unreal Engine 5 certified)"),
+            ("Process Priority Scheduler", "Real-Time Kit (rtkit) active for audio and Wayland compositor threads"),
+            ("Graphics Driver Subsystem", "Mesa Direct Rendering & Vulkan with ACO shader pre-caching"),
         ]
         for k, v in perf_items:
             row = QVBoxLayout()
+            row.setSpacing(2)
             k_lbl = QLabel(f"⚡ {k}")
-            k_lbl.setStyleSheet("font-size: 13px; font-weight: 800; color: #e07a5f;")
+            k_lbl.setStyleSheet("font-size: 13px; font-weight: 800; color: #d97706;")
             v_lbl = QLabel(v)
-            v_lbl.setStyleSheet("font-size: 11px; color: #6d6157;")
+            v_lbl.setWordWrap(True)
+            v_lbl.setStyleSheet("font-size: 12px; color: #6d6157;")
             row.addWidget(k_lbl)
             row.addWidget(v_lbl)
             c_layout.addLayout(row)
 
         layout.addWidget(card)
+
+        btn_mon = QPushButton("📊 Launch System Monitor")
+        btn_mon.setStyleSheet("background: #d97706; color: white; padding: 12px 22px; border-radius: 14px; font-weight: 700; border: none;")
+        btn_mon.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_mon.clicked.connect(lambda: os.system("plasma-systemmonitor || gnome-system-monitor || mission-center &"))
+        layout.addWidget(btn_mon, alignment=Qt.AlignmentFlag.AlignLeft)
+
         layout.addStretch()
         return page
 
     def check_updates(self):
-        self.lbl_u_status.setText("Checking official cryptographic package mirrors...")
         self.btn_check_up.setEnabled(False)
-        self.checker = CheckUpdatesWorker()
-        self.checker.result_signal.connect(self.on_check_finished)
-        self.checker.start()
+        self.lbl_u_status.setText("Checking official Arch Linux repositories...")
+        self.check_worker = CheckUpdatesWorker()
+        self.check_worker.result_signal.connect(self.on_check_finished)
+        self.check_worker.start()
 
     def on_check_finished(self, count, packages):
         self.btn_check_up.setEnabled(True)
         if count == 0:
             self.lbl_u_status.setText("✓ Your Caelaris Linux system is fully up to date! (0 pending updates)")
-            QMessageBox.information(self, "System Up to Date", "All packages and kernel components are running the latest verified release.")
+            self.lbl_u_status.setStyleSheet("font-size: 12px; font-weight: 700; color: #2e7d32;")
         else:
-            sample = ", ".join(packages[:4])
-            if count > 4:
-                sample += f" and {count - 4} others"
-            self.lbl_u_status.setText(f"Updates available: {count} verified package(s) ({sample})")
+            self.lbl_u_status.setText(f"⚡ {count} verified updates are available for your system.")
+            self.lbl_u_status.setStyleSheet("font-size: 12px; font-weight: 700; color: #d97706;")
 
     def run_os_update(self):
         self.btn_run_up.setEnabled(False)
         self.btn_check_up.setEnabled(False)
         self.update_progress.setVisible(True)
-        self.update_progress.setValue(10)
-        self.lbl_u_status.setText("Starting verified operating system update...")
+        self.update_progress.setValue(5)
+        self.lbl_u_status.setText("Starting live OS upgrade...")
 
         self.up_worker = UpdateWorker()
         self.up_worker.step_signal.connect(self.on_update_step)
-        self.up_worker.finished_signal.connect(self.on_update_completed)
+        self.up_worker.finished_signal.connect(self.on_update_complete)
         self.up_worker.start()
 
     def on_update_step(self, pct, message):
         self.update_progress.setValue(pct)
         self.lbl_u_status.setText(message)
 
-    def on_update_completed(self, success, message):
+    def on_update_complete(self, success, message):
         self.btn_run_up.setEnabled(True)
         self.btn_check_up.setEnabled(True)
-        self.update_progress.setValue(100)
         self.lbl_u_status.setText(message)
         if success:
-            QMessageBox.information(self, "OS Update Complete", message)
+            QMessageBox.information(self, "Caelaris System Update", message)
         else:
-            QMessageBox.warning(self, "Update Notice", message)
+            QMessageBox.warning(self, "Update Alert", message)
 
 def main():
     app = QApplication(sys.argv)

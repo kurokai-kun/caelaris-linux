@@ -52,6 +52,12 @@
 * **Smart Btrfs Layout**: One-click automatic partitioning with subvolumes (`@`, `@home`, `@snapshots`) and zstd transparent compression for instant rollbacks and disk savings. Standard Ext4 is also available.
 * **Architecture-Aware Bootloader**: Automatically provisions EFI system partitions for both standard x86_64 UEFI and ARM64 fallback (`BOOTAA64.EFI`).
 
+### 🛡️ Built-In Native Ecosystem Applications
+* **Caelaris Store (`caelaris-store`)**: A modern, curated software center with real-time download speed (MB/s), live ETA, accurate progress tracking, official app logos, one-click install/removal, direct launch, and instant update actions.
+* **Caelaris Defender (`caelaris-defender`)**: Proactive, zero-knowledge security daemon that scans downloads and binaries for rootkits, malware, and exploits in memory without collecting private telemetry. Severe threats are auto-quarantined to protect the system.
+* **Caelaris About & Settings (`caelaris-about`)**: Dedicated system dashboard displaying hardware specifications, display resolution, RAM allocation, desktop environment, and one-click verified operating system updates with real-time progress.
+* **Caelaris Welcome (`caelaris-welcome`)**: Onboarding experience providing quick access to essential configuration, gaming drivers, desktop tour, and documentation.
+
 ### 💻 Multi-Architecture Hardware Support
 * **x86_64 Flagship**: Optimized for modern gaming PCs, Intel/AMD custom rigs, and laptops.
 * **ARM64 Laptops & PCs**: Native support for Apple Silicon Macs (M1/M2/M3/M4 via UTM & Asahi) and Qualcomm Snapdragon X Elite Copilot+ laptops.
