@@ -1,7 +1,7 @@
 [Unit]
 Description=Caelaris Dynamic Foreground VRAM Priority Booster (Natalie Vock VRAM Optimization)
 Documentation=https://pixelcluster.github.io/VRAM-Mgmt-fixed/
-After=dmemcg-booster.service graphical.target
+After=dmemcg-booster.service
 Wants=dmemcg-booster.service
 
 [Service]

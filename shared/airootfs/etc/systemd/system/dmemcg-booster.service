@@ -1,9 +1,8 @@
 [Unit]
 Description=Valve Device Memory Cgroups Booster (Natalie Vock VRAM Management)
 Documentation=https://gitlab.steamos.cloud/holo/dmemcg-booster
-DefaultDependencies=no
-After=systemd-udevd.service sys-fs-cgroup.mount
-Before=basic.target
+After=local-fs.target sys-fs-cgroup.mount
+Before=caelaris-vram-booster.service
 
 [Service]
 Type=simple

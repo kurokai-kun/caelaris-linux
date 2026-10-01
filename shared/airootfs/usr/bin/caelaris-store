@@ -149,6 +149,12 @@ class InstallWorker(QThread):
                         pass
 
                 if self.action in ["install", "update"]:
+                    # Auto-initialize pacman keyring if not yet populated
+                    if not os.path.exists("/etc/pacman.d/gnupg/pubring.gpg"):
+                        self.progress_signal.emit(10, "--", "--", "Initializing cryptographic pacman keyring...")
+                        run_privileged_sync(["pacman-key", "--init"])
+                        run_privileged_sync(["pacman-key", "--populate", "archlinux"])
+
                     self.progress_signal.emit(15, "Connecting", "20s", f"Querying official Arch Linux repository for {pkg}...")
                     cmd = ["pacman", "-Sy", "--noconfirm", "--needed", pkg]
                     proc = run_privileged(cmd)

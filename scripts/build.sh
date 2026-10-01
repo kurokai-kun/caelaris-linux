@@ -238,12 +238,18 @@ done
 # Mask benign systemd-loop@ service on CD-ROM to silence loopback block device log
 ln -sf /dev/null "${BUILD_PROFILE}/airootfs/etc/systemd/system/systemd-loop@.service" 2>/dev/null || true
 
+# Mask reflector service on ISO so offline boots never report [FAILED]
+ln -sf /dev/null "${BUILD_PROFILE}/airootfs/etc/systemd/system/reflector.service" 2>/dev/null || true
+
 # Enable VirtualBox, VMware & UTM / QEMU Guest Services for display scaling & acceleration
 mkdir -p "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants"
 ln -sf /usr/lib/systemd/system/vboxservice.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/vboxservice.service" 2>/dev/null || true
 ln -sf /usr/lib/systemd/system/vmtoolsd.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/vmtoolsd.service" 2>/dev/null || true
 ln -sf /usr/lib/systemd/system/vmware-vmblock-fuse.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/vmware-vmblock-fuse.service" 2>/dev/null || true
 ln -sf /usr/lib/systemd/system/spice-vdagentd.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/spice-vdagentd.service" 2>/dev/null || true
+ln -sf /etc/systemd/system/dmemcg-booster.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/dmemcg-booster.service" 2>/dev/null || true
+ln -sf /etc/systemd/system/caelaris-vram-booster.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/caelaris-vram-booster.service" 2>/dev/null || true
+ln -sf /etc/systemd/system/caelaris-defender.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/caelaris-defender.service" 2>/dev/null || true
 
 # Ensure new Caelaris logo is deployed across all icon and branding paths
 if [ -f "${ROOT_DIR}/assets/logo.png" ]; then

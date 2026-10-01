@@ -178,7 +178,12 @@ chown -R liveuser:users /home/liveuser
 # Ensure system font caches are indexed to prevent glycin-svg sandbox crashes
 fc-cache -f >/dev/null 2>&1 || true
 
-# 6. Clean up releng residue
+# 6. Ensure pacman keyring is initialized and populated in live session
+if [ ! -f /etc/pacman.d/gnupg/pubring.gpg ]; then
+    (pacman-key --init && pacman-key --populate archlinux >/dev/null 2>&1 || true) &
+fi
+
+# 7. Clean up releng residue
 touch /root/.automated_script.sh
 chmod +x /root/.automated_script.sh
 exit 0

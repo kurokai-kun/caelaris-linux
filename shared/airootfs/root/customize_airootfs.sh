@@ -85,5 +85,13 @@ systemctl enable caelaris-defender.service 2>/dev/null || true
 systemctl enable dmemcg-booster.service 2>/dev/null || true
 systemctl enable caelaris-vram-booster.service 2>/dev/null || true
 
+# 12. Pre-initialize pacman keyring and prevent reflector boot failures
+echo "Pre-initializing pacman keyring in rootfs..."
+pacman-key --init 2>/dev/null || true
+pacman-key --populate archlinux 2>/dev/null || true
+systemctl disable reflector.service 2>/dev/null || true
+systemctl mask reflector.service 2>/dev/null || true
+systemctl enable pacman-init.service 2>/dev/null || true
+
 echo "=== customize_airootfs.sh completed successfully ==="
 
