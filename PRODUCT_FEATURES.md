@@ -109,6 +109,14 @@ Caelestia Shell is a next-generation, animated, dynamic tiling desktop environme
 - **VKD3D & DXVK Ready:** Complete Vulkan translation layers for DirectX 9, 10, 11, and 12.
 - **32-Bit Multilib Drivers:** Full 32-bit graphics libraries enabled by default for legacy Windows games running via Proton.
 
+### 5.3 Valve VRAM Management & dmemcg-booster (Natalie Vock Architecture)
+- **VRAM Starvation & GTT Eviction Elimination:** On GPUs with 8 GB of VRAM or less, running modern graphics-intensive games alongside desktop background applications (browsers with multiple open tabs, Discord, Spotify, Electron tools) rapidly saturates physical video memory. Under memory pressure, the Linux kernel TTM (Translation Table Manager) evicts graphics buffers into system RAM via the Graphics Translation Table (GTT), dropping memory bandwidth from ~256+ GB/s down to PCIe speeds (~16 GB/s), causing severe 1% low frame drops and micro-stuttering.
+- **Device Memory Control Groups (`dmemcg`):** Implements Natalie Vock's (Valve independent contractor) kernel-level Device Memory Cgroup architecture, introducing per-cgroup VRAM protection guarantees (`dmem.low`), ceilings (`dmem.max`), and real-time usage telemetry (`dmem.current`).
+- **`dmemcg-booster` System Daemon:** Boot-time systemd service (`dmemcg-booster.service`) that initializes cgroup v2 subtree control, propagating `+dmem` into user and session slices without waiting for upstream systemd unit exposure.
+- **Cross-Desktop Dynamic VRAM Booster (`caelaris-vram-booster`):** Real-time foreground focus tracking daemon supporting all three desktop environments (KDE Plasma 6 KWin, GNOME 4x Mutter, and Caelestia Shell Hyprland). When a game or high-performance 3D process is active, it dynamically assigns ~88% of total dedicated VRAM to the game's cgroup via `dmem.low`.
+- **Zero-Stutter Gaming Guarantee:** Forces background applications (not the active game) to spill into system RAM (GTT) during VRAM contention, keeping textures, shaders, and geometry strictly pinned inside high-speed hardware VRAM.
+- **Upstream Tool Compatibility:** Ships with built-in compatibility wrappers for `plasma-foreground-booster` and `gnome-vram-booster` to integrate seamlessly with AUR and upstream tooling.
+
 ---
 
 ## 6. Universal Virtualization & Hardware Drivers
@@ -167,6 +175,7 @@ Caelestia Shell is a next-generation, animated, dynamic tiling desktop environme
 | **Tri-Desktop (KDE + GNOME + Caelestia)** | Yes (Unified ISO) | Manual | Separate ISOs | Separate Spins | Separate Spins |
 | **Login Session Switcher (SDDM)** | Yes (Instant) | No | No | No | No |
 | **Custom Graphical Installer** | Yes (PyQt6) | No (CLI) | Calamares | Custom | Anaconda |
+| **Valve VRAM Optimizer (Natalie Vock dmemcg)** | Yes (Tri-Desktop) | No | No | No | No |
 | **Tuned Low-Latency Gaming Sysctl** | Yes | Manual | No | Partial | Partial |
 | **VMware & VBox Auto-Resize** | Yes (Built-in) | Manual | Partial | Partial | Partial |
 | **Silent Direct Bootloader** | Yes | Manual | Partial | Partial | Yes (Plymouth) |

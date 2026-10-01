@@ -427,8 +427,8 @@ caelaris-linux/
     </tr>
     <tr>
       <td><strong>Gaming Ecosystem</strong></td>
-      <td>Steam, GameMode, MangoHud (64 & 32-bit), VKD3D (DirectX 12 to Vulkan), Gamescope micro-compositor, Fuse2.</td>
-      <td>Full Proton / Steam Play capability, per-game process scheduling, in-game FPS and hardware telemetry overlay.</td>
+      <td>Steam, GameMode, MangoHud (64 & 32-bit), VKD3D (DirectX 12 to Vulkan), Gamescope, Valve VRAM Optimizer (<code>dmemcg-booster</code> & <code>caelaris-vram-booster</code>).</td>
+      <td>Full Proton / Steam Play capability, per-game process scheduling, in-game FPS and hardware telemetry overlay, plus Natalie Vock dmemcg VRAM protection for &le; 8GB GPUs.</td>
     </tr>
     <tr>
       <td><strong>Audio Architecture</strong></td>
@@ -492,6 +492,16 @@ caelaris-linux/
 <ul>
   <li>Tracks display state via <code>~/.config/caelaris-welcome-shown</code>.</li>
   <li>Exits immediately on subsequent logins in both KDE Plasma 6 and GNOME sessions.</li>
+</ul>
+
+<h2>4.5 Valve VRAM Management & Dynamic Prioritization (FR-5)</h2>
+<div class="callout">
+  <strong>Requirement FR-5:</strong> Prioritize foreground gaming VRAM allocation over background processes to prevent GTT system memory swapping on GPUs with 8 GB or less VRAM.
+</div>
+<ul>
+  <li><strong>dmem Controller Activation:</strong> Initializes cgroup v2 subtree control via <code>dmemcg-booster.service</code>, enabling per-cgroup <code>dmem.low</code> and <code>dmem.max</code> limits.</li>
+  <li><strong>Cross-Desktop Window Focus Tracking:</strong> Dynamically identifies the focused foreground application via <code>caelaris-vram-booster.service</code> across KDE Plasma 6, GNOME 4x, and Caelestia Shell (Hyprland).</li>
+  <li><strong>VRAM Eviction Protection:</strong> Guarantees ~88% of dedicated hardware VRAM to the active game, forcing background applications (browsers, Discord, Spotify) to spill into system RAM (GTT) during memory saturation and eliminating 1% low frame stutter.</li>
 </ul>
 
 <div class="page-break"></div>

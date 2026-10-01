@@ -366,6 +366,15 @@
   <li><strong>VKD3D:</strong> Full DirectX 12 translation layer.</li>
 </ul>
 
+<h2>4.3 Valve VRAM Management & dmemcg-booster (Natalie Vock Architecture)</h2>
+<ul>
+  <li><strong>VRAM Contention Protection:</strong> On GPUs with 8 GB or less VRAM, running modern titles alongside web browsers, Discord, or Electron apps causes kernel TTM to evict textures to system RAM via GTT, dropping bandwidth from ~256+ GB/s to ~16 GB/s and causing severe stuttering.</li>
+  <li><strong>Device Memory Control Groups (<code>dmemcg</code>):</strong> Implements Natalie Vock's kernel architecture, providing per-cgroup VRAM protection guarantees (<code>dmem.low</code>) and real-time usage telemetry (<code>dmem.current</code>).</li>
+  <li><strong>dmemcg-booster System Daemon:</strong> Boot-time service (<code>dmemcg-booster.service</code>) that initializes cgroup v2 subtree control, propagating <code>+dmem</code> to user and application slices.</li>
+  <li><strong>Cross-Desktop Dynamic VRAM Booster (<code>caelaris-vram-booster</code>):</strong> Dynamically tracks active window focus across KDE Plasma 6, GNOME 4x, and Caelestia Shell (Hyprland), reserving ~88% of dedicated VRAM for the active game via <code>dmem.low</code>, safely spilling background apps to GTT and keeping game frametimes stutter-free.</li>
+  <li><strong>Upstream Compatibility:</strong> Includes compatibility wrappers for <code>plasma-foreground-booster</code> and <code>gnome-vram-booster</code>.</li>
+</ul>
+
 <div class="page-break"></div>
 
 <!-- SECTION 5: VIRTUALIZATION & DRIVERS -->
@@ -451,6 +460,14 @@
       <td>Calamares</td>
       <td>Custom</td>
       <td>Anaconda</td>
+    </tr>
+    <tr>
+      <td><strong>Valve VRAM Optimizer (Natalie Vock dmemcg)</strong></td>
+      <td><strong>Yes (Tri-Desktop)</strong></td>
+      <td>No</td>
+      <td>No</td>
+      <td>No</td>
+      <td>No</td>
     </tr>
     <tr>
       <td><strong>Tuned Low-Latency Gaming Sysctl</strong></td>

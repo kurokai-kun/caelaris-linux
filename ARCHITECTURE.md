@@ -283,6 +283,61 @@ fs.file-max = 2097152
 fs.inotify.max_user_watches = 524288
 ```
 
+### 7.2 Device Memory Control Groups (dmemcg) & Dynamic VRAM Architecture
+
+To resolve the critical VRAM exhaustion and GTT eviction latency bottleneck affecting GPUs with $\le$ 8 GB VRAM, Caelaris Linux implements Natalie Vock's (independent Valve contractor) Device Memory Control Groups (`dmemcg`) architecture.
+
+```mermaid
+flowchart TD
+    subgraph Userspace["Userspace Daemons & Compositors"]
+        dmemcg["dmemcg-booster.service<br/>(Enables +dmem down cgroups v2)"]
+        booster["caelaris-vram-booster.service<br/>(Tracks active window & PID)"]
+        kwin["KDE KWin"]
+        mutter["GNOME Mutter"]
+        hypr["Caelestia Hyprland"]
+        kwin -. Focus .-> booster
+        mutter -. Focus .-> booster
+        hypr -. Focus .-> booster
+    end
+
+    subgraph Cgroups["cgroup v2 Hierarchy (/sys/fs/cgroup)"]
+        root["/sys/fs/cgroup (subtree_control: +dmem)"]
+        user["user.slice (subtree_control: +dmem)"]
+        game_cg["app-steam.scope (dmem.low = 88% VRAM)"]
+        bg_cg["app-discord / browser (dmem.low = 0)"]
+        root --> user
+        user --> game_cg
+        user --> bg_cg
+    end
+
+    subgraph Kernel["Linux Kernel DRM / TTM Subsystem"]
+        ttm["TTM Memory Manager"]
+        vram[("Dedicated High-Speed VRAM<br/>(256+ GB/s)")]
+        gtt[("System RAM / GTT<br/>(16 GB/s PCIe)")]
+        ttm -->|"Protected"| vram
+        ttm -->|"Evicts Background Apps"| gtt
+    end
+
+    dmemcg --> root
+    booster -->|"Sets dmem.low"| game_cg
+    game_cg -. Informs .-> ttm
+    bg_cg -. Informs .-> ttm
+```
+
+1. **Kernel Subsystem (`dmem` Controller):**
+   - Pure cgroup v2 unified hierarchy enforced at boot via `systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all`.
+   - Per-cgroup interface exposed by DRM drivers (`amdgpu`, `xe`, `nouveau`):
+     - `dmem.low`: Best-effort protection threshold in bytes. Kernel TTM guarantees allocations remain in dedicated VRAM unless no other memory can be reclaimed.
+     - `dmem.max`: Hard upper limit for device memory allocations.
+     - `dmem.current`: Real-time active device memory consumption.
+2. **`dmemcg-booster` System Service:**
+   - Traverses `/sys/fs/cgroup`, dynamically mounting and writing `+dmem` to `cgroup.subtree_control` from root to `user.slice`, `session.slice`, and `app.slice`.
+   - Detects GPU topology and dedicated VRAM capacities across DRM adapters.
+3. **Cross-Desktop Dynamic Foreground Booster (`caelaris-vram-booster`):**
+   - Continuously resolves the active foreground application across KDE Plasma 6 (KWin D-Bus), GNOME 4x (Mutter D-Bus), and Caelestia Shell (Hyprland IPC).
+   - Dynamically elevates the active game's cgroup `dmem.low` to ~88% of total dedicated hardware VRAM (e.g. 7.2 GiB on an 8 GiB card).
+   - Protects critical game textures, shaders, and geometry buffers from being evicted into GTT (system RAM) during memory saturation, guaranteeing rock-solid frametimes and eliminating 1% low frame stutter.
+
 ---
 
 ## 8. Continuous Deployment & Distribution Pipeline

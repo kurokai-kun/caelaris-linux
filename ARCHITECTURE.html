@@ -499,5 +499,17 @@ ISO_ROOT/
   <li><strong>Compatibility Bridges:</strong> Includes <code>pipewire-pulse</code>, <code>pipewire-alsa</code>, and <code>pipewire-jack</code>, allowing native Linux games, DAW software, and web browsers to route audio simultaneously with zero configuration.</li>
 </ul>
 
+<!-- SECTION 8: VALVE VRAM MANAGEMENT & DMEMCG ARCHITECTURE -->
+<h1>8. Valve Device Memory Control Groups (dmemcg) & VRAM Optimization</h1>
+<p>
+  To resolve the critical VRAM exhaustion and GTT eviction latency bottleneck affecting GPUs with 8 GB or less VRAM, Caelaris Linux implements Natalie Vock's (independent Valve contractor) Device Memory Control Groups (<code>dmemcg</code>) architecture:
+</p>
+<ul>
+  <li><strong>Kernel dmem Controller:</strong> Enforces pure cgroup v2 hierarchy at boot (<code>systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all</code>), providing per-cgroup VRAM protection guarantees (<code>dmem.low</code>) and active usage metrics (<code>dmem.current</code>) across AMD (<code>amdgpu</code>), Intel (<code>xe</code>), and modern graphics stacks.</li>
+  <li><strong>dmemcg-booster Daemon:</strong> A boot-time system service (<code>dmemcg-booster.service</code>) that initializes the cgroup hierarchy and ensures <code>+dmem</code> is propagated down through <code>user.slice</code> and <code>app.slice</code>.</li>
+  <li><strong>Cross-Desktop Foreground Booster (<code>caelaris-vram-booster</code>):</strong> Dynamically tracks active application focus across KDE Plasma 6 (KWin), GNOME 4x (Mutter), and Caelestia Shell (Hyprland). When a game is active, it elevates the process cgroup's <code>dmem.low</code> to ~88% of total dedicated VRAM.</li>
+  <li><strong>TTM Eviction Elimination:</strong> Under VRAM pressure, Linux TTM forcibly spills background processes (browsers, Discord, Spotify) to system RAM (GTT), while keeping the active game's shaders, textures, and geometry pinned in hardware VRAM, eliminating 1% low frame stutter.</li>
+</ul>
+
 </body>
 </html>
