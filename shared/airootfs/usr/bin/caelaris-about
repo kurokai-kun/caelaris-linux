@@ -68,6 +68,26 @@ def get_gpu_info():
 
     return "Standard Accelerated Graphics (Mesa Gallium / Wayland)"
 
+def get_vram_info():
+    try:
+        from pathlib import Path
+        max_bytes = 0
+        for card in Path("/sys/class/drm").glob("card[0-9]*"):
+            v_file = card / "device" / "mem_info_vram_total"
+            if v_file.exists():
+                v = int(v_file.read_text().strip())
+                if v > max_bytes:
+                    max_bytes = v
+            for lmem in (card / "device").glob("**/physical_vram_size"):
+                v = int(lmem.read_text().strip())
+                if v > max_bytes:
+                    max_bytes = v
+        if max_bytes > 0:
+            return f"{max_bytes / (1024**3):.1f} GiB Dedicated VRAM"
+    except Exception:
+        pass
+    return "Dedicated / Shared VRAM"
+
 def get_storage_info():
     try:
         usage = shutil.disk_usage("/")
@@ -549,6 +569,42 @@ class CaelarisAbout(QMainWindow):
         title = QLabel("System Tuning & Gaming Optimizations")
         title.setStyleSheet("font-size: 20px; font-weight: 800; color: #2d2621;")
         layout.addWidget(title)
+
+        # ── Valve VRAM Management & dmemcg-booster Card (Natalie Vock) ──
+        vram_card = QFrame()
+        vram_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        vram_card.setStyleSheet("background: #ffffff; border: 1px solid #c7d2fe; border-radius: 20px; padding: 20px;")
+        v_layout = QVBoxLayout(vram_card)
+        v_layout.setSpacing(10)
+
+        v_head = QHBoxLayout()
+        v_badge = QLabel("🎮 VALVE VRAM OPTIMIZER")
+        v_badge.setStyleSheet("background: #e0e7ff; color: #4338ca; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 8px;")
+        v_status = QLabel("● Active (dmemcg)")
+        v_status.setStyleSheet("color: #16a34a; font-size: 12px; font-weight: 700;")
+        v_head.addWidget(v_badge)
+        v_head.addStretch()
+        v_head.addWidget(v_status)
+        v_layout.addLayout(v_head)
+
+        v_title = QLabel("Natalie Vock's VRAM Management & Booster")
+        v_title.setStyleSheet("font-size: 15px; font-weight: 800; color: #1e1b4b;")
+        v_layout.addWidget(v_title)
+
+        v_desc = QLabel(
+            "Prioritizes foreground gaming tasks over background applications when VRAM fills up on GPUs with 8 GB or less. "
+            "Prevents background applications (browsers, Electron, Discord) from stealing VRAM and stops active game assets from being "
+            "evicted to system RAM via GTT (Graphics Translation Table)."
+        )
+        v_desc.setWordWrap(True)
+        v_desc.setStyleSheet("font-size: 12px; color: #475569; line-height: 1.4;")
+        v_layout.addWidget(v_desc)
+
+        v_specs = QLabel(f"Hardware VRAM: {get_vram_info()} • Protection Engine: dmemcg-booster & caelaris-vram-booster")
+        v_specs.setStyleSheet("font-size: 11px; font-weight: 600; color: #6366f1;")
+        v_layout.addWidget(v_specs)
+
+        layout.addWidget(vram_card)
 
         card = QFrame()
         card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)

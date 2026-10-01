@@ -156,6 +156,16 @@ if [ -f "$SYNC_DIR/shared/airootfs/etc/systemd/system/caelaris-defender.service"
     echo -e "   -> Activated: Caelaris Defender real-time shield service"
 fi
 
+# E3. Synchronize Valve Device Memory Cgroups (dmemcg) & VRAM Booster services
+if [ -f "$SYNC_DIR/shared/airootfs/etc/systemd/system/dmemcg-booster.service" ]; then
+    cp -f "$SYNC_DIR/shared/airootfs/etc/systemd/system/dmemcg-booster.service" /etc/systemd/system/
+    cp -f "$SYNC_DIR/shared/airootfs/etc/systemd/system/caelaris-vram-booster.service" /etc/systemd/system/
+    systemctl daemon-reload >/dev/null 2>&1 || true
+    systemctl enable --now dmemcg-booster.service >/dev/null 2>&1 || true
+    systemctl enable --now caelaris-vram-booster.service >/dev/null 2>&1 || true
+    echo -e "   -> Activated: Valve dmemcg & Dynamic VRAM Booster services (Natalie Vock VRAM management)"
+fi
+
 # F. Synchronize ZRAM generator settings
 if [ -f "$SYNC_DIR/shared/airootfs/etc/systemd/zram-generator.conf" ]; then
     mkdir -p /etc/systemd

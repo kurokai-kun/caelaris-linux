@@ -1,0 +1,17 @@
+[Unit]
+Description=Valve Device Memory Cgroups Booster (Natalie Vock VRAM Management)
+Documentation=https://gitlab.steamos.cloud/holo/dmemcg-booster
+DefaultDependencies=no
+After=systemd-udevd.service sys-fs-cgroup.mount
+Before=basic.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/bin/dmemcg-booster --daemon
+Restart=always
+RestartSec=3
+User=root
+Nice=-10
+
+[Install]
+WantedBy=multi-user.target

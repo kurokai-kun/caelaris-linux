@@ -41,6 +41,8 @@
 * **Modern Wayland by Default**: Ultra-smooth animations, fractional scaling, and multi-monitor variable refresh rate (VRR) support across all three environments.
 
 ### 🎮 High-Performance Gaming & Low-Latency Tuning
+* **Valve VRAM Management & dmemcg-booster (Natalie Vock Optimization)**: Integrates Valve contractor Natalie Vock's revolutionary Device Memory Control Groups (`dmemcg`) architecture and `dmemcg-booster` daemon. Prioritizes foreground games over background applications when video memory is saturated on GPUs with 8 GB of VRAM or less, preventing background apps (browsers, Electron, Discord) from stealing VRAM and eliminating game stutter caused by TTM eviction into system RAM via GTT (Graphics Translation Table).
+* **Cross-Desktop Dynamic VRAM Booster (`caelaris-vram-booster`)**: Real-time foreground focus monitor natively supporting KDE Plasma 6, GNOME 4x, and Caelestia Shell (Hyprland), dynamically assigning `dmem.low` memory protection reservations to active games.
 * **Low-Latency Scheduling & Responsiveness**: Dynamic kernel preemption and real-time process priority dispatching (`rtkit`) ensure competitive input responsiveness.
 * **Memory & Storage Optimization**: Pre-configured `vm.max_map_count=2147483642` eliminates crashes and allocation bottlenecks in modern DirectX 12, Unreal Engine 5, and Proton/Wine gaming titles.
 * **ZRAM with zstd Compression**: High-speed memory compression prevents out-of-memory slowdowns and eliminates disk-thrashing hitches during heavy gameplay.

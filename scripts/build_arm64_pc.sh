@@ -464,8 +464,9 @@ ln -sf /usr/lib/systemd/system/sddm.service "${ROOTFS_DIR}/etc/systemd/system/mu
 ln -sf /usr/lib/systemd/system/systemd-resolved.service "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/" || true
 ln -sf /usr/lib/systemd/system/NetworkManager.service "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/" || true
 ln -sf /usr/lib/systemd/system/spice-vdagentd.service "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/" || true
-ln -sf /usr/lib/systemd/system/caelaris-session-select.service "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/" || true
 ln -sf /etc/systemd/system/caelaris-defender.service "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/" 2>/dev/null || true
+ln -sf /etc/systemd/system/dmemcg-booster.service "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/" 2>/dev/null || true
+ln -sf /etc/systemd/system/caelaris-vram-booster.service "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/" 2>/dev/null || true
 
 # Prevent getty@tty1 from seizing console and causing display blinking
 ln -sf /dev/null "${ROOTFS_DIR}/etc/systemd/system/getty@tty1.service" 2>/dev/null || true

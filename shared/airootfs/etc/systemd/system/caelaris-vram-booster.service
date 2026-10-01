@@ -1,0 +1,16 @@
+[Unit]
+Description=Caelaris Dynamic Foreground VRAM Priority Booster (Natalie Vock VRAM Optimization)
+Documentation=https://pixelcluster.github.io/VRAM-Mgmt-fixed/
+After=dmemcg-booster.service graphical.target
+Wants=dmemcg-booster.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/bin/caelaris-vram-booster --daemon
+Restart=always
+RestartSec=5
+User=root
+Nice=-5
+
+[Install]
+WantedBy=multi-user.target

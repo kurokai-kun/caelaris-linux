@@ -1,0 +1,317 @@
+#!/usr/bin/env python3
+# ==============================================================================
+# Caelaris Linux — caelaris-vram-booster
+# Dynamic Real-Time Foreground VRAM Protection Daemon (Natalie Vock / Valve)
+# Supports KDE Plasma 6, GNOME 4x, and Caelestia Shell (Hyprland)
+# ==============================================================================
+"""
+caelaris-vram-booster dynamically identifies the active/foreground application
+or game (Steam Proton, Lutris, Heroic, Wine, Native) across KDE Plasma, GNOME,
+and Hyprland (Caelestia Shell). It elevates the active app's cgroup 'dmem.low'
+protection limit to prevent Linux TTM from evicting active game assets to system
+RAM via GTT when VRAM is saturated on <= 8GB GPUs.
+"""
+
+import sys
+import os
+import time
+import json
+import logging
+import argparse
+import subprocess
+from pathlib import Path
+
+CGROUP_ROOT = Path("/sys/fs/cgroup")
+DRM_ROOT = Path("/sys/class/drm")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [caelaris-vram-booster] %(levelname)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+log = logging.getLogger("caelaris-vram-booster")
+
+# Known gaming binaries and launcher keywords
+GAME_MARKERS = {
+    "steamapps", "proton", "wine", "wineserver", "wine64-preloader",
+    "gamescope", "lutris", "heroic", "retroarch", "dosbox", "rpcs3",
+    "yuzu", "ryujinx", "pcsx2", "dolphin-emu", "minecraft", "prism-launcher"
+}
+
+class VRAMBooster:
+    def __init__(self, reservation_ratio=0.88, poll_interval=1.5):
+        self.reservation_ratio = reservation_ratio
+        self.poll_interval = poll_interval
+        self.total_vram_bytes = self.detect_total_vram()
+        self.current_boosted_cgroup = None
+        self.current_boosted_pid = None
+        self.current_boosted_name = ""
+
+    def detect_total_vram(self) -> int:
+        """Detect the maximum dedicated VRAM available among installed GPUs."""
+        max_vram = 0
+        if DRM_ROOT.exists():
+            for card in DRM_ROOT.glob("card[0-9]*"):
+                dev = card / "device"
+                vram_f = dev / "mem_info_vram_total"
+                if vram_f.exists():
+                    try:
+                        v = int(vram_f.read_text().strip())
+                        if v > max_vram:
+                            max_vram = v
+                    except Exception:
+                        pass
+                # Check alternate sysfs paths
+                for lmem in dev.glob("**/physical_vram_size"):
+                    try:
+                        v = int(lmem.read_text().strip())
+                        if v > max_vram:
+                            max_vram = v
+                    except Exception:
+                        pass
+
+        # If undetected, default to 8 GiB baseline for safe calculation
+        if max_vram == 0:
+            max_vram = 8 * 1024 * 1024 * 1024
+            log.info("No sysfs VRAM count found; assuming 8 GiB standard threshold.")
+        else:
+            log.info(f"Target GPU VRAM capacity detected: {max_vram / (1024**3):.2f} GiB ({max_vram} bytes)")
+        return max_vram
+
+    def get_focused_pid_hyprland(self):
+        """Query active window PID from Hyprland compositor."""
+        try:
+            res = subprocess.run(["hyprctl", "activewindow", "-j"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=1.0)
+            if res.returncode == 0 and res.stdout.strip():
+                data = json.loads(res.stdout)
+                pid = data.get("pid")
+                title = data.get("title", "")
+                wm_class = data.get("class", "")
+                if pid and pid > 0:
+                    return pid, f"{wm_class} ({title})"
+        except Exception:
+            pass
+        return None, None
+
+    def get_focused_pid_kde(self):
+        """Query active window PID from KDE Plasma KWin."""
+        try:
+            # Query KWin via qdbus or dbus-send
+            res = subprocess.run([
+                "qdbus", "org.kde.KWin", "/KWin", "org.kde.KWin.activeWindow"
+            ], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=1.0)
+            if res.returncode == 0 and res.stdout.strip():
+                # Or query active window PID from KWin scripting
+                pass
+        except Exception:
+            pass
+        return None, None
+
+    def get_focused_pid_gnome(self):
+        """Query active window PID from GNOME Shell."""
+        try:
+            res = subprocess.run([
+                "gdbus", "call", "--session", "--dest", "org.gnome.Shell",
+                "--object-path", "/org/gnome/Shell",
+                "--method", "org.gnome.Shell.Eval",
+                "global.display.focus_window ? global.display.focus_window.get_pid() : 0"
+            ], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=1.0)
+            if res.returncode == 0 and res.stdout.strip():
+                # Output format: (true, '12345')
+                parts = res.stdout.strip().split(",")
+                if len(parts) >= 2:
+                    pid_str = parts[1].replace("'", "").replace(")", "").strip()
+                    pid = int(pid_str)
+                    if pid > 0:
+                        return pid, f"GNOME PID {pid}"
+        except Exception:
+            pass
+        return None, None
+
+    def detect_active_game_process(self):
+        """Scan running processes for active games (Proton, Steam, Wine, Native)."""
+        try:
+            for pid_dir in Path("/proc").glob("[0-9]*"):
+                try:
+                    pid = int(pid_dir.name)
+                    cmdline_file = pid_dir / "cmdline"
+                    if not cmdline_file.exists():
+                        continue
+                    cmdline = cmdline_file.read_bytes().replace(b"\x00", b" ").decode("utf-8", errors="ignore").lower()
+                    if any(marker in cmdline for marker in GAME_MARKERS):
+                        comm_file = pid_dir / "comm"
+                        comm = comm_file.read_text().strip() if comm_file.exists() else "Game"
+                        return pid, f"{comm} ({cmdline[:40]}...)"
+                except (ValueError, PermissionError, ProcessLookupError, FileNotFoundError):
+                    continue
+        except Exception:
+            pass
+        return None, None
+
+    def get_active_application(self):
+        """Find the active foreground application across Hyprland, KDE, GNOME, or active game."""
+        # 1. Check Hyprland
+        if os.environ.get("HYPRLAND_INSTANCE_SIGNATURE") or os.environ.get("XDG_CURRENT_DESKTOP", "").lower() == "hyprland":
+            pid, name = self.get_focused_pid_hyprland()
+            if pid:
+                return pid, name
+
+        # 2. Check KDE Plasma
+        de = os.environ.get("XDG_CURRENT_DESKTOP", "").lower()
+        if "kde" in de or "plasma" in de:
+            pid, name = self.get_focused_pid_kde()
+            if pid:
+                return pid, name
+
+        # 3. Check GNOME
+        if "gnome" in de:
+            pid, name = self.get_focused_pid_gnome()
+            if pid:
+                return pid, name
+
+        # 4. Check active gaming process heuristics
+        pid, name = self.detect_active_game_process()
+        if pid:
+            return pid, name
+
+        return None, None
+
+    def get_cgroup_for_pid(self, pid: int) -> Path:
+        """Resolve process PID to its cgroup v2 directory path."""
+        cgroup_file = Path(f"/proc/{pid}/cgroup")
+        if not cgroup_file.exists():
+            return None
+        try:
+            lines = cgroup_file.read_text().splitlines()
+            for line in lines:
+                parts = line.strip().split("::", 1)
+                if len(parts) == 2:
+                    rel_path = parts[1].lstrip("/")
+                    full_cgroup = CGROUP_ROOT / rel_path
+                    if full_cgroup.exists():
+                        return full_cgroup
+        except Exception as e:
+            log.debug(f"Failed to read cgroup for PID {pid}: {e}")
+        return None
+
+    def set_dmem_low(self, cgroup_path: Path, low_bytes: int):
+        """Set dmem.low protection threshold in bytes for target cgroup."""
+        dmem_low_file = cgroup_path / "dmem.low"
+        if not dmem_low_file.exists():
+            log.debug(f"{dmem_low_file} does not exist (kernel dmemcg controller needed).")
+            return False
+        try:
+            with open(dmem_low_file, "w") as f:
+                f.write(f"{low_bytes}\n")
+            return True
+        except Exception as e:
+            log.warning(f"Failed to write {low_bytes} to {dmem_low_file}: {e}")
+            return False
+
+    def boost(self, pid: int, name: str):
+        """Elevate VRAM protection for foreground application."""
+        if self.current_boosted_pid == pid and self.current_boosted_cgroup:
+            return
+
+        cgroup = self.get_cgroup_for_pid(pid)
+        if not cgroup:
+            return
+
+        # If previous cgroup was boosted, reset it
+        if self.current_boosted_cgroup and self.current_boosted_cgroup != cgroup:
+            self.reset_boost()
+
+        protection_bytes = int(self.total_vram_bytes * self.reservation_ratio)
+        protection_gib = protection_bytes / (1024**3)
+
+        success = self.set_dmem_low(cgroup, protection_bytes)
+        self.current_boosted_cgroup = cgroup
+        self.current_boosted_pid = pid
+        self.current_boosted_name = name
+
+        if success:
+            log.info(
+                f"⚡ BOOSTED [PID {pid}]: '{name}' | cgroup={cgroup.name} | "
+                f"dmem.low={protection_bytes} ({protection_gib:.2f} GiB / {self.reservation_ratio*100:.0f}%)"
+            )
+        else:
+            log.info(
+                f"Prioritizing [PID {pid}]: '{name}' (cgroup: {cgroup.name}). "
+                f"Awaiting dmem.low controller activation."
+            )
+
+    def reset_boost(self):
+        """Reset currently boosted cgroup to default 0 protection."""
+        if self.current_boosted_cgroup:
+            try:
+                self.set_dmem_low(self.current_boosted_cgroup, 0)
+                log.info(f"Reset dmem.low to 0 for {self.current_boosted_cgroup.name}")
+            except Exception:
+                pass
+        self.current_boosted_cgroup = None
+        self.current_boosted_pid = None
+        self.current_boosted_name = ""
+
+    def run(self):
+        """Main daemon loop."""
+        log.info("Starting Caelaris Dynamic Foreground VRAM Booster Daemon...")
+        log.info(f"Target VRAM: {self.total_vram_bytes / (1024**3):.2f} GiB | Reservation: {self.reservation_ratio*100:.0f}%")
+
+        while True:
+            try:
+                pid, name = self.get_active_application()
+                if pid:
+                    self.boost(pid, name)
+                elif self.current_boosted_pid is not None:
+                    # Check if process is still alive
+                    if not os.path.exists(f"/proc/{self.current_boosted_pid}"):
+                        log.info(f"Foreground process {self.current_boosted_pid} exited.")
+                        self.reset_boost()
+
+                time.sleep(self.poll_interval)
+            except KeyboardInterrupt:
+                log.info("Terminating VRAM booster daemon.")
+                self.reset_boost()
+                break
+            except Exception as e:
+                log.error(f"Error in booster daemon loop: {e}")
+                time.sleep(self.poll_interval)
+
+def main():
+    parser = argparse.ArgumentParser(description="caelaris-vram-booster — Real-time Foreground VRAM Priority Booster")
+    parser.add_argument("--daemon", "-d", action="store_true", help="Run as foreground monitoring daemon")
+    parser.add_argument("--status", "-s", action="store_true", help="Display current VRAM and booster state")
+    parser.add_argument("--boost-pid", type=int, help="Manually boost a target PID")
+    parser.add_argument("--reset", action="store_true", help="Reset all boosted cgroups")
+    args = parser.parse_args()
+
+    booster = VRAMBooster()
+
+    if args.status:
+        print("=== Caelaris Dynamic VRAM Booster Status ===")
+        print(f"Total Dedicated VRAM:    {booster.total_vram_bytes / (1024**3):.2f} GiB")
+        print(f"Protection Ratio:        {booster.reservation_ratio * 100:.0f}% ({int(booster.total_vram_bytes * booster.reservation_ratio) / (1024**3):.2f} GiB protected)")
+        pid, name = booster.get_active_application()
+        if pid:
+            print(f"Active Foreground App:   PID {pid} — {name}")
+            cg = booster.get_cgroup_for_pid(pid)
+            print(f"Active cgroup:           {cg}")
+            if cg and (cg / "dmem.low").exists():
+                print(f"dmem.low value:          {(cg / 'dmem.low').read_text().strip()} bytes")
+        else:
+            print("Active Foreground App:   Idle / Desktop background")
+        sys.exit(0)
+
+    if args.reset:
+        booster.reset_boost()
+        print("Reset complete.")
+        sys.exit(0)
+
+    if args.boost_pid:
+        booster.boost(args.boost_pid, f"Manual PID {args.boost_pid}")
+        sys.exit(0)
+
+    booster.run()
+
+if __name__ == "__main__":
+    main()

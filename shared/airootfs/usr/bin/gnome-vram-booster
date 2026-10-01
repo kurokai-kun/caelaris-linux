@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Compatibility launcher for gnome-vram-booster
+exec /usr/bin/caelaris-vram-booster "$@"

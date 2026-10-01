@@ -1,0 +1,207 @@
+#!/usr/bin/env python3
+# ==============================================================================
+# Caelaris Linux — dmemcg-booster
+# Device Memory Control Groups (dmemcg) Hierarchy & Protection Initializer
+# Based on Natalie Vock's Valve VRAM Management Architecture
+# ==============================================================================
+"""
+dmemcg-booster initializes and manages the cgroup v2 'dmem' (device memory)
+controller hierarchy for DRM/TTM graphics drivers (amdgpu, xe, nouveau).
+Enables per-cgroup VRAM limits (dmem.low, dmem.max, dmem.current) to protect
+foreground gaming tasks from VRAM starvation and GTT eviction on GPUs <= 8GB.
+"""
+
+import sys
+import os
+import time
+import glob
+import logging
+import argparse
+from pathlib import Path
+
+CGROUP_ROOT = Path("/sys/fs/cgroup")
+DRM_ROOT = Path("/sys/class/drm")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [dmemcg-booster] %(levelname)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+log = logging.getLogger("dmemcg-booster")
+
+def detect_gpus():
+    """Detect all DRM graphics adapters and their total dedicated VRAM."""
+    gpus = []
+    if not DRM_ROOT.exists():
+        return gpus
+
+    for card in DRM_ROOT.glob("card[0-9]*"):
+        device_dir = card / "device"
+        if not device_dir.exists():
+            continue
+
+        vram_bytes = 0
+        vram_file = device_dir / "mem_info_vram_total"
+        if vram_file.exists():
+            try:
+                vram_bytes = int(vram_file.read_text().strip())
+            except Exception:
+                pass
+
+        # Fallback for Intel Xe or different sysfs layouts
+        if vram_bytes == 0:
+            for lmem in device_dir.glob("**/physical_vram_size"):
+                try:
+                    vram_bytes = int(lmem.read_text().strip())
+                    if vram_bytes > 0:
+                        break
+                except Exception:
+                    pass
+
+        # Card name / PCI vendor
+        driver_name = "unknown"
+        driver_link = device_dir / "driver"
+        if driver_link.exists():
+            try:
+                driver_name = os.path.basename(os.readlink(str(driver_link)))
+            except Exception:
+                pass
+
+        gpus.append({
+            "card": card.name,
+            "driver": driver_name,
+            "vram_bytes": vram_bytes,
+            "vram_mb": vram_bytes / (1024 * 1024) if vram_bytes else 0,
+            "path": str(device_dir)
+        })
+    return gpus
+
+def is_dmem_supported():
+    """Check if the dmem controller is supported by the running kernel in cgroup.controllers."""
+    root_ctrls = CGROUP_ROOT / "cgroup.controllers"
+    if not root_ctrls.exists():
+        return False
+    try:
+        content = root_ctrls.read_text()
+        return "dmem" in content.split()
+    except Exception as e:
+        log.warning(f"Failed to read {root_ctrls}: {e}")
+        return False
+
+def enable_controller(cgroup_dir: Path, controller="dmem"):
+    """Enable a controller in the cgroup's subtree_control."""
+    subtree = cgroup_dir / "cgroup.subtree_control"
+    controllers = cgroup_dir / "cgroup.controllers"
+
+    if not subtree.exists():
+        return False
+
+    try:
+        # Verify controller is available in this cgroup
+        if controllers.exists():
+            available = controllers.read_text().split()
+            if controller not in available:
+                return False
+
+        active = subtree.read_text().split()
+        if controller not in active:
+            with open(subtree, "w") as f:
+                f.write(f"+{controller}\n")
+            log.debug(f"Enabled +{controller} on {cgroup_dir}")
+            return True
+        return True
+    except Exception as e:
+        log.debug(f"Could not enable +{controller} on {cgroup_dir}: {e}")
+        return False
+
+def setup_hierarchy(controller="dmem"):
+    """Walk cgroup tree and propagate +dmem down user and session slices."""
+    if not CGROUP_ROOT.exists():
+        log.error("cgroup v2 root (/sys/fs/cgroup) not found!")
+        return 0
+
+    enabled_count = 0
+
+    # 1. Root cgroup
+    if enable_controller(CGROUP_ROOT, controller):
+        enabled_count += 1
+
+    # 2. Key systemd slices where user apps, games, and sessions spawn
+    target_prefixes = [
+        "user.slice",
+        "system.slice",
+        "app.slice",
+        "session.slice"
+    ]
+
+    for root, dirs, files in os.walk(str(CGROUP_ROOT)):
+        cgroup_path = Path(root)
+        rel = cgroup_path.relative_to(CGROUP_ROOT)
+        rel_str = str(rel)
+
+        # Check if this cgroup belongs to target hierarchy
+        if any(rel_str.startswith(p) for p in target_prefixes) or rel_str == ".":
+            if enable_controller(cgroup_path, controller):
+                enabled_count += 1
+
+    return enabled_count
+
+def run_daemon(poll_interval=2.0):
+    """Run continuously to ensure dynamically spawned cgroups inherit dmem controller."""
+    log.info("Starting dmemcg-booster daemon (Valve / Natalie Vock VRAM management)...")
+    
+    gpus = detect_gpus()
+    for g in gpus:
+        log.info(f"Detected GPU: {g['card']} ({g['driver']}) with {g['vram_mb']:.1f} MiB VRAM")
+
+    dmem_active = is_dmem_supported()
+    if dmem_active:
+        log.info("Kernel 'dmem' cgroup controller is AVAILABLE.")
+    else:
+        log.info("Kernel 'dmem' cgroup controller not yet loaded in running kernel. Standby monitoring active.")
+
+    while True:
+        try:
+            if is_dmem_supported():
+                setup_hierarchy("dmem")
+            time.sleep(poll_interval)
+        except KeyboardInterrupt:
+            log.info("Terminating dmemcg-booster daemon.")
+            break
+        except Exception as e:
+            log.error(f"Error during booster cycle: {e}")
+            time.sleep(poll_interval)
+
+def main():
+    parser = argparse.ArgumentParser(description="dmemcg-booster — Valve Device Memory Cgroups Manager")
+    parser.add_argument("--daemon", "-d", action="store_true", help="Run as background daemon")
+    parser.add_argument("--init-only", action="store_true", help="Setup hierarchy once and exit")
+    parser.add_argument("--status", "-s", action="store_true", help="Show dmemcg controller status and GPU VRAM")
+    args = parser.parse_args()
+
+    gpus = detect_gpus()
+    supported = is_dmem_supported()
+
+    if args.status:
+        print("=== Caelaris Linux dmemcg-booster Status ===")
+        print(f"cgroup v2 Root:          {'Mounted' if CGROUP_ROOT.exists() else 'Missing'}")
+        print(f"Kernel 'dmem' Controller: {'Supported & Active' if supported else 'Not Active (Kernel 6.12+ / dmemcg required)'}")
+        print(f"Detected Graphics Devices: {len(gpus)}")
+        for g in gpus:
+            print(f"  • {g['card']}: driver={g['driver']}, dedicated VRAM={g['vram_mb']:.1f} MiB ({g['vram_bytes']} bytes)")
+        sys.exit(0)
+
+    if args.init_only:
+        log.info("Running one-shot dmemcg hierarchy initialization...")
+        if supported:
+            count = setup_hierarchy("dmem")
+            log.info(f"Initialized {count} cgroups with +dmem controller.")
+        else:
+            log.warning("Kernel dmem controller not present in cgroup.controllers.")
+        sys.exit(0)
+
+    # Default to daemon mode when invoked as service
+    run_daemon()
+
+if __name__ == "__main__":
+    main()

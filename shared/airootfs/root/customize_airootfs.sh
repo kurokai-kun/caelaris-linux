@@ -81,4 +81,9 @@ fi
 # 10. Enable Caelaris Defender Real-Time Security Guard
 systemctl enable caelaris-defender.service 2>/dev/null || true
 
+# 11. Enable Valve Device Memory Cgroups (dmemcg) & Dynamic VRAM Booster (Natalie Vock)
+systemctl enable dmemcg-booster.service 2>/dev/null || true
+systemctl enable caelaris-vram-booster.service 2>/dev/null || true
+
 echo "=== customize_airootfs.sh completed successfully ==="
+

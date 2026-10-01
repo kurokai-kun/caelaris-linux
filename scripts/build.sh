@@ -98,7 +98,7 @@ linux   /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
 initrd  /%INSTALL_DIR%/boot/intel-ucode.img
 initrd  /%INSTALL_DIR%/boot/amd-ucode.img
 initrd  /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-options archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
+options archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all
 EOF
 
         cat > "${loader_dir}/entries/02-caelaris-safe.conf" << 'EOF'
@@ -160,7 +160,7 @@ ENDTEXT
 MENU LABEL Caelaris Linux
 LINUX /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
 INITRD /%INSTALL_DIR%/boot/intel-ucode.img,/%INSTALL_DIR%/boot/amd-ucode.img,/%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
+APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all
 
 LABEL caelaris_safe
 TEXT HELP
@@ -181,7 +181,7 @@ set timeout=12
 
 menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --class gnu --class os {
     set gfxpayload=keep
-    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
+    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all
     initrd /%INSTALL_DIR%/boot/intel-ucode.img /%INSTALL_DIR%/boot/amd-ucode.img /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
 }
 

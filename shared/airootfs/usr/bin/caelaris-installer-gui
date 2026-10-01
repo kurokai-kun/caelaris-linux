@@ -575,7 +575,7 @@ class InstallWorker(QThread):
                     'GRUB_TIMEOUT=12\n'
                     'GRUB_TIMEOUT_STYLE=menu\n'
                     'GRUB_DISTRIBUTOR="Caelaris"\n'
-                    f'GRUB_CMDLINE_LINUX_DEFAULT="{subvol_arg} quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0"\n'
+                    f'GRUB_CMDLINE_LINUX_DEFAULT="{subvol_arg} quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all"\n'
                     'GRUB_CMDLINE_LINUX=""\n'
                     'GRUB_GFXMODE=auto\n'
                     'GRUB_GFXPAYLOAD_LINUX=keep\n'
@@ -747,7 +747,7 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
     insmod part_msdos
     insmod {fs_type}
     search --no-floppy --fs-uuid --set=root {root_uuid}
-    linux {k_path} root=UUID={root_uuid} rw {subvol_flag}quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0
+    linux {k_path} root=UUID={root_uuid} rw {subvol_flag}quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all
     initrd {ucode_str}{initrd_path}
 }}
 """
@@ -766,7 +766,7 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
 
             # ── Step 5: Install & Enable All Hardware & Virtualization Drivers ───
             self.progress_changed.emit(96, "Installing and enabling hardware drivers & guest tools...")
-            self.run_cmd("arch-chroot /mnt systemctl enable NetworkManager sddm pipewire wireplumber systemd-timesyncd ananicy-cpp caelaris-defender 2>/dev/null || true", check=False)
+            self.run_cmd("arch-chroot /mnt systemctl enable NetworkManager sddm pipewire wireplumber systemd-timesyncd ananicy-cpp caelaris-defender dmemcg-booster caelaris-vram-booster 2>/dev/null || true", check=False)
             for guest_srv in ["vmtoolsd", "vmware-vmblock-fuse", "vboxservice", "spice-vdagentd", "qemu-guest-agent"]:
                 if os.path.isfile(f"/mnt/usr/lib/systemd/system/{guest_srv}.service"):
                     self.run_cmd(f"arch-chroot /mnt systemctl enable {guest_srv} 2>/dev/null || true", check=False)
