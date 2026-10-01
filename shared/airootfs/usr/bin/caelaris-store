@@ -60,6 +60,27 @@ VERIFIED_CATALOG = [
     {"name": "GParted", "app_id": "org.gnome.GParted", "pkg": "gparted", "type": "pacman", "cat": "System", "desc": "Partition editor for creating, reorganizing, and deleting disk partitions", "pub": "GParted Project", "icon_names": ["gparted", "org.gnome.GParted"], "emoji": "💾"}
 ]
 
+def run_privileged(args):
+    # Returns a running Popen process with administrative privileges
+    if os.geteuid() == 0:
+        return subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+    if shutil.which("pkexec"):
+        return subprocess.Popen(["pkexec"] + args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+    return subprocess.Popen(["sudo", "-n"] + args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+
+def run_privileged_sync(args):
+    # Returns (returncode, stdout_str)
+    if os.geteuid() == 0:
+        p = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        return p.returncode, p.stdout
+    if shutil.which("pkexec"):
+        p = subprocess.run(["pkexec"] + args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        if p.returncode == 0 or not shutil.which("sudo"):
+            return p.returncode, p.stdout
+    # Fallback to passwordless sudo
+    p = subprocess.run(["sudo", "-n"] + args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    return p.returncode, p.stdout
+
 class InstallWorker(QThread):
     # progress_signal emits: (percentage: int, speed: str, eta: str, status_msg: str)
     progress_signal = pyqtSignal(int, str, str, str)
@@ -76,7 +97,7 @@ class InstallWorker(QThread):
         pkg = self.app_info.get("pkg", "")
         app_type = self.app_info.get("type", "flatpak")
 
-        self.progress_signal.emit(5, "Calculating...", "--", f"Connecting to verified repository for {name}...")
+        self.progress_signal.emit(5, "Calculating...", "--", f"Connecting to repository for {name}...")
 
         try:
             if app_type == "flatpak":
@@ -89,7 +110,6 @@ class InstallWorker(QThread):
                     pct = 20
                     for line in proc.stdout:
                         l = line.strip()
-                        # Parse Flatpak progress e.g. "Installing: 1/1 ... 55% 4.2 MB/s 00:08"
                         m_pct = re.search(r'(\d+)%', l)
                         m_speed = re.search(r'([\d\.]+\s*(?:MB|kB|MiB|KiB)/s)', l, re.IGNORECASE)
                         m_eta = re.search(r'(\d+:\d+|\d+s)', l)
@@ -108,22 +128,36 @@ class InstallWorker(QThread):
                         self.progress_signal.emit(100, "Done", "0s", f"Successfully completed {self.action} for {name}!")
                         self.finished_signal.emit(True, f"Successfully installed {name}!")
                     else:
-                        self.finished_signal.emit(False, f"Operation failed with code {proc.returncode}")
+                        self.finished_signal.emit(False, f"Flatpak operation failed with code {proc.returncode}")
                 else: # remove
                     self.progress_signal.emit(40, "--", "--", f"Removing {name}...")
                     cmd = ["flatpak", "uninstall", "-y", "--noninteractive", app_id]
                     res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-                    self.progress_signal.emit(100, "Done", "0s", f"{name} uninstalled.")
-                    self.finished_signal.emit(True, f"Successfully removed {name}.")
+                    if res.returncode == 0:
+                        self.progress_signal.emit(100, "Done", "0s", f"{name} uninstalled.")
+                        self.finished_signal.emit(True, f"Successfully removed {name}.")
+                    else:
+                        self.finished_signal.emit(False, f"Uninstall failed: {res.stderr.strip() or res.stdout.strip()}")
             elif app_type == "pacman":
+                # Ensure stale pacman db lock is cleared if pacman is not running
+                if os.path.exists("/var/lib/pacman/db.lck"):
+                    try:
+                        chk = subprocess.run(["pgrep", "-x", "pacman"], stdout=subprocess.PIPE)
+                        if chk.returncode != 0:
+                            run_privileged_sync(["rm", "-f", "/var/lib/pacman/db.lck"])
+                    except Exception:
+                        pass
+
                 if self.action in ["install", "update"]:
                     self.progress_signal.emit(15, "Connecting", "20s", f"Querying official Arch Linux repository for {pkg}...")
-                    cmd = ["pkexec", "pacman", "-S", "--noconfirm", "--needed", pkg]
-                    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+                    cmd = ["pacman", "-Sy", "--noconfirm", "--needed", pkg]
+                    proc = run_privileged(cmd)
                     
                     pct = 25
+                    output_log = []
                     for line in proc.stdout:
                         l = line.strip()
+                        output_log.append(l)
                         m_pct = re.search(r'(\d+)%', l)
                         m_speed = re.search(r'([\d\.]+\s*(?:MiB|KiB|MB|kB)/s)', l, re.IGNORECASE)
                         m_eta = re.search(r'(\d+:\d+)', l)
@@ -133,18 +167,39 @@ class InstallWorker(QThread):
                             pct = max(pct, int(m_pct.group(1)))
                         else:
                             pct = min(94, pct + 6)
-                        self.progress_signal.emit(pct, speed_str, eta_str, f"Downloading verified GPG package {pkg}...")
+                        self.progress_signal.emit(pct, speed_str, eta_str, f"Downloading & installing verified package {pkg}...")
                     proc.wait()
+
+                    # Fallback to sudo if pkexec had authorization failure (exit code 126 or 127)
+                    if proc.returncode != 0 and shutil.which("sudo"):
+                        self.progress_signal.emit(30, "--", "--", f"Retrying with elevated system credentials...")
+                        proc_sudo = subprocess.Popen(["sudo", "-n"] + cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+                        for line in proc_sudo.stdout:
+                            output_log.append(line.strip())
+                        proc_sudo.wait()
+                        if proc_sudo.returncode == 0:
+                            proc = proc_sudo
+
                     if proc.returncode == 0:
                         self.progress_signal.emit(100, "Done", "0s", f"Successfully completed {self.action} for {name}!")
                         self.finished_signal.emit(True, f"Successfully installed {name}!")
                     else:
-                        self.finished_signal.emit(False, f"Installation error in pacman.")
-                else:
+                        err_tail = "\n".join([x for x in output_log[-4:] if x]) or f"Exit code {proc.returncode}"
+                        self.finished_signal.emit(False, f"Pacman error:\n{err_tail}")
+                else: # remove
                     self.progress_signal.emit(50, "--", "--", f"Uninstalling {pkg}...")
-                    subprocess.run(["pkexec", "pacman", "-R", "--noconfirm", pkg], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    self.progress_signal.emit(100, "Done", "0s", f"{name} removed.")
-                    self.finished_signal.emit(True, f"Successfully removed {name}.")
+                    # First attempt clean removal with unneeded dependencies
+                    ret, out = run_privileged_sync(["pacman", "-Rns", "--noconfirm", pkg])
+                    if ret != 0:
+                        # Fallback to simple removal
+                        ret, out = run_privileged_sync(["pacman", "-R", "--noconfirm", pkg])
+
+                    if ret == 0:
+                        self.progress_signal.emit(100, "Done", "0s", f"{name} removed.")
+                        self.finished_signal.emit(True, f"Successfully removed {name}.")
+                    else:
+                        err_msg = out.strip().splitlines()[-1] if out.strip() else f"Error code {ret}"
+                        self.finished_signal.emit(False, f"Uninstall failed: {err_msg}")
             else:
                 self.progress_signal.emit(100, "Done", "0s", f"{name} is a core system component.")
                 self.finished_signal.emit(True, f"{name} is active.")
@@ -512,9 +567,14 @@ class CaelarisStore(QMainWindow):
     def is_app_installed(self, app_info):
         app_id = app_info["app_id"]
         pkg = app_info.get("pkg", "")
-        if app_info.get("type") == "system":
+        app_type = app_info.get("type", "flatpak")
+        if app_type == "system":
             return True
-        return (app_id in self.installed_cache) or (pkg in self.installed_cache) or bool(shutil.which(pkg))
+        if app_type == "flatpak":
+            return app_id in self.installed_cache
+        if app_type == "pacman":
+            return pkg in self.installed_cache
+        return (app_id in self.installed_cache) or (pkg in self.installed_cache)
 
     def has_update(self, app_info):
         return (app_info["app_id"] in self.updates_cache) or (app_info.get("pkg", "") in self.updates_cache)

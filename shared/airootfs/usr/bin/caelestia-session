@@ -30,7 +30,19 @@ export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 # Ensure default Caelestia Hyprland config is initialized in user profile
 mkdir -p "$HOME/.config/hypr"
 if [ ! -f "$HOME/.config/hypr/hyprland.conf" ]; then
-    echo -e "# Caelestia Shell configuration for Caelaris Linux\nsource = /etc/caelestia/hyprland.conf\n" > "$HOME/.config/hypr/hyprland.conf"
+    cat << 'EOF' > "$HOME/.config/hypr/hyprland.conf"
+# Caelestia Shell configuration for Caelaris Linux
+debug {
+    suppress_errors = true
+}
+ecosystem {
+    no_donation_nag = true
+}
+source = /etc/caelestia/hyprland.conf
+EOF
+fi
+if [ -f /etc/caelestia/hyprland.lua ] && [ ! -f "$HOME/.config/hypr/hyprland.lua" ]; then
+    cp /etc/caelestia/hyprland.lua "$HOME/.config/hypr/hyprland.lua" 2>/dev/null || true
 fi
 
 # Launch Hyprland via official wrapper start-hyprland or direct binary

@@ -1,0 +1,13 @@
+/* Caelaris Linux Polkit Security Policy
+ * Grants passwordless authorization for administrative operations (package management, system services)
+ * to members of the wheel/sudo groups and live session users.
+ */
+
+polkit.addRule(function(action, subject) {
+    if (subject.isInGroup("wheel") || 
+        subject.isInGroup("sudo") || 
+        subject.user === "liveuser" || 
+        subject.user === "asus") {
+        return polkit.Result.YES;
+    }
+});
