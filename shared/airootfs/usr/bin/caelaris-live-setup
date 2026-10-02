@@ -2,12 +2,8 @@
 # caelaris-live-setup: System initialization for live session
 set +e
 
-# Mask and terminate any lingering Plymouth services to prevent boot hang
-systemctl mask --now plymouth-start.service plymouth-quit.service plymouth-quit-wait.service plymouth-reboot.service plymouth-poweroff.service plymouth-halt.service 2>/dev/null || true
+# Terminate any lingering Plymouth processes if present
 killall -9 plymouth plymouthd 2>/dev/null || true
-
-# Mask getty@tty1 so SDDM has exclusive console ownership and does not blink
-systemctl mask --now getty@tty1.service 2>/dev/null || true
 
 # 1. Completely remove default alarm user from base image
 userdel -r -f alarm 2>/dev/null || true
@@ -175,11 +171,11 @@ fi
 
 chown -R liveuser:users /home/liveuser
 
-# Ensure system font caches are indexed to prevent glycin-svg sandbox crashes
-fc-cache -f >/dev/null 2>&1 || true
+# Background refresh of system font caches without blocking desktop startup
+(fc-cache -s >/dev/null 2>&1 || true) &
 
 # 6. Ensure pacman keyring is initialized and populated in live session
-if [ ! -f /etc/pacman.d/gnupg/pubring.gpg ]; then
+if [ ! -f /etc/pacman.d/gnupg/pubring.kbx ] && [ ! -f /etc/pacman.d/gnupg/pubring.gpg ]; then
     (pacman-key --init && pacman-key --populate archlinux >/dev/null 2>&1 || true) &
 fi
 

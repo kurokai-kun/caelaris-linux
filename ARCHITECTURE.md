@@ -325,7 +325,7 @@ flowchart TD
 ```
 
 1. **Kernel Subsystem (`dmem` Controller):**
-   - Pure cgroup v2 unified hierarchy enforced at boot via `systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all`.
+   - Unified cgroup v2 hierarchy at boot via `systemd.unified_cgroup_hierarchy=1`.
    - Per-cgroup interface exposed by DRM drivers (`amdgpu`, `xe`, `nouveau`):
      - `dmem.low`: Best-effort protection threshold in bytes. Kernel TTM guarantees allocations remain in dedicated VRAM unless no other memory can be reclaimed.
      - `dmem.max`: Hard upper limit for device memory allocations.

@@ -98,7 +98,7 @@ linux   /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
 initrd  /%INSTALL_DIR%/boot/intel-ucode.img
 initrd  /%INSTALL_DIR%/boot/amd-ucode.img
 initrd  /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-options archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all
+options archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp systemd.unified_cgroup_hierarchy=1
 EOF
 
         cat > "${loader_dir}/entries/02-caelaris-safe.conf" << 'EOF'
@@ -160,7 +160,7 @@ ENDTEXT
 MENU LABEL Caelaris Linux
 LINUX /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
 INITRD /%INSTALL_DIR%/boot/intel-ucode.img,/%INSTALL_DIR%/boot/amd-ucode.img,/%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all
+APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp systemd.unified_cgroup_hierarchy=1
 
 LABEL caelaris_safe
 TEXT HELP
@@ -181,7 +181,7 @@ set timeout=12
 
 menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --class gnu --class os {
     set gfxpayload=keep
-    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all
+    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp systemd.unified_cgroup_hierarchy=1
     initrd /%INSTALL_DIR%/boot/intel-ucode.img /%INSTALL_DIR%/boot/amd-ucode.img /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
 }
 
@@ -198,10 +198,9 @@ mkdir -p "${BUILD_PROFILE}/airootfs/etc/systemd/system/graphical.target.wants"
 mkdir -p "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants"
 ln -sf /usr/lib/systemd/system/graphical.target "${BUILD_PROFILE}/airootfs/etc/systemd/system/default.target"
 ln -sf /etc/systemd/system/caelaris-live-setup.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/graphical.target.wants/caelaris-live-setup.service"
-ln -sf /etc/systemd/system/caelaris-live-setup.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/caelaris-live-setup.service"
 ln -sf /usr/lib/systemd/system/sddm.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/display-manager.service"
 ln -sf /usr/lib/systemd/system/sddm.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/graphical.target.wants/sddm.service"
-ln -sf /usr/lib/systemd/system/sddm.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/sddm.service"
+ln -sf /dev/null "${BUILD_PROFILE}/airootfs/etc/systemd/system/getty@tty1.service" 2>/dev/null || true
 
 # Configure SDDM with stable display server and pre-configured autologin
 mkdir -p "${BUILD_PROFILE}/airootfs/etc/sddm.conf.d"

@@ -128,7 +128,7 @@ caelaris-linux/
   - `net.ipv4.tcp_congestion_control = bbr` (Google BBR for low-latency network streaming).
 - **Gaming Software Ecosystem:** Bundled Steam client, GameMode (`gamemoded`), MangoHud overlay (64-bit and 32-bit), VKD3D DirectX 12 translation layer, and complete 32-bit multilib graphics drivers.
 - **Valve VRAM Management & dmemcg-booster (Natalie Vock Architecture):**
-  - Kernel Device Memory Cgroups (`dmemcg`) controller integration (`systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all`).
+  - Kernel Device Memory Cgroups (`dmemcg`) controller integration (`systemd.unified_cgroup_hierarchy=1`).
   - `dmemcg-booster.service` initializes cgroup v2 subtree control, enabling `+dmem` down to `user.slice` and `app.slice`.
   - `caelaris-vram-booster.service` provides real-time foreground focus monitoring across KDE Plasma 6 (KWin), GNOME 4x (Mutter), and Caelestia Shell (Hyprland).
   - Dynamically pins ~88% of dedicated hardware VRAM to active games via `dmem.low`, preventing background applications (browsers, Electron, Discord) from stealing VRAM and stopping TTM from spilling active game textures into slow system RAM (GTT) on GPUs with $\le$ 8 GB VRAM.
