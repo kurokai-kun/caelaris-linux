@@ -23,12 +23,9 @@ export WLR_NO_HARDWARE_CURSORS=1
 export WLR_RENDERER_ALLOW_SOFTWARE=1
 export AQ_NO_MODIFIERS=1
 
+# NVIDIA Wayland Compatibility (Do NOT force GBM_BACKEND=nvidia-drm as it breaks hybrid laptops)
 if [ -d /dev/dri ]; then
-    if lspci -k 2>/dev/null | grep -iE 'amd|radeon' >/dev/null 2>&1; then
-        export LIBVA_DRIVER_NAME="radeonsi"
-    elif lspci -k 2>/dev/null | grep -iE 'nvidia' >/dev/null 2>&1; then
-        export LIBVA_DRIVER_NAME="nvidia"
-        export GBM_BACKEND="nvidia-drm"
+    if lspci -k 2>/dev/null | grep -iE 'nvidia' >/dev/null 2>&1; then
         export __GLX_VENDOR_LIBRARY_NAME="nvidia"
         export NVD_BACKEND="direct"
     fi

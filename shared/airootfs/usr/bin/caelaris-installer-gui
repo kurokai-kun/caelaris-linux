@@ -572,7 +572,7 @@ class InstallWorker(QThread):
             with open("/mnt/etc/default/grub", "w") as f:
                 f.write(
                     'GRUB_DEFAULT=0\n'
-                    'GRUB_TIMEOUT=12\n'
+                    'GRUB_TIMEOUT=5\n'
                     'GRUB_TIMEOUT_STYLE=menu\n'
                     'GRUB_DISTRIBUTOR="Caelaris"\n'
                     f'GRUB_CMDLINE_LINUX_DEFAULT="{subvol_arg} quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 systemd.unified_cgroup_hierarchy=1"\n'
@@ -584,10 +584,14 @@ class InstallWorker(QThread):
                     'GRUB_DISABLE_OS_PROBER=true\n'
                 )
 
-            # Remove any stale custom menu entries from old installs
-            for stale in ["/mnt/etc/grub.d/15_caelaris_gnome"]:
-                if os.path.exists(stale):
-                    os.remove(stale)
+            # Deactivate clutter generator scripts in grub.d
+            for clut_script in ["20_linux_xen", "20_memtest86+", "30_os-prober", "15_caelaris_gnome"]:
+                cp = f"/mnt/etc/grub.d/{clut_script}"
+                if os.path.exists(cp):
+                    try:
+                        os.chmod(cp, 0o644)
+                    except Exception:
+                        pass
 
             # ── Step 1: Ensure firmware stubs exist & regenerate initramfs ──────
             self.progress_changed.emit(90, "Configuring firmware and generating initramfs with mkinitcpio...")
@@ -662,7 +666,7 @@ class InstallWorker(QThread):
 
             self.run_cmd("arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg", check=False)
 
-            # ── Step 3b: Clean up menu labels without corrupting GRUB syntax ──
+            # ── Step 3b: Clean up and deduplicate menu entries to prevent clutter ──
             grub_cfg_file = "/mnt/boot/grub/grub.cfg"
             if os.path.isfile(grub_cfg_file):
                 try:
@@ -670,14 +674,73 @@ class InstallWorker(QThread):
                         cfg_text = f.read()
 
                     import re
-                    cfg_text = re.sub(r'set timeout=\d+', 'set timeout=12', cfg_text)
-                    cfg_text = re.sub(r'with Linux linux \(fallback initramfs\)', '(Recovery Mode)', cfg_text)
-                    cfg_text = re.sub(r'with Linux linux', '', cfg_text)
-                    cfg_text = re.sub(r'Arch Linux', 'Caelaris Linux', cfg_text)
+                    cfg_text = re.sub(r'set timeout=\d+', 'set timeout=5', cfg_text)
+
+                    # Extract header before first menuentry
+                    first_menu = re.search(r'^[ \t]*menuentry\s+', cfg_text, re.MULTILINE)
+                    if first_menu:
+                        header = cfg_text[:first_menu.start()].rstrip()
+                        body = cfg_text[first_menu.start():]
+
+                        # Parse all menuentry blocks
+                        lines = body.splitlines(keepends=True)
+                        entries = []
+                        current_entry = []
+                        in_entry = False
+                        depth = 0
+
+                        for line in lines:
+                            if not in_entry:
+                                if re.match(r'^[ \t]*menuentry\s+', line):
+                                    in_entry = True
+                                    current_entry = [line]
+                                    depth = line.count('{') - line.count('}')
+                                    if depth <= 0 and '{' in line:
+                                        entries.append("".join(current_entry))
+                                        current_entry = []
+                                        in_entry = False
+                            else:
+                                current_entry.append(line)
+                                depth += line.count('{') - line.count('}')
+                                if depth <= 0:
+                                    entries.append("".join(current_entry))
+                                    current_entry = []
+                                    in_entry = False
+
+                        primary_entry = None
+                        recovery_entry = None
+                        uefi_entry = None
+
+                        for entry in entries:
+                            t_match = re.search(r'menuentry\s+[\'"]([^\'"]+)[\'"]', entry)
+                            if not t_match:
+                                continue
+                            raw_t = t_match.group(1).lower()
+
+                            if ("uefi" in raw_t or "firmware" in raw_t) and not uefi_entry:
+                                cleaned = re.sub(r'menuentry\s+[\'"][^\'"]+[\'"]', 'menuentry "UEFI Firmware Settings"', entry, count=1)
+                                uefi_entry = cleaned
+                            elif ("recovery" in raw_t or "fallback" in raw_t) and not recovery_entry:
+                                cleaned = re.sub(r'menuentry\s+[\'"][^\'"]+[\'"]', 'menuentry "Caelaris Linux (Recovery Mode)"', entry, count=1)
+                                recovery_entry = cleaned
+                            elif not primary_entry and ("caelaris" in raw_t or "linux" in raw_t or "arch" in raw_t):
+                                cleaned = re.sub(r'menuentry\s+[\'"][^\'"]+[\'"]', 'menuentry "Caelaris Linux"', entry, count=1)
+                                primary_entry = cleaned
+
+                        kept = []
+                        if primary_entry:
+                            kept.append(primary_entry.strip())
+                        if recovery_entry:
+                            kept.append(recovery_entry.strip())
+                        if uefi_entry:
+                            kept.append(uefi_entry.strip())
+
+                        if kept:
+                            cfg_text = header + "\n\n" + "\n\n".join(kept) + "\n"
 
                     with open(grub_cfg_file, "w") as f:
                         f.write(cfg_text)
-                    self.log("[SUCCESS] GRUB menu configured cleanly with 12s timeout.")
+                    self.log("[SUCCESS] GRUB menu decluttered successfully (kept essential entries only, 5s timeout).")
                 except Exception as ex:
                     self.log(f"[WARNING] Could not polish grub.cfg: {ex}")
 
@@ -853,10 +916,13 @@ class InstallWorker(QThread):
 
             # Cleanly flush disk buffers and unmount all target partitions
             self.progress_changed.emit(99, "Flushing filesystem buffers and unmounting target partitions...")
+            self.run_cmd("arch-chroot /mnt gpgconf --kill all 2>/dev/null || true", check=False)
+            self.run_cmd("killall -9 gpg-agent dirmngr 2>/dev/null || true", check=False)
             self.run_cmd("sync", check=False)
             self.run_cmd("fuser -km /mnt 2>/dev/null || true", check=False)
             self.run_cmd("sync", check=False)
-            self.run_cmd("umount -R /mnt 2>/dev/null || true", check=False)
+            self.run_cmd("umount -R -f /mnt 2>/dev/null || true", check=False)
+            self.run_cmd("umount -R -l /mnt 2>/dev/null || true", check=False)
 
             self.progress_changed.emit(100, "Installation complete!")
             self.installation_finished.emit(True, "Caelaris Linux installed successfully!")
@@ -1416,6 +1482,8 @@ class CaelarisInstaller(QMainWindow):
 
     def finish_installation(self):
         if self.chk_reboot.isChecked():
+            subprocess.run(["sync"])
+            subprocess.run(["umount", "-R", "-l", "/mnt"], check=False)
             subprocess.Popen(["systemctl", "--no-block", "reboot"])
         self.close()
 
