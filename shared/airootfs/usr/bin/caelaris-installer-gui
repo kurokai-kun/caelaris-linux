@@ -639,11 +639,30 @@ class InstallWorker(QThread):
                     self.log(f"Installing GRUB BIOS MBR to {disk}...")
                     self.run_cmd(f"arch-chroot /mnt grub-install --target=i386-pc --recheck {disk}", check=False)
 
-            # ── Step 3: Generate grub.cfg ─────────────────────────────────────
-            self.progress_changed.emit(94, "Generating GRUB menu configuration...")
+            # ── Step 3: Ensure GRUB fonts, locales, and generate grub.cfg ────────
+            self.progress_changed.emit(94, "Configuring GRUB fonts and generating menu...")
+            os.makedirs("/mnt/boot/grub/fonts", exist_ok=True)
+            for font_cand in [
+                "/usr/share/grub/unicode.pf2",
+                "/boot/grub/fonts/unicode.pf2",
+            ]:
+                if os.path.isfile(font_cand):
+                    try:
+                        shutil.copy2(font_cand, "/mnt/boot/grub/fonts/unicode.pf2")
+                    except Exception:
+                        pass
+                    break
+
+            os.makedirs("/mnt/boot/grub/locale", exist_ok=True)
+            for loc_cand in glob.glob("/usr/share/grub/locale/*.mo") + glob.glob("/boot/grub/locale/*.mo"):
+                try:
+                    shutil.copy2(loc_cand, "/mnt/boot/grub/locale/")
+                except Exception:
+                    pass
+
             self.run_cmd("arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg", check=False)
 
-            # ── Step 3b: Clean up and deduplicate menu entries: Keep ONLY Caelaris Linux + Recovery ──
+            # ── Step 3b: Clean up menu labels without corrupting GRUB syntax ──
             grub_cfg_file = "/mnt/boot/grub/grub.cfg"
             if os.path.isfile(grub_cfg_file):
                 try:
@@ -652,112 +671,15 @@ class InstallWorker(QThread):
 
                     import re
                     cfg_text = re.sub(r'set timeout=\d+', 'set timeout=12', cfg_text)
-                    first_menu = re.search(r'^(menuentry\s+.*)', cfg_text, re.MULTILINE)
-                    if first_menu:
-                        header = cfg_text[:first_menu.start()]
-                        entries_text = cfg_text[first_menu.start():]
-
-                        menu_blocks = []
-                        current_block = []
-                        brace_depth = 0
-                        in_entry = False
-
-                        for line in entries_text.splitlines(keepends=True):
-                            if not in_entry:
-                                if re.match(r'^\s*menuentry\s+', line):
-                                    in_entry = True
-                                    current_block = [line]
-                                    brace_depth = line.count('{') - line.count('}')
-                                    if brace_depth == 0 and '{' in line:
-                                        menu_blocks.append(''.join(current_block))
-                                        current_block = []
-                                        in_entry = False
-                                continue
-                            else:
-                                current_block.append(line)
-                                brace_depth += line.count('{') - line.count('}')
-                                if brace_depth <= 0:
-                                    menu_blocks.append(''.join(current_block))
-                                    current_block = []
-                                    in_entry = False
-
-                        kept_entries = []
-                        has_primary = False
-                        has_recovery = False
-                        has_uefi = False
-
-                        for block in menu_blocks:
-                            title_match = re.search(r'menuentry\s+[\'"]([^\'"]+)[\'"]', block)
-                            if not title_match:
-                                continue
-                            raw_title = title_match.group(1)
-
-                            if "uefi" in raw_title.lower() or "firmware" in raw_title.lower():
-                                if not has_uefi:
-                                    kept_entries.append((3, block))
-                                    has_uefi = True
-                            elif "fallback" in raw_title.lower() or "recovery" in raw_title.lower():
-                                if not has_recovery:
-                                    clean_block = re.sub(r'menuentry\s+[\'"][^\'"]+[\'"]', 'menuentry "Caelaris Linux (Recovery Mode)"', block, count=1)
-                                    kept_entries.append((2, clean_block))
-                                    has_recovery = True
-                            else:
-                                if not has_primary and ("caelaris" in raw_title.lower() or "linux" in raw_title.lower()):
-                                    clean_block = re.sub(r'menuentry\s+[\'"][^\'"]+[\'"]', 'menuentry "Caelaris Linux"', block, count=1)
-                                    kept_entries.append((1, clean_block))
-                                    has_primary = True
-
-                        if kept_entries:
-                            kept_entries.sort(key=lambda x: x[0])
-                            final_entries = "\n\n".join(e[1].strip() for e in kept_entries)
-                            cfg_text = header.strip() + "\n\n" + final_entries + "\n"
+                    cfg_text = re.sub(r'with Linux linux \(fallback initramfs\)', '(Recovery Mode)', cfg_text)
+                    cfg_text = re.sub(r'with Linux linux', '', cfg_text)
+                    cfg_text = re.sub(r'Arch Linux', 'Caelaris Linux', cfg_text)
 
                     with open(grub_cfg_file, "w") as f:
                         f.write(cfg_text)
-                    self.log("[SUCCESS] GRUB menu decluttered successfully (kept essential entries only, 12s timeout).")
+                    self.log("[SUCCESS] GRUB menu configured cleanly with 12s timeout.")
                 except Exception as ex:
-                    self.log(f"[WARNING] Could not parse and declutter grub.cfg: {ex}")
-
-            # ── Step 3c: Guarantee primary boot entry if not generated ───
-            has_linux = False
-            if os.path.isfile(grub_cfg_file):
-                with open(grub_cfg_file, "r") as f:
-                    cfg_text = f.read()
-                if "vmlinuz" in cfg_text:
-                    has_linux = True
-
-            if not has_linux:
-                self.log("[WARNING] Generating bulletproof Caelaris Linux entry...")
-                root_uuid = subprocess.check_output(f"blkid -s UUID -o value {p_root}", shell=True, text=True).strip()
-                subvol_flag = "rootflags=subvol=@ " if fs_type == "btrfs" else ""
-                k_path = "/@/boot/vmlinuz-linux" if fs_type == "btrfs" else "/boot/vmlinuz-linux"
-                initrd_path = "/@/boot/initramfs-linux.img" if fs_type == "btrfs" else "/boot/initramfs-linux.img"
-                ucode_str = ""
-                if os.path.isfile("/mnt/boot/intel-ucode.img"):
-                    ucode_str = ("/@/boot/intel-ucode.img " if fs_type == "btrfs" else "/boot/intel-ucode.img ")
-                elif os.path.isfile("/mnt/boot/amd-ucode.img"):
-                    ucode_str = ("/@/boot/amd-ucode.img " if fs_type == "btrfs" else "/boot/amd-ucode.img ")
-
-                guaranteed_entry = f"""
-menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --class gnu --class os {{
-    load_video
-    set gfxpayload=keep
-    insmod gzio
-    insmod part_gpt
-    insmod part_msdos
-    insmod {fs_type}
-    search --no-floppy --fs-uuid --set=root {root_uuid}
-    linux {k_path} root=UUID={root_uuid} rw {subvol_flag}quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 systemd.unified_cgroup_hierarchy=1
-    initrd {ucode_str}{initrd_path}
-}}
-"""
-                existing_cfg = ""
-                if os.path.isfile(grub_cfg_file):
-                    with open(grub_cfg_file, "r") as f:
-                        existing_cfg = f.read()
-                with open(grub_cfg_file, "w") as f:
-                    f.write(guaranteed_entry + "\n" + existing_cfg)
-                self.log("[SUCCESS] Guaranteed Caelaris Linux entry injected as default in grub.cfg!")
+                    self.log(f"[WARNING] Could not polish grub.cfg: {ex}")
 
             # ── Step 4: Enable pacman keys for online use ─────────────────────
             self.run_cmd("arch-chroot /mnt pacman-key --init 2>/dev/null || true", check=False)
@@ -928,6 +850,13 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
             self.run_cmd("arch-chroot /mnt fc-cache -r", check=False)
             self.run_cmd("arch-chroot /mnt gtk-update-icon-cache -f -t /usr/share/icons/hicolor", check=False)
             self.run_cmd("arch-chroot /mnt update-desktop-database /usr/share/applications", check=False)
+
+            # Cleanly flush disk buffers and unmount all target partitions
+            self.progress_changed.emit(99, "Flushing filesystem buffers and unmounting target partitions...")
+            self.run_cmd("sync", check=False)
+            self.run_cmd("fuser -km /mnt 2>/dev/null || true", check=False)
+            self.run_cmd("sync", check=False)
+            self.run_cmd("umount -R /mnt 2>/dev/null || true", check=False)
 
             self.progress_changed.emit(100, "Installation complete!")
             self.installation_finished.emit(True, "Caelaris Linux installed successfully!")

@@ -3,7 +3,7 @@
 # Caelestia Shell Session Launcher for Caelaris Linux
 # Powered by Hyprland dynamic tiling Wayland compositor
 # ==========================================================
-set -e
+set +e
 
 # Session Environment Variables
 export XDG_CURRENT_DESKTOP="Hyprland"
@@ -18,26 +18,31 @@ export SDL_VIDEODRIVER="wayland"
 export MOZ_ENABLE_WAYLAND="1"
 export ELECTRON_OZONE_PLATFORM_HINT="auto"
 
-# Hardware Acceleration Flags
+# Universal Hardware Acceleration & VM Compatibility Flags
+export WLR_NO_HARDWARE_CURSORS=1
+export WLR_RENDERER_ALLOW_SOFTWARE=1
+export AQ_NO_MODIFIERS=1
+
 if [ -d /dev/dri ]; then
-    export LIBVA_DRIVER_NAME="$(lspci -k 2>/dev/null | grep -iE 'amd|radeon' >/dev/null && echo 'radeonsi' || echo '')"
-    [ -z "$LIBVA_DRIVER_NAME" ] && unset LIBVA_DRIVER_NAME
+    if lspci -k 2>/dev/null | grep -iE 'amd|radeon' >/dev/null 2>&1; then
+        export LIBVA_DRIVER_NAME="radeonsi"
+    elif lspci -k 2>/dev/null | grep -iE 'nvidia' >/dev/null 2>&1; then
+        export LIBVA_DRIVER_NAME="nvidia"
+        export GBM_BACKEND="nvidia-drm"
+        export __GLX_VENDOR_LIBRARY_NAME="nvidia"
+        export NVD_BACKEND="direct"
+    fi
 fi
 
 # Ensure user runtime directory exists
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+mkdir -p "$XDG_RUNTIME_DIR" 2>/dev/null || true
 
 # Ensure default Caelestia Hyprland config is initialized in user profile
 mkdir -p "$HOME/.config/hypr"
 if [ ! -f "$HOME/.config/hypr/hyprland.conf" ]; then
     cat << 'EOF' > "$HOME/.config/hypr/hyprland.conf"
 # Caelestia Shell configuration for Caelaris Linux
-debug {
-    suppress_errors = true
-}
-ecosystem {
-    no_donation_nag = true
-}
 source = /etc/caelestia/hyprland.conf
 EOF
 fi
@@ -45,13 +50,17 @@ if [ -f /etc/caelestia/hyprland.lua ] && [ ! -f "$HOME/.config/hypr/hyprland.lua
     cp /etc/caelestia/hyprland.lua "$HOME/.config/hypr/hyprland.lua" 2>/dev/null || true
 fi
 
-# Launch Hyprland via official wrapper start-hyprland or direct binary
-if command -v start-hyprland >/dev/null 2>&1; then
+# Determine authoritative Hyprland configuration file
+HYPR_CONF="$HOME/.config/hypr/hyprland.conf"
+if [ ! -s "$HYPR_CONF" ]; then
+    HYPR_CONF="/etc/caelestia/hyprland.conf"
+fi
+
+# Launch Hyprland with explicit config
+if command -v Hyprland >/dev/null 2>&1; then
+    exec Hyprland --config "$HYPR_CONF"
+elif command -v start-hyprland >/dev/null 2>&1; then
     exec start-hyprland
-elif [ -f "$HOME/.config/hypr/hyprland.conf" ]; then
-    exec Hyprland --config "$HOME/.config/hypr/hyprland.conf"
-elif [ -f /etc/caelestia/hyprland.conf ]; then
-    exec Hyprland --config /etc/caelestia/hyprland.conf
 else
     exec Hyprland
 fi

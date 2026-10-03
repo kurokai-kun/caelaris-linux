@@ -5,46 +5,66 @@
 # ==========================================================
 set +e
 
-# 1. Register display environment with D-Bus and systemd user session
-dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP 2>/dev/null || true
-systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP 2>/dev/null || true
+# 1. Wait for Wayland display socket to become fully operational
+for i in {1..50}; do
+    if [ -n "$WAYLAND_DISPLAY" ] && [ -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]; then
+        break
+    fi
+    sleep 0.1
+done
 
-# 2. Polkit authentication agent
+# 2. Register display environment with D-Bus and systemd user session
+dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP HYPRLAND_INSTANCE_SIGNATURE 2>/dev/null || true
+systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP HYPRLAND_INSTANCE_SIGNATURE 2>/dev/null || true
+
+# 3. Audio & Polkit User Services
+systemctl --user start pipewire pipewire-pulse wireplumber 2>/dev/null || true
+
 if [ -x /usr/lib/polkit-kde-authentication-agent-1 ]; then
     /usr/lib/polkit-kde-authentication-agent-1 &
 elif [ -x /usr/libexec/polkit-kde-authentication-agent-1 ]; then
     /usr/libexec/polkit-kde-authentication-agent-1 &
 fi
 
-# 3. Audio & Network system tray applets
-command -v pipewire >/dev/null 2>&1 && pipewire &
-command -v wireplumber >/dev/null 2>&1 && wireplumber &
-nm-applet --indicator &
+# 4. Network system tray applet
+command -v nm-applet >/dev/null 2>&1 && (nm-applet --indicator &)
 
-# 4. Set Caelestia Wallpaper (Eliminates Anime Splash Screen)
+# 5. Set Caelestia Wallpaper (Official Anime Wallpaper with Fallback)
 WALLPAPER="/usr/share/backgrounds/caelestia-wallpaper.jpg"
+[ ! -f "$WALLPAPER" ] && WALLPAPER="/usr/share/backgrounds/caelaris-wallpaper.jpg"
 [ ! -f "$WALLPAPER" ] && WALLPAPER="/usr/share/pixmaps/caelaris-logo.png"
 
 if command -v swaybg >/dev/null 2>&1 && [ -f "$WALLPAPER" ]; then
     killall swaybg 2>/dev/null || true
-    swaybg -m fill -i "$WALLPAPER" &
+    (
+        for attempt in 1 2 3; do
+            swaybg -m fill -i "$WALLPAPER" && break
+            sleep 0.5
+        done
+    ) &
 elif command -v hyprpaper >/dev/null 2>&1; then
     hyprpaper &
 fi
 
-# 5. Notification Daemon
-if command -v mako >/dev/null 2>&1; then
-    killall mako 2>/dev/null || true
-    mako &
-elif command -v dunst >/dev/null 2>&1; then
+# 6. Notification Daemon (Dunst / Mako)
+if command -v dunst >/dev/null 2>&1; then
     killall dunst 2>/dev/null || true
     dunst &
+elif command -v mako >/dev/null 2>&1; then
+    killall mako 2>/dev/null || true
+    mako &
 fi
 
-# 6. Waybar / Caelestia Top Bar
+# 7. Waybar / Caelestia Top Bar
 killall waybar 2>/dev/null || true
-if [ -f /etc/caelestia/waybar/config.jsonc ]; then
-    waybar -c /etc/caelestia/waybar/config.jsonc -s /etc/caelestia/waybar/style.css &
-elif command -v waybar >/dev/null 2>&1; then
-    waybar &
-fi
+(
+    for attempt in 1 2 3 4; do
+        if [ -f /etc/caelestia/waybar/config.jsonc ]; then
+            waybar -c /etc/caelestia/waybar/config.jsonc -s /etc/caelestia/waybar/style.css && break
+        elif command -v waybar >/dev/null 2>&1; then
+            waybar && break
+        fi
+        sleep 0.5
+    done
+) &
+
