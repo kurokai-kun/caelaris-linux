@@ -638,11 +638,38 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
     initrd /live/initrd.img
 }
 
+menuentry "Boot Installed Operating System" --class disk --class os {
+    insmod chain
+    insmod part_gpt
+    insmod part_msdos
+    insmod fat
+    insmod btrfs
+    insmod ext2
+    search --no-floppy --file --set=root /EFI/Caelaris/grubaa64.efi
+    if [ -f ($root)/EFI/Caelaris/grubaa64.efi ]; then
+        chainloader ($root)/EFI/Caelaris/grubaa64.efi
+    else
+        search --no-floppy --file --set=root /EFI/BOOT/BOOTAA64.EFI
+        if [ -f ($root)/EFI/BOOT/BOOTAA64.EFI ]; then
+            chainloader ($root)/EFI/BOOT/BOOTAA64.EFI
+        else
+            search --no-floppy --file --set=root /boot/grub/grub.cfg
+            configfile ($root)/boot/grub/grub.cfg
+        fi
+    fi
+}
+
 menuentry "Caelaris Linux (Safe Graphics / Fallback)" --class caelaris --class gnu-linux {
     search --no-floppy --set=root --file /live/vmlinuz
     linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live nomodeset quiet plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
     initrd /live/initrd.img
 }
+
+if [ "$grub_platform" = "efi" ]; then
+    menuentry "UEFI Firmware Settings" --class uefi {
+        fwsetup
+    }
+fi
 EOF
 
 # Ensure grub.cfg is available at standard search locations

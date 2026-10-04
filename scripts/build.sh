@@ -185,11 +185,38 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
     initrd /%INSTALL_DIR%/boot/intel-ucode.img /%INSTALL_DIR%/boot/amd-ucode.img /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
 }
 
+menuentry "Boot Installed Operating System" --class disk --class os {
+    insmod chain
+    insmod part_gpt
+    insmod part_msdos
+    insmod fat
+    insmod btrfs
+    insmod ext2
+    search --no-floppy --file --set=root /EFI/Caelaris/grubx64.efi
+    if [ -f ($root)/EFI/Caelaris/grubx64.efi ]; then
+        chainloader ($root)/EFI/Caelaris/grubx64.efi
+    else
+        search --no-floppy --file --set=root /EFI/BOOT/BOOTX64.EFI
+        if [ -f ($root)/EFI/BOOT/BOOTX64.EFI ]; then
+            chainloader ($root)/EFI/BOOT/BOOTX64.EFI
+        else
+            search --no-floppy --file --set=root /boot/grub/grub.cfg
+            configfile ($root)/boot/grub/grub.cfg
+        fi
+    fi
+}
+
 menuentry "Caelaris Linux (Safe Graphics / Fallback)" --class caelaris --class gnu-linux {
     set gfxpayload=keep
     linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma nomodeset quiet plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
     initrd /%INSTALL_DIR%/boot/intel-ucode.img /%INSTALL_DIR%/boot/amd-ucode.img /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
 }
+
+if [ "$grub_platform" = "efi" ]; then
+    menuentry "UEFI Firmware Settings" --class uefi {
+        fwsetup
+    }
+fi
 EOF
 ' _ {} \;
 
