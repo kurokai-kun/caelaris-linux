@@ -100,6 +100,7 @@ xorg-xwayland
 # ==========================================================
 hyprland
 xdg-desktop-portal-hyprland
+xdg-desktop-portal-gtk
 waybar
 rofi-wayland
 swaybg

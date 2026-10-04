@@ -1,0 +1,14 @@
+[Unit]
+Description=Caelaris Clean Shutdown & Mount Release
+DefaultDependencies=no
+After=final.target
+Before=shutdown.target reboot.target poweroff.target halt.target swap.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/caelaris-shutdown-clean
+TimeoutSec=5
+RemainAfterExit=yes
+
+[Install]
+WantedBy=shutdown.target reboot.target poweroff.target

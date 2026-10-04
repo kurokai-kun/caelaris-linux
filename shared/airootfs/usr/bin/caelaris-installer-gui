@@ -572,7 +572,7 @@ class InstallWorker(QThread):
             with open("/mnt/etc/default/grub", "w") as f:
                 f.write(
                     'GRUB_DEFAULT=0\n'
-                    'GRUB_TIMEOUT=5\n'
+                    'GRUB_TIMEOUT=12\n'
                     'GRUB_TIMEOUT_STYLE=menu\n'
                     'GRUB_DISTRIBUTOR="Caelaris"\n'
                     f'GRUB_CMDLINE_LINUX_DEFAULT="{subvol_arg} quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 systemd.unified_cgroup_hierarchy=1"\n'
@@ -674,7 +674,7 @@ class InstallWorker(QThread):
                         cfg_text = f.read()
 
                     import re
-                    cfg_text = re.sub(r'set timeout=\d+', 'set timeout=5', cfg_text)
+                    cfg_text = re.sub(r'set timeout=\d+', 'set timeout=12', cfg_text)
 
                     # Extract header before first menuentry
                     first_menu = re.search(r'^[ \t]*menuentry\s+', cfg_text, re.MULTILINE)
@@ -740,7 +740,7 @@ class InstallWorker(QThread):
 
                     with open(grub_cfg_file, "w") as f:
                         f.write(cfg_text)
-                    self.log("[SUCCESS] GRUB menu decluttered successfully (kept essential entries only, 5s timeout).")
+                    self.log("[SUCCESS] GRUB menu decluttered successfully (kept essential entries only, 12s timeout).")
                 except Exception as ex:
                     self.log(f"[WARNING] Could not polish grub.cfg: {ex}")
 
@@ -748,6 +748,8 @@ class InstallWorker(QThread):
             self.run_cmd("arch-chroot /mnt pacman-key --init 2>/dev/null || true", check=False)
             pop_key = "archlinuxarm" if is_aarch64 else "archlinux"
             self.run_cmd(f"arch-chroot /mnt pacman-key --populate {pop_key} 2>/dev/null || true", check=False)
+            self.run_cmd("arch-chroot /mnt gpgconf --kill all 2>/dev/null || true", check=False)
+            self.run_cmd("killall -9 gpg-agent dirmngr 2>/dev/null || true", check=False)
 
             # ── Step 5: Install & Enable All Hardware & Virtualization Drivers ───
             self.progress_changed.emit(96, "Installing and enabling hardware drivers & guest tools...")
@@ -917,9 +919,13 @@ class InstallWorker(QThread):
             # Cleanly flush disk buffers and unmount all target partitions
             self.progress_changed.emit(99, "Flushing filesystem buffers and unmounting target partitions...")
             self.run_cmd("arch-chroot /mnt gpgconf --kill all 2>/dev/null || true", check=False)
-            self.run_cmd("killall -9 gpg-agent dirmngr 2>/dev/null || true", check=False)
+            self.run_cmd("gpgconf --homedir /etc/pacman.d/gnupg --kill all 2>/dev/null || true", check=False)
+            self.run_cmd("killall -9 gpg-agent dirmngr scdaemon pacman 2>/dev/null || true", check=False)
+            self.run_cmd("swapoff -a 2>/dev/null || true", check=False)
             self.run_cmd("sync", check=False)
             self.run_cmd("fuser -km /mnt 2>/dev/null || true", check=False)
+            self.run_cmd("fuser -km /tmp 2>/dev/null || true", check=False)
+            self.run_cmd("fuser -km /etc/pacman.d/gnupg 2>/dev/null || true", check=False)
             self.run_cmd("sync", check=False)
             self.run_cmd("umount -R -f /mnt 2>/dev/null || true", check=False)
             self.run_cmd("umount -R -l /mnt 2>/dev/null || true", check=False)
@@ -1482,8 +1488,20 @@ class CaelarisInstaller(QMainWindow):
 
     def finish_installation(self):
         if self.chk_reboot.isChecked():
-            subprocess.run(["sync"])
+            subprocess.run(["sync"], check=False)
+            subprocess.run(["arch-chroot", "/mnt", "gpgconf", "--kill", "all"], check=False)
+            subprocess.run(["gpgconf", "--homedir", "/etc/pacman.d/gnupg", "--kill", "all"], check=False)
+            subprocess.run(["killall", "-9", "gpg-agent", "dirmngr", "scdaemon", "pacman"], check=False)
+            subprocess.run(["swapoff", "-a"], check=False)
+            subprocess.run(["fuser", "-km", "/mnt"], check=False)
+            subprocess.run(["fuser", "-km", "/tmp"], check=False)
+            subprocess.run(["fuser", "-km", "/etc/pacman.d/gnupg"], check=False)
+            subprocess.run(["sync"], check=False)
+            subprocess.run(["umount", "-R", "-f", "/mnt"], check=False)
             subprocess.run(["umount", "-R", "-l", "/mnt"], check=False)
+            subprocess.run(["umount", "-l", "/etc/pacman.d/gnupg"], check=False)
+            subprocess.run(["umount", "-l", "/tmp"], check=False)
+            time.sleep(0.5)
             subprocess.Popen(["systemctl", "--no-block", "reboot"])
         self.close()
 

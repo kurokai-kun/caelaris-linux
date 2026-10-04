@@ -183,7 +183,7 @@ if [[ "$FORMAT" == "both" || "$FORMAT" == "iso" ]]; then
     # Create GRUB EFI configuration
     cat << 'EOF' > "${ISO_STAGING}/EFI/BOOT/grub.cfg"
 set default="0"
-set timeout=5
+set timeout=12
 
 menuentry "Caelaris Linux ARM64 (Live Session)" {
     linux /live/vmlinuz boot=live quiet splash

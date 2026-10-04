@@ -463,6 +463,20 @@ class CaelestiaDashboard(QWidget):
             super().keyPressEvent(event)
 
 def main():
+    cur_pid = os.getpid()
+    try:
+        out = subprocess.check_output(["pgrep", "-f", "caelestia-dashboard"], text=True)
+        pids = [int(p) for p in out.strip().split() if int(p) != cur_pid]
+        if pids:
+            for p in pids:
+                try:
+                    os.kill(p, 15)
+                except OSError:
+                    pass
+            sys.exit(0)
+    except Exception:
+        pass
+
     app = QApplication(sys.argv)
     dashboard = CaelestiaDashboard()
     dashboard.show()
@@ -470,3 +484,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

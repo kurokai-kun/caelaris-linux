@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2034
 
-iso_name="caelaris-kde"
-iso_label="CAEL_KDE_$(date +%y%m)"
+iso_name="caelaris-linux"
+iso_label="CAELARIS_$(date +%y%m)"
 iso_publisher="Caelaris Project <https://github.com/caelaris-linux/caelaris>"
-iso_application="Caelaris Linux Live/Rescue & Installer (KDE Edition)"
+iso_application="Caelaris Linux Live/Rescue & Installer"
 iso_version="$(date +%Y.%m.%d)"
 install_dir="arch"
 buildmodes=('iso')

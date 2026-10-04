@@ -1,0 +1,34 @@
+#!/bin/bash
+# ==========================================================
+# Caelaris Clean Shutdown Helper
+# Eliminates unmount errors for /etc/pacman.d/gnupg, /tmp, and zram swap
+# ==========================================================
+set +e
+
+# 1. Terminate all lingering GnuPG and pacman daemons
+gpgconf --homedir /etc/pacman.d/gnupg --kill all 2>/dev/null || true
+killall -9 gpg-agent dirmngr scdaemon pacman 2>/dev/null || true
+
+# 2. Deactivate all swap so /dev/zram0 detaches cleanly
+swapoff -a 2>/dev/null || true
+
+# 3. Synchronize filesystem buffers
+sync
+
+# 4. Release and unmount /etc/pacman.d/gnupg
+if mountpoint -q /etc/pacman.d/gnupg 2>/dev/null; then
+    fuser -km /etc/pacman.d/gnupg 2>/dev/null || true
+    umount -l /etc/pacman.d/gnupg 2>/dev/null || true
+fi
+
+# 5. Release any dangling locks on /tmp
+fuser -km /tmp 2>/dev/null || true
+umount -l /tmp 2>/dev/null || true
+
+# 6. Unmount /mnt if still mounted
+if mountpoint -q /mnt 2>/dev/null; then
+    fuser -km /mnt 2>/dev/null || true
+    umount -R -l /mnt 2>/dev/null || true
+fi
+
+exit 0

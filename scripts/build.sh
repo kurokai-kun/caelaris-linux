@@ -296,6 +296,15 @@ mkdir -p "$OUT_DIR"
 echo "Running mkarchiso validation and build..."
 mkarchiso -v -w "$WORK_DIR" -o "$OUT_DIR" "$BUILD_PROFILE"
 
+# Ensure generated ISO filename strictly never contains "kde"
+for iso in "${OUT_DIR}"/*kde*.iso; do
+    if [ -f "$iso" ]; then
+        new_iso="${iso//-kde/}"
+        echo "Normalizing ISO filename: $iso -> $new_iso"
+        mv "$iso" "$new_iso"
+    fi
+done
+
 echo "=========================================================="
 echo " ISO Generated successfully in: ${OUT_DIR}                "
 echo "=========================================================="

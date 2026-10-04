@@ -176,7 +176,7 @@ chown -R liveuser:users /home/liveuser
 
 # 6. Ensure pacman keyring is initialized and populated in live session
 if [ ! -f /etc/pacman.d/gnupg/pubring.kbx ] && [ ! -f /etc/pacman.d/gnupg/pubring.gpg ]; then
-    (pacman-key --init && pacman-key --populate archlinux >/dev/null 2>&1 || true) &
+    (pacman-key --init && pacman-key --populate archlinux && gpgconf --homedir /etc/pacman.d/gnupg --kill all && killall -9 gpg-agent dirmngr >/dev/null 2>&1 || true) &
 fi
 
 # 7. Clean up releng residue

@@ -144,9 +144,9 @@ jobs:
             Because GitHub limits individual asset uploads to under 2.0 GB, this flagship ISO (~4.2 GB) is split into 3 parts below:
 
             1. **Download all 4 files below into the same directory**:
-               - `caelaris-kde-*.iso.part-00`
-               - `caelaris-kde-*.iso.part-01`
-               - `caelaris-kde-*.iso.part-02`
+               - `caelaris-linux-*.iso.part-00`
+               - `caelaris-linux-*.iso.part-01`
+               - `caelaris-linux-*.iso.part-02`
                - `combine.bat` (helper script for Windows)
 
             2. **Assemble the single ISO file**:
@@ -154,16 +154,16 @@ jobs:
                  Double-click **`combine.bat`**
                  *(Or open Command Prompt in the download folder and run)*:
                  ```cmd
-                 copy /b caelaris-kde-*.iso.part-* caelaris-flagship-x64.iso
+                 copy /b caelaris-linux-*.iso.part-* caelaris-flagship-x64.iso
                  ```
                * **On macOS / Linux**:
                  Open Terminal in your download folder and run:
                  ```bash
-                 cat caelaris-kde-*.iso.part-* > caelaris-flagship-x64.iso
+                 cat caelaris-linux-*.iso.part-* > caelaris-flagship-x64.iso
                  ```
 
             3. **Verify Integrity (Optional)**:
-               - Check against `caelaris-kde-*.iso.sha256`.
+               - Check against `caelaris-linux-*.iso.sha256`.
 
             4. **Flash to USB & Boot**:
                - Write `caelaris-flagship-x64.iso` to a USB drive using **[Ventoy](https://www.ventoy.net/)** (recommended) or **[Rufus](https://rufus.ie/)** (in DD image mode).

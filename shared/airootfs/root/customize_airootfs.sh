@@ -89,10 +89,16 @@ systemctl enable caelaris-vram-booster.service 2>/dev/null || true
 echo "Pre-initializing pacman keyring in rootfs..."
 pacman-key --init 2>/dev/null || true
 pacman-key --populate archlinux 2>/dev/null || true
+gpgconf --homedir /etc/pacman.d/gnupg --kill all 2>/dev/null || true
+killall -9 gpg-agent dirmngr 2>/dev/null || true
 systemctl disable reflector.service 2>/dev/null || true
 systemctl mask reflector.service 2>/dev/null || true
 ln -sf /dev/null /etc/systemd/system/reflector.service 2>/dev/null || true
 ln -sf /dev/null /etc/systemd/system/getty@tty1.service 2>/dev/null || true
+
+# 13. Enable Clean Shutdown and unmount safeguards
+systemctl enable caelaris-shutdown-clean.service 2>/dev/null || true
+chmod +x /usr/bin/caelaris-shutdown-clean /usr/lib/systemd/system-shutdown/caelaris-clean.shutdown 2>/dev/null || true
 
 echo "=== customize_airootfs.sh completed successfully ==="
 
