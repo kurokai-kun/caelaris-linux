@@ -3,118 +3,104 @@
 set +e
 
 LOGFILE="/tmp/caelaris-installer.log"
-USER_UID="$(id -u)"
-USER_RUNTIME="${XDG_RUNTIME_DIR:-/run/user/${USER_UID}}"
 
-# 1. Authorize root on X11 / XWayland
-if command -v xhost >/dev/null 2>&1; then
-    xhost +SI:localuser:root 2>/dev/null || true
-    xhost +local:root 2>/dev/null || true
-    xhost +local: 2>/dev/null || true
-    xhost + 2>/dev/null || true
+# Step 1: If launched as normal unprivileged user, configure display authorizations and elevate to root
+if [ "$(id -u)" -ne 0 ]; then
+    USER_UID="$(id -u)"
+    USER_RUNTIME="${XDG_RUNTIME_DIR:-/run/user/${USER_UID}}"
+
+    # 1. Authorize root on X11 / XWayland via xhost
+    if command -v xhost >/dev/null 2>&1; then
+        xhost +SI:localuser:root 2>/dev/null || true
+        xhost +local:root 2>/dev/null || true
+        xhost + 2>/dev/null || true
+    fi
+
+    # 2. Extract and merge current X11 authority cookie to root
+    if [ -n "$DISPLAY" ] && command -v xauth >/dev/null 2>&1; then
+        xauth extract - "$DISPLAY" 2>/dev/null | sudo xauth merge - 2>/dev/null || true
+    fi
+
+    # 3. Setup root Wayland runtime directory and bridge socket using sudo
+    sudo mkdir -p /run/user/0 2>/dev/null || true
+    sudo chmod 700 /run/user/0 2>/dev/null || true
+    sudo chown root:root /run/user/0 2>/dev/null || true
+
+    if [ -d "$USER_RUNTIME" ]; then
+        chmod 777 "$USER_RUNTIME" 2>/dev/null || true
+        for sock in "$USER_RUNTIME"/wayland-*; do
+            if [ -e "$sock" ]; then
+                chmod 777 "$sock" 2>/dev/null || true
+                base="$(basename "$sock")"
+                sudo ln -sf "$sock" "/run/user/0/$base" 2>/dev/null || true
+            fi
+        done
+    fi
+
+    # 4. Copy XAUTHORITY to root
+    XAUTH_SRC="${XAUTHORITY}"
+    if [ -z "$XAUTH_SRC" ] || [ ! -f "$XAUTH_SRC" ]; then
+        for f in "$USER_RUNTIME"/xauth_* "$HOME"/.Xauthority /tmp/xauth_*; do
+            if [ -f "$f" ]; then
+                XAUTH_SRC="$f"
+                break
+            fi
+        done
+    fi
+    if [ -n "$XAUTH_SRC" ] && [ -f "$XAUTH_SRC" ]; then
+        sudo cp -f "$XAUTH_SRC" /root/.Xauthority 2>/dev/null || true
+        sudo chmod 600 /root/.Xauthority 2>/dev/null || true
+    fi
+
+    # Re-exec as root preserving display environment
+    exec sudo -E env DISPLAY="${DISPLAY:-:0}" \
+                     WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}" \
+                     XDG_RUNTIME_DIR="/run/user/0" \
+                     XAUTHORITY="/root/.Xauthority" \
+                     /usr/bin/caelaris-installer "$@"
 fi
 
-# 2. Setup root Wayland runtime directory and bridge socket
-mkdir -p /run/user/0 2>/dev/null || true
-chmod 700 /run/user/0 2>/dev/null || true
-if [ -d "$USER_RUNTIME" ]; then
-    chmod 777 "$USER_RUNTIME" 2>/dev/null || true
-    for sock in "$USER_RUNTIME"/wayland-*; do
-        if [ -e "$sock" ]; then
-            chmod 777 "$sock" 2>/dev/null || true
-            base="$(basename "$sock")"
-            ln -sf "$sock" "/run/user/0/$base" 2>/dev/null || true
-        fi
-    done
-fi
-
-# 3. Locate and grant access to XAUTHORITY
-if [ -z "$XAUTHORITY" ]; then
-    for f in "$USER_RUNTIME"/xauth_* "$HOME"/.Xauthority /tmp/xauth_*; do
-        if [ -f "$f" ]; then
-            export XAUTHORITY="$f"
-            break
-        fi
-    done
-fi
-if [ -n "$XAUTHORITY" ] && [ -f "$XAUTHORITY" ]; then
-    chmod 644 "$XAUTHORITY" 2>/dev/null || true
-    cp -f "$XAUTHORITY" /root/.Xauthority 2>/dev/null || true
-    chmod 600 /root/.Xauthority 2>/dev/null || true
-fi
-
-export DISPLAY="${DISPLAY:-:0}"
-
-# 4. If already root, launch directly
-if [ "$USER_UID" -eq 0 ]; then
-    export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/0}"
-    exec python3 /usr/bin/caelaris-installer-gui "$@"
-fi
-
-# Log header
+# Step 2: Running as root - Log environment
 {
     echo "=============================================="
-    echo " Starting Caelaris Linux Installer            "
+    echo " Starting Caelaris Linux Installer (Root)      "
     echo "=============================================="
     echo "[*] Date: $(date)"
-    echo "[*] User: $(whoami) (UID: ${USER_UID})"
-    echo "[*] DISPLAY: ${DISPLAY}"
+    echo "[*] User: $(whoami) (UID: $(id -u))"
+    echo "[*] DISPLAY: ${DISPLAY:-none}"
     echo "[*] WAYLAND_DISPLAY: ${WAYLAND_DISPLAY:-none}"
-    echo "[*] XDG_RUNTIME_DIR: ${USER_RUNTIME}"
+    echo "[*] XDG_RUNTIME_DIR: ${XDG_RUNTIME_DIR:-none}"
 } > "$LOGFILE"
 
-# 5. Launch with root privileges via sudo
-# Primary: Native Wayland with XCB fallback
-if [ -n "$WAYLAND_DISPLAY" ]; then
-    sudo -E env DISPLAY="$DISPLAY" \
-                 WAYLAND_DISPLAY="$WAYLAND_DISPLAY" \
-                 XDG_RUNTIME_DIR="/run/user/0" \
-                 XAUTHORITY="${XAUTHORITY:-/root/.Xauthority}" \
-                 QT_QPA_PLATFORM="wayland;xcb" \
-                 python3 /usr/bin/caelaris-installer-gui "$@" >> "$LOGFILE" 2>&1
+export DISPLAY="${DISPLAY:-:0}"
+export PYTHONUNBUFFERED=1
+
+# Attempt 1: Native Wayland with XCB fallback
+if [ -n "$WAYLAND_DISPLAY" ] && [ -e "/run/user/0/$WAYLAND_DISPLAY" ]; then
+    env QT_QPA_PLATFORM="wayland;xcb" python3 -u /usr/bin/caelaris-installer-gui "$@" >> "$LOGFILE" 2>&1
     STATUS=$?
     if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ]; then
         exit 0
     fi
 fi
 
-# Fallback 1: Direct XCB via XWayland / X11
-sudo -E env DISPLAY="$DISPLAY" \
-             XAUTHORITY="${XAUTHORITY:-/root/.Xauthority}" \
-             QT_QPA_PLATFORM="xcb" \
-             python3 /usr/bin/caelaris-installer-gui "$@" >> "$LOGFILE" 2>&1
+# Attempt 2: Direct XCB via XWayland / X11
+env QT_QPA_PLATFORM="xcb" python3 -u /usr/bin/caelaris-installer-gui "$@" >> "$LOGFILE" 2>&1
 STATUS=$?
 if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ]; then
     exit 0
 fi
 
-# Fallback 2: Wayland direct without XCB
-if [ -n "$WAYLAND_DISPLAY" ]; then
-    sudo -E env DISPLAY="$DISPLAY" \
-                 WAYLAND_DISPLAY="$WAYLAND_DISPLAY" \
-                 XDG_RUNTIME_DIR="/run/user/0" \
-                 XAUTHORITY="${XAUTHORITY:-/root/.Xauthority}" \
-                 QT_QPA_PLATFORM="wayland" \
-                 python3 /usr/bin/caelaris-installer-gui "$@" >> "$LOGFILE" 2>&1
+# Attempt 3: Direct Wayland
+if [ -n "$WAYLAND_DISPLAY" ] && [ -e "/run/user/0/$WAYLAND_DISPLAY" ]; then
+    env QT_QPA_PLATFORM="wayland" python3 -u /usr/bin/caelaris-installer-gui "$@" >> "$LOGFILE" 2>&1
     STATUS=$?
     if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ]; then
         exit 0
     fi
 fi
 
-# Fallback 3: pkexec elevation
-pkexec env DISPLAY="$DISPLAY" \
-           WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}" \
-           XDG_RUNTIME_DIR="/run/user/0" \
-           XAUTHORITY="${XAUTHORITY:-/root/.Xauthority}" \
-           QT_QPA_PLATFORM="wayland;xcb" \
-           python3 /usr/bin/caelaris-installer-gui "$@" >> "$LOGFILE" 2>&1
-STATUS=$?
-if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ]; then
-    exit 0
-fi
-
-# 6. Only open a diagnostic terminal if all launch attempts failed
+# Only display diagnostic if all graphical launch attempts failed
 echo "[-] Graphical installer failed to launch (exit code: $STATUS)." >> "$LOGFILE"
 sync
 if command -v konsole >/dev/null 2>&1; then

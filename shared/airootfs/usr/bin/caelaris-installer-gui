@@ -1583,24 +1583,22 @@ if __name__ == "__main__":
             os.execvp("sudo", cmd)
         except Exception:
             pass
-
-        app = QApplication(sys.argv)
-        QMessageBox.critical(
-            None,
-            "Root Privileges Required",
-            "The Caelaris Linux installer requires administrative (root) privileges to partition drives and install the system.\n\nPlease launch with root privileges or run:\nsudo caelaris-installer"
-        )
         sys.exit(1)
 
     ensure_ui_assets()
-    app = QApplication(sys.argv)
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication(sys.argv)
 
     # Disable popup animations to eliminate lag on software rendering and virtual environments
-    app.setEffectEnabled(Qt.UIEffect.UI_AnimateCombo, False)
-    app.setEffectEnabled(Qt.UIEffect.UI_AnimateMenu, False)
-    app.setEffectEnabled(Qt.UIEffect.UI_AnimateTooltip, False)
-    app.setEffectEnabled(Qt.UIEffect.UI_FadeMenu, False)
-    app.setEffectEnabled(Qt.UIEffect.UI_FadeTooltip, False)
+    try:
+        app.setEffectEnabled(Qt.UIEffect.UI_AnimateCombo, False)
+        app.setEffectEnabled(Qt.UIEffect.UI_AnimateMenu, False)
+        app.setEffectEnabled(Qt.UIEffect.UI_AnimateTooltip, False)
+        app.setEffectEnabled(Qt.UIEffect.UI_FadeMenu, False)
+        app.setEffectEnabled(Qt.UIEffect.UI_FadeTooltip, False)
+    except Exception:
+        pass
 
     installer = CaelarisInstaller()
     installer.show()

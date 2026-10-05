@@ -357,8 +357,10 @@ class CaelarisDefender(QMainWindow):
                 border: 1px solid #d5c7b8;
                 border-radius: 8px;
                 text-align: center;
-                height: 16px;
+                height: 18px;
                 background-color: #eee4d8;
+                color: #2d2621;
+                font-weight: 700;
             }
             QProgressBar::chunk {
                 background-color: #e07a5f;
@@ -366,6 +368,7 @@ class CaelarisDefender(QMainWindow):
             }
         """)
         self.scan_progress.setValue(0)
+        self.scan_progress.setFormat("%p%")
         layout.addWidget(self.scan_progress)
 
         self.lbl_scan_status = QLabel("Ready to scan.")
@@ -382,11 +385,32 @@ class CaelarisDefender(QMainWindow):
         layout.addWidget(self.threat_table)
 
         btn_box = QHBoxLayout()
-        self.btn_stop_scan = QPushButton("Stop Scan")
-        self.btn_stop_scan.setStyleSheet("background: #d32f2f; color: white; padding: 10px 20px; border-radius: 12px; font-weight: 700; border: none;")
+        self.btn_stop_scan = QPushButton("🛑 Stop Scan")
+        self.btn_stop_scan.setStyleSheet("""
+            QPushButton {
+                background: #d32f2f; color: white; padding: 10px 20px;
+                border-radius: 12px; font-weight: 700; border: none; font-size: 13px;
+            }
+            QPushButton:hover { background: #b71c1c; }
+        """)
+        self.btn_stop_scan.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_stop_scan.clicked.connect(self.stop_scan)
-        self.btn_stop_scan.setEnabled(False)
+        self.btn_stop_scan.setVisible(False)
         btn_box.addWidget(self.btn_stop_scan)
+
+        self.btn_new_scan = QPushButton("⚡ Run Another Scan")
+        self.btn_new_scan.setStyleSheet("""
+            QPushButton {
+                background: #e07a5f; color: white; padding: 10px 20px;
+                border-radius: 12px; font-weight: 700; border: none; font-size: 13px;
+            }
+            QPushButton:hover { background: #f28a6f; }
+        """)
+        self.btn_new_scan.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_new_scan.clicked.connect(lambda: self.content_stack.setCurrentIndex(0))
+        self.btn_new_scan.setVisible(False)
+        btn_box.addWidget(self.btn_new_scan)
+
         btn_box.addStretch()
         layout.addLayout(btn_box)
 
@@ -440,8 +464,27 @@ class CaelarisDefender(QMainWindow):
     def start_scan(self, targets):
         self.threat_table.setRowCount(0)
         self.scan_progress.setValue(0)
+        self.scan_progress.setFormat("%p%")
+        self.scan_progress.setStyleSheet("""
+            QProgressBar {
+                border: 1px solid #d5c7b8;
+                border-radius: 8px;
+                text-align: center;
+                height: 18px;
+                background-color: #eee4d8;
+                color: #2d2621;
+                font-weight: 700;
+            }
+            QProgressBar::chunk {
+                background-color: #e07a5f;
+                border-radius: 8px;
+            }
+        """)
+        self.btn_stop_scan.setVisible(True)
         self.btn_stop_scan.setEnabled(True)
+        self.btn_new_scan.setVisible(False)
         self.lbl_scan_status.setText("Initiating in-memory heuristic inspection...")
+        self.lbl_scan_status.setStyleSheet("font-size: 12px; font-weight: 600; color: #7d7065;")
 
         self.active_scanner = ScannerThread(targets)
         self.active_scanner.progress_signal.connect(self.on_scan_progress)
@@ -451,6 +494,7 @@ class CaelarisDefender(QMainWindow):
 
     def on_scan_progress(self, pct, status_text):
         self.scan_progress.setValue(pct)
+        self.scan_progress.setFormat(f"{pct}%")
         self.lbl_scan_status.setText(status_text)
 
     def on_threat_detected(self, filepath, status, desc, level):
@@ -504,17 +548,41 @@ class CaelarisDefender(QMainWindow):
                 self.threat_table.setItem(row, 3, QTableWidgetItem("Allowed by User"))
 
     def on_scan_finished(self, total, threats):
-        self.btn_stop_scan.setEnabled(False)
+        self.btn_stop_scan.setVisible(False)
+        self.btn_new_scan.setVisible(True)
         self.scan_progress.setValue(100)
-        self.lbl_scan_status.setText(f"Scan complete. {total} files inspected. {threats} threats handled.")
+        self.scan_progress.setFormat("Completed (100%)")
+        self.scan_progress.setStyleSheet("""
+            QProgressBar {
+                border: 1px solid #81c784;
+                border-radius: 8px;
+                text-align: center;
+                height: 18px;
+                background-color: #e8f5e9;
+                color: #1b5e20;
+                font-weight: 800;
+            }
+            QProgressBar::chunk {
+                background-color: #2e7d32;
+                border-radius: 8px;
+            }
+        """)
+        self.lbl_scan_status.setText(f"✔ Completed — 100% finished. {total} files inspected. {threats} threats handled.")
+        self.lbl_scan_status.setStyleSheet("font-size: 13px; font-weight: 800; color: #2e7d32;")
         self.load_quarantine_items()
-        QMessageBox.information(self, "Scan Complete", f"Inspection finished!\n\nFiles Scanned: {total}\nThreats Handled: {threats}\n\nZero private data was saved or transmitted.")
+        QMessageBox.information(
+            self,
+            "Scan Complete",
+            f"Threat Inspection Finished!\n\nStatus: Completed (100%)\nFiles Scanned: {total}\nThreats Handled: {threats}\n\nZero private data was saved or transmitted."
+        )
 
     def stop_scan(self):
         if self.active_scanner:
             self.active_scanner.stop()
-            self.btn_stop_scan.setEnabled(False)
+            self.btn_stop_scan.setVisible(False)
+            self.btn_new_scan.setVisible(True)
             self.lbl_scan_status.setText("Scan cancelled by user.")
+            self.lbl_scan_status.setStyleSheet("font-size: 12px; font-weight: 700; color: #d32f2f;")
 
     def load_quarantine_items(self):
         self.quarantine_table.setRowCount(0)
