@@ -1253,23 +1253,20 @@ class CaelarisInstaller(QMainWindow):
         cl10.addWidget(QLabel("Your selected desktop environment will boot by default. You can freely switch between all three from the session dropdown at the SDDM login screen."))
         cl10.addSpacing(12)
 
-        notice_box = QFrame()
-        notice_box.setStyleSheet("background-color: #0f172a; border: 1.5px solid #0284c7; border-radius: 8px; padding: 14px;")
-        nb_l = QVBoxLayout(notice_box)
-        lbl_notice_title = QLabel("⚠️  <b>Important Boot Instructions:</b>")
-        lbl_notice_title.setStyleSheet("color: #38bdf8; font-size: 14px; font-weight: bold;")
-        lbl_notice_body = QLabel(
-            "• <b>Virtual Machine (VMware / VirtualBox / QEMU):</b> Disconnect or unmount the Live ISO from your VM optical drive settings before or immediately after restarting.<br>"
-            "• <b>Physical PC:</b> Remove the USB installation drive when your PC shuts down / reboots.<br>"
-            "<i>(If the ISO/USB is kept attached, some BIOS/VM configurations will boot the live USB again instead of the hard drive).</i>"
+        cl10.addSpacing(10)
+        lbl_boot_notice = QLabel(
+            "<div style='background-color: #0f172a; border: 1.5px solid #0284c7; border-radius: 8px; padding: 12px;'>"
+            "<b style='color: #38bdf8; font-size: 14px;'>⚠️  Important Boot Instructions:</b><br><br>"
+            "<span style='color: #cbd5e1; font-size: 13px; line-height: 1.5;'>"
+            "• <b>Virtual Machine (VMware / VirtualBox / QEMU):</b> Disconnect or unmount the Live ISO in VM settings before restarting.<br>"
+            "• <b>Physical PC:</b> Remove the USB installation drive when your PC shuts down or restarts.<br>"
+            "<i>(Otherwise your computer will automatically boot back into the Live ISO installer).</i>"
+            "</span>"
+            "</div>"
         )
-        lbl_notice_body.setStyleSheet("color: #cbd5e1; font-size: 13px; line-height: 1.5;")
-        lbl_notice_body.setWordWrap(True)
-        nb_l.addWidget(lbl_notice_title)
-        nb_l.addWidget(lbl_notice_body)
-        cl10.addWidget(notice_box)
-
-        cl10.addSpacing(12)
+        lbl_boot_notice.setWordWrap(True)
+        cl10.addWidget(lbl_boot_notice)
+        cl10.addSpacing(10)
         self.chk_reboot = QCheckBox("Restart computer now")
         self.chk_reboot.setChecked(True)
         cl10.addWidget(self.chk_reboot)
@@ -1584,6 +1581,14 @@ if __name__ == "__main__":
         except Exception:
             pass
         sys.exit(1)
+
+    def _ex_handler(etype, evalue, etrace):
+        err = "".join(traceback.format_exception(etype, evalue, etrace))
+        sys.stderr.write(f"[PYTHON CRASH] {err}\n")
+        sys.stderr.flush()
+    sys.excepthook = _ex_handler
+
+    print(f"[*] Initializing Caelaris GUI installer (PID: {os.getpid()}, UID: {os.geteuid()})...", flush=True)
 
     ensure_ui_assets()
     app = QApplication.instance()

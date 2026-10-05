@@ -75,20 +75,20 @@ fi
 export DISPLAY="${DISPLAY:-:0}"
 export PYTHONUNBUFFERED=1
 
-# Attempt 1: Native Wayland with XCB fallback
+# Attempt 1: Direct XCB via XWayland / X11 (most compatible for root GUI on desktop)
+env QT_QPA_PLATFORM="xcb" python3 -u /usr/bin/caelaris-installer-gui "$@" >> "$LOGFILE" 2>&1
+STATUS=$?
+if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ]; then
+    exit 0
+fi
+
+# Attempt 2: Native Wayland with XCB fallback
 if [ -n "$WAYLAND_DISPLAY" ] && [ -e "/run/user/0/$WAYLAND_DISPLAY" ]; then
     env QT_QPA_PLATFORM="wayland;xcb" python3 -u /usr/bin/caelaris-installer-gui "$@" >> "$LOGFILE" 2>&1
     STATUS=$?
     if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ]; then
         exit 0
     fi
-fi
-
-# Attempt 2: Direct XCB via XWayland / X11
-env QT_QPA_PLATFORM="xcb" python3 -u /usr/bin/caelaris-installer-gui "$@" >> "$LOGFILE" 2>&1
-STATUS=$?
-if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ]; then
-    exit 0
 fi
 
 # Attempt 3: Direct Wayland
