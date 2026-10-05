@@ -21,6 +21,7 @@ if ! id -u liveuser >/dev/null 2>&1; then
 fi
 passwd -d liveuser 2>/dev/null || true
 echo "liveuser ALL=(ALL:ALL) NOPASSWD: ALL" > /etc/sudoers.d/liveuser
+echo 'Defaults env_keep += "DISPLAY WAYLAND_DISPLAY XDG_RUNTIME_DIR XAUTHORITY QT_QPA_PLATFORM PULSE_SERVER"' >> /etc/sudoers.d/liveuser
 chmod 0440 /etc/sudoers.d/liveuser
 chfn -f "Caelaris Linux" liveuser 2>/dev/null || true
 

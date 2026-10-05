@@ -171,6 +171,7 @@ neovim
 which
 sudo
 polkit
+xorg-xhost
 git
 reflector
 pacman-contrib

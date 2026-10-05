@@ -1296,40 +1296,53 @@ class CaelarisInstaller(QMainWindow):
         self.cb_disks.clear()
         found = False
 
-        # Detect live boot media (USB stick) to prevent catastrophic overwrite
-        live_devices = set()
-        for mount_check in ["/run/archiso/bootmnt", "/run/archiso", "/run/archiso/cowspace"]:
+        # Detect live boot media (USB drive or CD-ROM) to prevent overwriting the installer
+        live_disks = set()
+        for mount_check in ["/run/archiso/bootmnt", "/run/archiso"]:
             try:
-                src = subprocess.check_output(["findmnt", "-no", "SOURCE", mount_check], text=True).strip()
-                if src:
-                    live_devices.add(os.path.basename(src))
+                src = subprocess.check_output(
+                    ["findmnt", "-no", "SOURCE", mount_check],
+                    text=True, stderr=subprocess.DEVNULL
+                ).strip()
+                if src and src.startswith("/dev/"):
+                    dev = os.path.basename(src)
+                    live_disks.add(dev)
                     try:
-                        pk = subprocess.check_output(["lsblk", "-no", "PKNAME", src], text=True).strip()
+                        pk = subprocess.check_output(
+                            ["lsblk", "-no", "PKNAME", src],
+                            text=True, stderr=subprocess.DEVNULL
+                        ).strip()
                         if pk:
-                            live_devices.add(pk)
+                            live_disks.add(pk)
                     except Exception:
                         pass
             except Exception:
                 pass
 
         try:
-            out = subprocess.check_output(["lsblk", "-d", "-n", "-o", "NAME,SIZE,MODEL,TYPE"], text=True)
+            out = subprocess.check_output(
+                ["lsblk", "-d", "-n", "-o", "NAME,SIZE,MODEL,TYPE"],
+                text=True, stderr=subprocess.DEVNULL
+            )
             for line in out.strip().split("\n"):
                 parts = line.split()
                 if len(parts) >= 2 and parts[-1] == "disk":
                     name, size = parts[0], parts[1]
-                    if not name.startswith("loop") and not name.startswith("zram"):
-                        # Exclude live USB installer media
-                        if name in live_devices or any(name in d for d in live_devices):
-                            continue
-                        model = " ".join(parts[2:-1]) if len(parts) > 3 else ""
-                        display_text = f"/dev/{name} ({size} - {model})" if model else f"/dev/{name} ({size})"
-                        self.cb_disks.addItem(display_text, f"/dev/{name}")
-                        found = True
+                    if name.startswith("loop") or name.startswith("zram"):
+                        continue
+                    # Exclude the live USB installer device itself
+                    if name in live_disks:
+                        continue
+                    model = " ".join(parts[2:-1]) if len(parts) > 3 else ""
+                    display_text = f"/dev/{name} ({size} - {model})" if model else f"/dev/{name} ({size})"
+                    self.cb_disks.addItem(display_text, f"/dev/{name}")
+                    found = True
         except Exception:
             pass
+
         if not found:
-            self.cb_disks.addItem("/dev/sda (20.0G - Virtual Disk)", "/dev/sda")
+            # Fallback if no unmounted disk was recognized (e.g. fresh virtual disk)
+            self.cb_disks.addItem("/dev/sda (Virtual Disk / Drive)", "/dev/sda")
 
     def update_step_ui(self):
         for i, lbl in enumerate(self.step_labels):
