@@ -1,13 +1,16 @@
 [Unit]
 Description=Caelaris Clean Shutdown & Mount Release
 DefaultDependencies=no
-After=systemd-user-sessions.service
-Before=umount.target swap.target shutdown.target reboot.target poweroff.target halt.target
+After=basic.target
+Before=umount.target swap.target
+Conflicts=shutdown.target reboot.target poweroff.target halt.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/caelaris-shutdown-clean
-TimeoutSec=10
+RemainAfterExit=yes
+ExecStart=/bin/true
+ExecStop=/usr/bin/caelaris-shutdown-clean
+TimeoutStopSec=10
 
 [Install]
-WantedBy=shutdown.target reboot.target poweroff.target halt.target
+WantedBy=basic.target

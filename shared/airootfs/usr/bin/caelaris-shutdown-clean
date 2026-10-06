@@ -10,10 +10,12 @@ gpgconf --homedir /etc/pacman.d/gnupg --kill all 2>/dev/null || true
 killall -9 gpg-agent dirmngr scdaemon pacman 2>/dev/null || true
 if mountpoint -q /etc/pacman.d/gnupg 2>/dev/null; then
     fuser -km /etc/pacman.d/gnupg 2>/dev/null || true
+    umount -l /etc/pacman.d/gnupg 2>/dev/null || true
 fi
 
 # 2. Release dangling locks and unlinked files on /tmp
 fuser -km /tmp 2>/dev/null || true
+umount -l /tmp 2>/dev/null || true
 
 # 3. Synchronize filesystem buffers
 sync

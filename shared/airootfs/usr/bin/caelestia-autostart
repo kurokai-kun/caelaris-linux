@@ -78,8 +78,11 @@ killall waybar 2>/dev/null || true
     done
 ) &
 
-# 8. Visual confirmation banner
+# 8. Visual confirmation banner & Launch Caelestia Dashboard
 (
     sleep 1.0
     notify-send -u normal "✦ Caelestia Shell" "Press Super+Space or click ✦ Caelaris for App Launcher" -i /usr/share/pixmaps/caelaris-logo.png 2>/dev/null || true
+    if [ -x /usr/bin/caelestia-dashboard ]; then
+        /usr/bin/caelestia-dashboard &
+    fi
 ) &

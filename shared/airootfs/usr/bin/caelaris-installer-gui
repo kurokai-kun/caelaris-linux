@@ -607,6 +607,7 @@ class InstallWorker(QThread):
                     'GRUB_DEFAULT=0\n'
                     'GRUB_TIMEOUT=12\n'
                     'GRUB_TIMEOUT_STYLE=menu\n'
+                    'GRUB_RECORDFAIL_TIMEOUT=12\n'
                     'GRUB_DISTRIBUTOR="Caelaris"\n'
                     f'GRUB_CMDLINE_LINUX_DEFAULT="{subvol_arg} quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 systemd.unified_cgroup_hierarchy=1"\n'
                     'GRUB_CMDLINE_LINUX=""\n'
@@ -615,12 +616,12 @@ class InstallWorker(QThread):
                     'GRUB_DISABLE_SUBMENU=y\n'
                     'GRUB_DISABLE_RECOVERY=true\n'
                     'GRUB_DISABLE_OS_PROBER=true\n'
+                    'GRUB_DISABLE_BOOTNEXT=true\n'
                 )
 
             # Deactivate clutter generator scripts in grub.d
-            for clut_script in ["20_linux_xen", "20_memtest86+", "30_os-prober", "15_caelaris_gnome"]:
-                cp = f"/mnt/etc/grub.d/{clut_script}"
-                if os.path.exists(cp):
+            for clut_pattern in ["*bootnext*", "*memtest*", "*xen*", "*os-prober*", "*caelaris_gnome*"]:
+                for cp in glob.glob(f"/mnt/etc/grub.d/{clut_pattern}"):
                     try:
                         os.chmod(cp, 0o644)
                     except Exception:
@@ -707,20 +708,44 @@ class InstallWorker(QThread):
                         cfg_text = f.read()
 
                     import re
-                    # 1. Guarantee 12-second countdown and visible menu style
-                    cfg_text = re.sub(r'set timeout=\d+', 'set timeout=12', cfg_text)
-                    cfg_text = re.sub(r'set timeout_style=\w+', 'set timeout_style=menu', cfg_text)
+                    # 1. Strip all (EFI BootNext) and unsupported option menuentry blocks
+                    cleaned_lines = []
+                    skip_block = False
+                    brace_depth = 0
+                    for line in cfg_text.splitlines():
+                        if re.search(r"menuentry\s+['\"].*(?:BootNext|Unsupported option).*['\"]", line, re.IGNORECASE):
+                            skip_block = True
+                            brace_depth = line.count("{") - line.count("}")
+                            if brace_depth <= 0:
+                                skip_block = False
+                            continue
+                        if skip_block:
+                            brace_depth += line.count("{") - line.count("}")
+                            if brace_depth <= 0:
+                                skip_block = False
+                            continue
+                        cleaned_lines.append(line)
+                    cfg_text = "\n".join(cleaned_lines)
 
-                    # 2. De-clutter menuentry names (remove redundant distro/kernel version strings)
-                    cfg_text = re.sub(r"menuentry ['\"][^'\"]*fallback initramfs[^'\"]*['\"]", "menuentry 'Caelaris Linux (Safe Mode)'", cfg_text, flags=re.IGNORECASE)
-                    cfg_text = re.sub(r"menuentry ['\"][^'\"]*(?:with Linux|linux-fallback)[^'\"]*['\"]", "menuentry 'Caelaris Linux (Safe Mode)'", cfg_text, flags=re.IGNORECASE)
+                    # 2. De-clutter menuentry names (only fallback kernel gets Safe Mode)
+                    cfg_text = re.sub(r"menuentry ['\"][^'\"]*(?:fallback initramfs|linux-fallback)[^'\"]*['\"]", "menuentry 'Caelaris Linux (Safe Mode)'", cfg_text, flags=re.IGNORECASE)
+                    cfg_text = re.sub(r"menuentry ['\"][^'\"]*(?:Caelaris|Arch Linux), with Linux[^'\"]*['\"]", "menuentry 'Caelaris Linux'", cfg_text, flags=re.IGNORECASE)
                     cfg_text = re.sub(r"menuentry ['\"]Arch Linux[^'\"]*['\"]", "menuentry 'Caelaris Linux'", cfg_text)
-                    cfg_text = re.sub(r"menuentry ['\"]Caelaris, with Linux[^'\"]*['\"]", "menuentry 'Caelaris Linux'", cfg_text)
+                    cfg_text = re.sub(r"menuentry ['\"]Caelaris\s*['\"]", "menuentry 'Caelaris Linux'", cfg_text)
                     cfg_text = cfg_text.replace("Arch Linux", "Caelaris Linux")
 
-                    # 3. Ensure top-level default and timeout block is present
-                    if "set timeout=12" not in cfg_text:
-                        cfg_text = "set default=0\nset timeout=12\nset timeout_style=menu\n\n" + cfg_text
+                    # 3. Ensure top-level default, timeout, and visible menu
+                    cfg_text = re.sub(r'set timeout=\d+', 'set timeout=12', cfg_text)
+                    cfg_text = re.sub(r'set timeout_style=\w+', 'set timeout_style=menu', cfg_text)
+                    cfg_text = re.sub(r'set recordfail_timeout=\d+', 'set recordfail_timeout=12', cfg_text)
+
+                    # Prepend default and 12-second timeout before the first menuentry
+                    timeout_banner = "set default=0\nset timeout=12\nset timeout_style=menu\n\n"
+                    first_menu_pos = cfg_text.find("menuentry ")
+                    if first_menu_pos != -1:
+                        cfg_text = cfg_text[:first_menu_pos] + timeout_banner + cfg_text[first_menu_pos:]
+                    else:
+                        cfg_text = timeout_banner + cfg_text
 
                     with open(grub_cfg_file, "w") as f:
                         f.write(cfg_text)
@@ -1547,6 +1572,12 @@ class CaelarisInstaller(QMainWindow):
 
     def finish_installation(self):
         if self.chk_reboot.isChecked():
+            # Release all GPG locks, unmount /tmp, and deactivate swap before rebooting
+            if os.path.isfile("/usr/bin/caelaris-shutdown-clean"):
+                try:
+                    subprocess.run(["/usr/bin/caelaris-shutdown-clean"], check=False)
+                except Exception:
+                    pass
             # Flush filesystem buffers to disk
             subprocess.run(["sync"], check=False)
             # Unmount target partitions if still mounted
