@@ -255,7 +255,7 @@ class InstallWorker(QThread):
 
             self.progress_changed.emit(5, f"Preparing target disk {disk}...")
             self.run_cmd("umount -R /mnt 2>/dev/null || true", check=False)
-            self.run_cmd("swapoff -a 2>/dev/null || true", check=False)
+            self.run_cmd(f"swapoff {disk}* 2>/dev/null || true", check=False)
             self.run_cmd("dmsetup remove_all 2>/dev/null || true", check=False)
             self.run_cmd("vgchange -an 2>/dev/null || true", check=False)
             self.run_cmd(f"fuser -k {disk}* 2>/dev/null || true", check=False)
@@ -926,16 +926,11 @@ class InstallWorker(QThread):
             self.run_cmd("arch-chroot /mnt gtk-update-icon-cache -f -t /usr/share/icons/hicolor", check=False)
             self.run_cmd("arch-chroot /mnt update-desktop-database /usr/share/applications", check=False)
 
-            # Cleanly flush disk buffers and unmount all target partitions
+            # Cleanly flush disk buffers and unmount target partitions
             self.progress_changed.emit(99, "Flushing filesystem buffers and unmounting target partitions...")
             self.run_cmd("arch-chroot /mnt gpgconf --kill all 2>/dev/null || true", check=False)
-            self.run_cmd("gpgconf --homedir /etc/pacman.d/gnupg --kill all 2>/dev/null || true", check=False)
-            self.run_cmd("killall -9 gpg-agent dirmngr scdaemon pacman 2>/dev/null || true", check=False)
-            self.run_cmd("swapoff -a 2>/dev/null || true", check=False)
             self.run_cmd("sync", check=False)
             self.run_cmd("fuser -km /mnt 2>/dev/null || true", check=False)
-            self.run_cmd("fuser -km /tmp 2>/dev/null || true", check=False)
-            self.run_cmd("fuser -km /etc/pacman.d/gnupg 2>/dev/null || true", check=False)
             self.run_cmd("sync", check=False)
             self.run_cmd("umount -R -f /mnt 2>/dev/null || true", check=False)
             self.run_cmd("umount -R -l /mnt 2>/dev/null || true", check=False)
@@ -1522,27 +1517,36 @@ class CaelarisInstaller(QMainWindow):
 
     def finish_installation(self):
         if self.chk_reboot.isChecked():
+            # Flush filesystem buffers to disk
+            subprocess.run(["sync"], check=False)
+            # Unmount target partitions if still mounted
+            subprocess.run(["umount", "-R", "-f", "/mnt"], check=False)
+            subprocess.run(["umount", "-R", "-l", "/mnt"], check=False)
             # Attempt to eject optical drive/ISO media to avoid booting back into live ISO
             for cd in ["/dev/sr0", "/dev/cdrom"]:
                 if os.path.exists(cd):
                     subprocess.run(["eject", "-s", cd], check=False)
                     subprocess.run(["eject", cd], check=False)
             subprocess.run(["sync"], check=False)
-            subprocess.run(["arch-chroot", "/mnt", "gpgconf", "--kill", "all"], check=False)
-            subprocess.run(["gpgconf", "--homedir", "/etc/pacman.d/gnupg", "--kill", "all"], check=False)
-            subprocess.run(["killall", "-9", "gpg-agent", "dirmngr", "scdaemon", "pacman"], check=False)
-            subprocess.run(["swapoff", "-a"], check=False)
-            subprocess.run(["fuser", "-km", "/mnt"], check=False)
-            subprocess.run(["fuser", "-km", "/tmp"], check=False)
-            subprocess.run(["fuser", "-km", "/etc/pacman.d/gnupg"], check=False)
-            subprocess.run(["sync"], check=False)
-            subprocess.run(["umount", "-R", "-f", "/mnt"], check=False)
-            subprocess.run(["umount", "-R", "-l", "/mnt"], check=False)
-            subprocess.run(["umount", "-l", "/etc/pacman.d/gnupg"], check=False)
-            subprocess.run(["umount", "-l", "/tmp"], check=False)
             time.sleep(0.5)
-            subprocess.Popen(["systemctl", "--no-block", "reboot"])
+            subprocess.Popen(["systemctl", "reboot"])
         self.close()
+
+    def closeEvent(self, event):
+        if self.current_step == 8 and hasattr(self, 'worker') and self.worker.isRunning():
+            reply = QMessageBox.question(
+                self,
+                "Cancel Installation?",
+                "Installation is currently in progress. Exiting now may leave your system in an unbootable state.\n\nAre you sure you want to abort?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No
+            )
+            if reply == QMessageBox.StandardButton.Yes:
+                event.accept()
+            else:
+                event.ignore()
+        else:
+            event.accept()
 
 def ensure_ui_assets():
     assets = {
