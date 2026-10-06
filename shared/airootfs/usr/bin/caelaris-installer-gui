@@ -478,8 +478,7 @@ class InstallWorker(QThread):
                 "Current=breeze\n"
                 "CursorTheme=breeze_cursors\n\n"
                 "[General]\n"
-                "DisplayServer=wayland\n"
-                "GreeterEnvironment=QT_WAYLAND_SHELL_INTEGRATION=layer-shell\n\n"
+                "DisplayServer=wayland\n\n"
                 "[Wayland]\n"
                 "SessionDir=/usr/share/wayland-sessions\n"
                 "CompositorCommand=kwin_wayland --no-lockscreen --no-global-shortcuts --locale1\n\n"
@@ -497,15 +496,18 @@ class InstallWorker(QThread):
                 self.run_cmd("sed -i 's/^Name=.*/Name=Plasma/' /mnt/usr/share/wayland-sessions/plasma.desktop", check=False)
             if os.path.exists("/mnt/usr/share/wayland-sessions/gnome.desktop"):
                 self.run_cmd("sed -i 's/^Name=.*/Name=GNOME/' /mnt/usr/share/wayland-sessions/gnome.desktop", check=False)
-            if os.path.exists("/mnt/usr/share/wayland-sessions/hyprland.desktop"):
-                self.run_cmd("sed -i 's/^Name=.*/Name=Caelestia/' /mnt/usr/share/wayland-sessions/hyprland.desktop", check=False)
-                self.run_cmd("sed -i 's|^Exec=.*|Exec=/usr/bin/caelestia-session|' /mnt/usr/share/wayland-sessions/hyprland.desktop", check=False)
-                self.run_cmd("sed -i 's|^TryExec=.*|TryExec=/usr/bin/caelestia-session|' /mnt/usr/share/wayland-sessions/hyprland.desktop", check=False)
-            if os.path.exists("/mnt/usr/share/wayland-sessions/caelestia.desktop"):
-                try:
-                    os.remove("/mnt/usr/share/wayland-sessions/caelestia.desktop")
-                except OSError:
-                    pass
+            for h_desk in ["/mnt/usr/share/wayland-sessions/hyprland.desktop", "/mnt/usr/share/wayland-sessions/caelestia.desktop"]:
+                os.makedirs(os.path.dirname(h_desk), exist_ok=True)
+                with open(h_desk, "w") as f:
+                    f.write(
+                        "[Desktop Entry]\n"
+                        "Name=Caelestia\n"
+                        "Comment=Caelestia Shell powered by Hyprland dynamic tiling Wayland compositor\n"
+                        "Exec=/usr/bin/caelestia-session\n"
+                        "TryExec=/usr/bin/caelestia-session\n"
+                        "Type=Application\n"
+                        "DesktopNames=Hyprland;Caelestia\n"
+                    )
 
             # ── Ensure Linux Kernel & Microcodes exist in /mnt/boot ──────────
             self.progress_changed.emit(85, "Installing Linux Kernel & Microcode binaries...")
@@ -611,7 +613,7 @@ class InstallWorker(QThread):
                     'GRUB_GFXMODE=auto\n'
                     'GRUB_GFXPAYLOAD_LINUX=keep\n'
                     'GRUB_DISABLE_SUBMENU=y\n'
-                    'GRUB_DISABLE_RECOVERY=false\n'
+                    'GRUB_DISABLE_RECOVERY=true\n'
                     'GRUB_DISABLE_OS_PROBER=true\n'
                 )
 
@@ -705,14 +707,26 @@ class InstallWorker(QThread):
                         cfg_text = f.read()
 
                     import re
+                    # 1. Guarantee 12-second countdown and visible menu style
                     cfg_text = re.sub(r'set timeout=\d+', 'set timeout=12', cfg_text)
+                    cfg_text = re.sub(r'set timeout_style=\w+', 'set timeout_style=menu', cfg_text)
+
+                    # 2. De-clutter menuentry names (remove redundant distro/kernel version strings)
+                    cfg_text = re.sub(r"menuentry ['\"][^'\"]*fallback initramfs[^'\"]*['\"]", "menuentry 'Caelaris Linux (Safe Mode)'", cfg_text, flags=re.IGNORECASE)
+                    cfg_text = re.sub(r"menuentry ['\"][^'\"]*(?:with Linux|linux-fallback)[^'\"]*['\"]", "menuentry 'Caelaris Linux (Safe Mode)'", cfg_text, flags=re.IGNORECASE)
+                    cfg_text = re.sub(r"menuentry ['\"]Arch Linux[^'\"]*['\"]", "menuentry 'Caelaris Linux'", cfg_text)
+                    cfg_text = re.sub(r"menuentry ['\"]Caelaris, with Linux[^'\"]*['\"]", "menuentry 'Caelaris Linux'", cfg_text)
                     cfg_text = cfg_text.replace("Arch Linux", "Caelaris Linux")
+
+                    # 3. Ensure top-level default and timeout block is present
+                    if "set timeout=12" not in cfg_text:
+                        cfg_text = "set default=0\nset timeout=12\nset timeout_style=menu\n\n" + cfg_text
 
                     with open(grub_cfg_file, "w") as f:
                         f.write(cfg_text)
-                    self.log("[SUCCESS] GRUB boot menu configured successfully (12s timeout).")
-                except Exception:
-                    pass
+                    self.log("[SUCCESS] GRUB boot menu configured successfully (clean 12s countdown).")
+                except Exception as ge:
+                    self.log(f"[WARN] GRUB post-processing: {ge}")
 
             # Write standalone ESP bootloader locator so GRUB always finds grub.cfg on root
             try:
@@ -763,7 +777,23 @@ class InstallWorker(QThread):
 
             # ── Step 5: Install & Enable All Hardware & Virtualization Drivers ───
             self.progress_changed.emit(96, "Installing and enabling hardware drivers & guest tools...")
-            self.run_cmd("arch-chroot /mnt systemctl enable NetworkManager sddm pipewire wireplumber systemd-timesyncd ananicy-cpp caelaris-defender dmemcg-booster caelaris-vram-booster 2>/dev/null || true", check=False)
+            if os.path.isfile("/usr/bin/caelaris-shutdown-clean"):
+                shutil.copy2("/usr/bin/caelaris-shutdown-clean", "/mnt/usr/bin/caelaris-shutdown-clean")
+                try:
+                    os.chmod("/mnt/usr/bin/caelaris-shutdown-clean", 0o755)
+                except Exception:
+                    pass
+            if os.path.isfile("/etc/systemd/system/caelaris-shutdown-clean.service"):
+                shutil.copy2("/etc/systemd/system/caelaris-shutdown-clean.service", "/mnt/etc/systemd/system/caelaris-shutdown-clean.service")
+            if os.path.isfile("/usr/lib/systemd/system-shutdown/caelaris-clean.shutdown"):
+                os.makedirs("/mnt/usr/lib/systemd/system-shutdown", exist_ok=True)
+                shutil.copy2("/usr/lib/systemd/system-shutdown/caelaris-clean.shutdown", "/mnt/usr/lib/systemd/system-shutdown/caelaris-clean.shutdown")
+                try:
+                    os.chmod("/mnt/usr/lib/systemd/system-shutdown/caelaris-clean.shutdown", 0o755)
+                except Exception:
+                    pass
+
+            self.run_cmd("arch-chroot /mnt systemctl enable NetworkManager sddm pipewire wireplumber systemd-timesyncd ananicy-cpp caelaris-defender dmemcg-booster caelaris-vram-booster caelaris-shutdown-clean 2>/dev/null || true", check=False)
             for guest_srv in ["vmtoolsd", "vmware-vmblock-fuse", "vboxservice", "spice-vdagentd", "qemu-guest-agent"]:
                 if os.path.isfile(f"/mnt/usr/lib/systemd/system/{guest_srv}.service"):
                     self.run_cmd(f"arch-chroot /mnt systemctl enable {guest_srv} 2>/dev/null || true", check=False)

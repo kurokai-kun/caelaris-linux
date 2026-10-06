@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Caelestia
+Comment=Caelestia Shell powered by Hyprland dynamic tiling Wayland compositor
+Exec=/usr/bin/caelestia-session
+TryExec=/usr/bin/caelestia-session
+Type=Application
+DesktopNames=Hyprland;Caelestia

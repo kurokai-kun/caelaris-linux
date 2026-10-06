@@ -5,7 +5,10 @@
 # ==========================================================
 set +e
 
-# Session Environment Variables
+# 1. Clean stale Wayland display inherited from parent display manager
+unset WAYLAND_DISPLAY
+
+# 2. Session Environment Variables
 export XDG_CURRENT_DESKTOP="Hyprland"
 export XDG_SESSION_DESKTOP="Hyprland"
 export XDG_SESSION_TYPE="wayland"
@@ -18,9 +21,8 @@ export SDL_VIDEODRIVER="wayland"
 export MOZ_ENABLE_WAYLAND="1"
 export ELECTRON_OZONE_PLATFORM_HINT="auto"
 
-# Universal Hardware Acceleration & VM Compatibility Flags
+# 3. Universal Hardware Acceleration & VM Compatibility Flags
 export WLR_NO_HARDWARE_CURSORS=1
-export WLR_RENDERER_ALLOW_SOFTWARE=1
 export AQ_NO_MODIFIERS=1
 export AQ_FORCE_LINEAR=1
 export XCURSOR_THEME="breeze_cursors"

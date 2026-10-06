@@ -277,6 +277,13 @@ ln -sf /etc/systemd/system/dmemcg-booster.service "${BUILD_PROFILE}/airootfs/etc
 ln -sf /etc/systemd/system/caelaris-vram-booster.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/caelaris-vram-booster.service" 2>/dev/null || true
 ln -sf /etc/systemd/system/caelaris-defender.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/caelaris-defender.service" 2>/dev/null || true
 
+# Enable Caelaris clean shutdown handler across shutdown targets
+mkdir -p "${BUILD_PROFILE}/airootfs/etc/systemd/system/shutdown.target.wants" "${BUILD_PROFILE}/airootfs/etc/systemd/system/reboot.target.wants" "${BUILD_PROFILE}/airootfs/etc/systemd/system/poweroff.target.wants" "${BUILD_PROFILE}/airootfs/etc/systemd/system/halt.target.wants"
+ln -sf /etc/systemd/system/caelaris-shutdown-clean.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/shutdown.target.wants/caelaris-shutdown-clean.service" 2>/dev/null || true
+ln -sf /etc/systemd/system/caelaris-shutdown-clean.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/reboot.target.wants/caelaris-shutdown-clean.service" 2>/dev/null || true
+ln -sf /etc/systemd/system/caelaris-shutdown-clean.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/poweroff.target.wants/caelaris-shutdown-clean.service" 2>/dev/null || true
+ln -sf /etc/systemd/system/caelaris-shutdown-clean.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/halt.target.wants/caelaris-shutdown-clean.service" 2>/dev/null || true
+
 # Ensure new Caelaris logo is deployed across all icon and branding paths
 if [ -f "${ROOT_DIR}/assets/logo.png" ]; then
     mkdir -p "${BUILD_PROFILE}/airootfs/usr/share/pixmaps"

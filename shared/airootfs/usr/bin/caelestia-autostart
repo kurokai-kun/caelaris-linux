@@ -7,39 +7,24 @@ set +e
 
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 
-# 1. Resolve and ensure Wayland display socket is ready
-for i in {1..50}; do
-    # Check if existing WAYLAND_DISPLAY is valid
-    if [ -n "$WAYLAND_DISPLAY" ] && [ -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]; then
+# 1. Wait for Hyprland compositor to initialize and accept IPC calls
+for i in {1..60}; do
+    if hyprctl monitors >/dev/null 2>&1; then
         break
     fi
-
-    # Auto-detect newest wayland socket owned by this user
-    for sock in $(ls -t "$XDG_RUNTIME_DIR"/wayland-* 2>/dev/null); do
-        if [ -S "$sock" ] && [[ "$sock" != *".lock" ]]; then
-            export WAYLAND_DISPLAY="$(basename "$sock")"
-            break 2
-        fi
-    done
-
-    # Check if hyprctl is responding
-    if command -v hyprctl >/dev/null 2>&1; then
-        if hyprctl monitors >/dev/null 2>&1; then
-            break
-        fi
-    fi
-
     sleep 0.1
 done
 
-# If still unset, default to wayland-1 or wayland-0
+# If WAYLAND_DISPLAY is not set, auto-detect the newest active socket
 if [ -z "$WAYLAND_DISPLAY" ]; then
-    if [ -S "$XDG_RUNTIME_DIR/wayland-1" ]; then
-        export WAYLAND_DISPLAY="wayland-1"
-    else
-        export WAYLAND_DISPLAY="wayland-0"
-    fi
+    for sock in $(ls -t "$XDG_RUNTIME_DIR"/wayland-* 2>/dev/null); do
+        if [ -S "$sock" ] && [[ "$sock" != *".lock" ]]; then
+            export WAYLAND_DISPLAY="$(basename "$sock")"
+            break
+        fi
+    done
 fi
+export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}"
 
 # 2. Register display environment with D-Bus and systemd user session
 dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP HYPRLAND_INSTANCE_SIGNATURE 2>/dev/null || true
@@ -57,55 +42,44 @@ fi
 # 4. Network system tray applet
 command -v nm-applet >/dev/null 2>&1 && (nm-applet --indicator &)
 
-# 5. Set Caelestia Wallpaper (Official Anime Wallpaper with Fallback)
+# 5. Set Caelestia Wallpaper (Official Anime Wallpaper with Fallbacks)
 WALLPAPER="/usr/share/backgrounds/caelestia-wallpaper.jpg"
 [ ! -f "$WALLPAPER" ] && WALLPAPER="/usr/share/backgrounds/caelaris-wallpaper.jpg"
 [ ! -f "$WALLPAPER" ] && WALLPAPER="/usr/share/pixmaps/caelaris-logo.png"
 
 killall swaybg 2>/dev/null || true
-for attempt in 1 2 3 4; do
-    if command -v swaybg >/dev/null 2>&1 && [ -f "$WALLPAPER" ]; then
-        WAYLAND_DISPLAY="$WAYLAND_DISPLAY" swaybg -m fill -i "$WALLPAPER" &
-        SWAY_PID=$!
-        sleep 0.25
-        if kill -0 "$SWAY_PID" 2>/dev/null; then
-            break
+(
+    while true; do
+        if command -v swaybg >/dev/null 2>&1 && [ -f "$WALLPAPER" ]; then
+            swaybg -m fill -i "$WALLPAPER"
+        elif command -v hyprpaper >/dev/null 2>&1; then
+            hyprpaper
         fi
-    elif command -v hyprpaper >/dev/null 2>&1; then
-        WAYLAND_DISPLAY="$WAYLAND_DISPLAY" hyprpaper &
-        break
-    fi
-    sleep 0.3
-done
+        sleep 2
+    done
+) &
 
-# 6. Notification Daemon (Dunst / Mako)
+# 6. Notification Daemon (Dunst)
 if command -v dunst >/dev/null 2>&1; then
     killall dunst 2>/dev/null || true
-    WAYLAND_DISPLAY="$WAYLAND_DISPLAY" dunst &
-elif command -v mako >/dev/null 2>&1; then
-    killall mako 2>/dev/null || true
-    WAYLAND_DISPLAY="$WAYLAND_DISPLAY" mako &
+    dunst &
 fi
 
-# 7. Waybar / Caelestia Top Bar
+# 7. Waybar / Caelestia Top Bar (Supervised)
 killall waybar 2>/dev/null || true
-for attempt in 1 2 3 4; do
-    if [ -f /etc/caelestia/waybar/config.jsonc ]; then
-        WAYLAND_DISPLAY="$WAYLAND_DISPLAY" waybar -c /etc/caelestia/waybar/config.jsonc -s /etc/caelestia/waybar/style.css &
-        WB_PID=$!
-        sleep 0.25
-        if kill -0 "$WB_PID" 2>/dev/null; then
-            break
+(
+    while true; do
+        if [ -f /etc/caelestia/waybar/config.jsonc ]; then
+            waybar -c /etc/caelestia/waybar/config.jsonc -s /etc/caelestia/waybar/style.css
+        elif command -v waybar >/dev/null 2>&1; then
+            waybar
         fi
-    elif command -v waybar >/dev/null 2>&1; then
-        WAYLAND_DISPLAY="$WAYLAND_DISPLAY" waybar &
-        break
-    fi
-    sleep 0.3
-done
+        sleep 2
+    done
+) &
 
 # 8. Visual confirmation banner
 (
-    sleep 0.8
-    notify-send -u normal "Caelestia Shell" "Press Super+Space for App Launcher" -i /usr/share/pixmaps/caelaris-logo.png 2>/dev/null || true
+    sleep 1.0
+    notify-send -u normal "✦ Caelestia Shell" "Press Super+Space or click ✦ Caelaris for App Launcher" -i /usr/share/pixmaps/caelaris-logo.png 2>/dev/null || true
 ) &

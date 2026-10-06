@@ -502,11 +502,18 @@ fi
 if [ -f "${ROOTFS_DIR}/usr/share/wayland-sessions/gnome.desktop" ]; then
     sed -i 's/^Name=.*/Name=GNOME/' "${ROOTFS_DIR}/usr/share/wayland-sessions/gnome.desktop"
 fi
-if [ -f "${ROOTFS_DIR}/usr/share/wayland-sessions/hyprland.desktop" ]; then
-    sed -i 's/^Name=.*/Name=Caelestia/' "${ROOTFS_DIR}/usr/share/wayland-sessions/hyprland.desktop"
-    sed -i 's|^Exec=.*|Exec=/usr/bin/caelestia-session|' "${ROOTFS_DIR}/usr/share/wayland-sessions/hyprland.desktop"
-    sed -i 's|^TryExec=.*|TryExec=/usr/bin/caelestia-session|' "${ROOTFS_DIR}/usr/share/wayland-sessions/hyprland.desktop"
-fi
+for h_sess in "${ROOTFS_DIR}/usr/share/wayland-sessions/hyprland.desktop" "${ROOTFS_DIR}/usr/share/wayland-sessions/caelestia.desktop"; do
+    mkdir -p "$(dirname "$h_sess")"
+    cat > "$h_sess" << 'EOF'
+[Desktop Entry]
+Name=Caelestia
+Comment=Caelestia Shell powered by Hyprland dynamic tiling Wayland compositor
+Exec=/usr/bin/caelestia-session
+TryExec=/usr/bin/caelestia-session
+Type=Application
+DesktopNames=Hyprland;Caelestia
+EOF
+done
 
 # Isolate KDE and GNOME application menus to avoid clutter in both environments
 for kapp in org.kde.dolphin dolphin org.kde.konsole konsole org.kde.kate kate \

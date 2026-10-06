@@ -44,4 +44,5 @@ file_permissions=(
   ["/usr/bin/caelaris-vram-booster"]="0:0:755"
   ["/usr/bin/plasma-foreground-booster"]="0:0:755"
   ["/usr/bin/gnome-vram-booster"]="0:0:755"
+  ["/usr/bin/caelaris-shutdown-clean"]="0:0:755"
 )

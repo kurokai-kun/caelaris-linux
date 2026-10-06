@@ -198,7 +198,6 @@ fc-cache -r >/dev/null 2>&1 || true
 # Enforce strictly 3 SDDM sessions: Plasma, GNOME, Caelestia
 echo -e "   -> Normalizing SDDM sessions to Plasma, GNOME, and Caelestia (purging X11 duplicates)..."
 rm -rf /usr/share/xsessions/* 2>/dev/null || true
-rm -f /usr/share/wayland-sessions/caelestia.desktop 2>/dev/null || true
 
 if [ -f /usr/share/wayland-sessions/plasma.desktop ]; then
     sed -i 's/^Name=.*/Name=Plasma/' /usr/share/wayland-sessions/plasma.desktop
@@ -206,11 +205,17 @@ fi
 if [ -f /usr/share/wayland-sessions/gnome.desktop ]; then
     sed -i 's/^Name=.*/Name=GNOME/' /usr/share/wayland-sessions/gnome.desktop
 fi
-if [ -f /usr/share/wayland-sessions/hyprland.desktop ]; then
-    sed -i 's/^Name=.*/Name=Caelestia/' /usr/share/wayland-sessions/hyprland.desktop
-    sed -i 's|^Exec=.*|Exec=/usr/bin/caelestia-session|' /usr/share/wayland-sessions/hyprland.desktop
-    sed -i 's|^TryExec=.*|TryExec=/usr/bin/caelestia-session|' /usr/share/wayland-sessions/hyprland.desktop
-fi
+for h_sess in /usr/share/wayland-sessions/hyprland.desktop /usr/share/wayland-sessions/caelestia.desktop; do
+    cat > "$h_sess" << 'EOF'
+[Desktop Entry]
+Name=Caelestia
+Comment=Caelestia Shell powered by Hyprland dynamic tiling Wayland compositor
+Exec=/usr/bin/caelestia-session
+TryExec=/usr/bin/caelestia-session
+Type=Application
+DesktopNames=Hyprland;Caelestia
+EOF
+done
 
 mkdir -p /etc/sddm.conf.d
 cat > /etc/sddm.conf.d/10-wayland-only.conf << 'EOF'

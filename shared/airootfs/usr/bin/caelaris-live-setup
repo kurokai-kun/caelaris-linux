@@ -98,9 +98,8 @@ SessionDir=/usr/share/wayland-sessions
 SessionDir=/dev/null
 EOF
 
-# Ensure SDDM strictly displays only the 3 Wayland options: Plasma, GNOME, Caelestia
+# Ensure SDDM strictly displays the clean Wayland options: Plasma, GNOME, Caelestia
 rm -rf /usr/share/xsessions/* 2>/dev/null || true
-rm -f /usr/share/wayland-sessions/caelestia.desktop 2>/dev/null || true
 
 if [ -f /usr/share/wayland-sessions/plasma.desktop ]; then
     sed -i 's/^Name=.*/Name=Plasma/' /usr/share/wayland-sessions/plasma.desktop
@@ -108,11 +107,17 @@ fi
 if [ -f /usr/share/wayland-sessions/gnome.desktop ]; then
     sed -i 's/^Name=.*/Name=GNOME/' /usr/share/wayland-sessions/gnome.desktop
 fi
-if [ -f /usr/share/wayland-sessions/hyprland.desktop ]; then
-    sed -i 's/^Name=.*/Name=Caelestia/' /usr/share/wayland-sessions/hyprland.desktop
-    sed -i 's|^Exec=.*|Exec=/usr/bin/caelestia-session|' /usr/share/wayland-sessions/hyprland.desktop
-    sed -i 's|^TryExec=.*|TryExec=/usr/bin/caelestia-session|' /usr/share/wayland-sessions/hyprland.desktop
-fi
+for h_sess in /usr/share/wayland-sessions/hyprland.desktop /usr/share/wayland-sessions/caelestia.desktop; do
+    cat > "$h_sess" << 'EOF'
+[Desktop Entry]
+Name=Caelestia
+Comment=Caelestia Shell powered by Hyprland dynamic tiling Wayland compositor
+Exec=/usr/bin/caelestia-session
+TryExec=/usr/bin/caelestia-session
+Type=Application
+DesktopNames=Hyprland;Caelestia
+EOF
+done
 
 # 4. Copy skeleton files & desktop shortcuts
 if [ -d /etc/skel ]; then
