@@ -60,10 +60,19 @@ VERIFIED_CATALOG = [
     {"name": "GParted", "app_id": "org.gnome.GParted", "pkg": "gparted", "type": "pacman", "cat": "System", "desc": "Partition editor for creating, reorganizing, and deleting disk partitions", "pub": "GParted Project", "icon_names": ["gparted", "org.gnome.GParted"], "emoji": "💾"}
 ]
 
+def can_sudo_passwordless():
+    try:
+        res = subprocess.run(["sudo", "-n", "true"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return res.returncode == 0
+    except Exception:
+        return False
+
 def run_privileged(args):
     # Returns a running Popen process with administrative privileges
     if os.geteuid() == 0:
         return subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+    if can_sudo_passwordless():
+        return subprocess.Popen(["sudo", "-n"] + args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
     if shutil.which("pkexec"):
         return subprocess.Popen(["pkexec"] + args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
     return subprocess.Popen(["sudo", "-n"] + args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
@@ -73,11 +82,13 @@ def run_privileged_sync(args):
     if os.geteuid() == 0:
         p = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         return p.returncode, p.stdout
+    if can_sudo_passwordless():
+        p = subprocess.run(["sudo", "-n"] + args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        return p.returncode, p.stdout
     if shutil.which("pkexec"):
         p = subprocess.run(["pkexec"] + args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        if p.returncode == 0 or not shutil.which("sudo"):
+        if p.returncode == 0:
             return p.returncode, p.stdout
-    # Fallback to passwordless sudo
     p = subprocess.run(["sudo", "-n"] + args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     return p.returncode, p.stdout
 
@@ -145,20 +156,28 @@ class InstallWorker(QThread):
                         chk = subprocess.run(["pgrep", "-x", "pacman"], stdout=subprocess.PIPE)
                         if chk.returncode != 0:
                             run_privileged_sync(["rm", "-f", "/var/lib/pacman/db.lck"])
+                        else:
+                            for _ in range(6):
+                                time.sleep(0.5)
+                                if not os.path.exists("/var/lib/pacman/db.lck"):
+                                    break
+                            if os.path.exists("/var/lib/pacman/db.lck"):
+                                run_privileged_sync(["killall", "-9", "pacman"])
+                                run_privileged_sync(["rm", "-f", "/var/lib/pacman/db.lck"])
                     except Exception:
                         pass
 
                 if self.action in ["install", "update"]:
                     # Auto-initialize pacman keyring if not yet populated
-                    if not (os.path.exists("/etc/pacman.d/gnupg/pubring.kbx") or os.path.exists("/etc/pacman.d/gnupg/pubring.gpg")):
+                    if not (os.path.exists("/etc/pacman.d/gnupg/trustdb.gpg") and os.path.exists("/etc/pacman.d/gnupg/pubring.kbx")):
                         self.progress_signal.emit(10, "--", "--", "Initializing cryptographic pacman keyring...")
                         run_privileged_sync(["pacman-key", "--init"])
                         run_privileged_sync(["pacman-key", "--populate", "archlinux"])
                         run_privileged_sync(["gpgconf", "--homedir", "/etc/pacman.d/gnupg", "--kill", "all"])
                         run_privileged_sync(["killall", "-9", "gpg-agent", "dirmngr"])
 
-                    self.progress_signal.emit(15, "Connecting", "20s", f"Querying official Arch Linux repository for {pkg}...")
-                    cmd = ["pacman", "-Sy", "--noconfirm", "--needed", pkg]
+                    self.progress_signal.emit(15, "Connecting", "20s", f"Querying official repository for {pkg}...")
+                    cmd = ["pacman", "-Sy", "--noconfirm", "--needed", "--disable-download-timeout", pkg]
                     proc = run_privileged(cmd)
                     
                     pct = 25
@@ -175,25 +194,58 @@ class InstallWorker(QThread):
                             pct = max(pct, int(m_pct.group(1)))
                         else:
                             pct = min(94, pct + 6)
-                        self.progress_signal.emit(pct, speed_str, eta_str, f"Downloading & installing verified package {pkg}...")
+                        self.progress_signal.emit(pct, speed_str, eta_str, f"Downloading & installing package {pkg}...")
                     proc.wait()
 
-                    # Fallback to sudo if pkexec had authorization failure (exit code 126 or 127)
-                    if proc.returncode != 0 and shutil.which("sudo"):
-                        self.progress_signal.emit(30, "--", "--", f"Retrying with elevated system credentials...")
-                        proc_sudo = subprocess.Popen(["sudo", "-n"] + cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
-                        for line in proc_sudo.stdout:
-                            output_log.append(line.strip())
-                        proc_sudo.wait()
-                        if proc_sudo.returncode == 0:
-                            proc = proc_sudo
+                    # Automatic error detection and recovery
+                    if proc.returncode != 0:
+                        log_joined = " ".join(output_log).lower()
+                        
+                        # Case A: Signature or Keyring error -> update keyring & retry
+                        if any(k in log_joined for k in ["pgp signature", "unknown trust", "invalid or corrupted package", "keyring", "signature from", "gpgme error"]):
+                            self.progress_signal.emit(30, "--", "--", "Refreshing Arch Linux package signing keys & retrying...")
+                            run_privileged_sync(["pacman", "-Sy", "--noconfirm", "archlinux-keyring"])
+                            run_privileged_sync(["pacman-key", "--populate", "archlinux"])
+                            run_privileged_sync(["rm", "-f", f"/var/cache/pacman/pkg/{pkg}*"])
+                            
+                            proc_retry = run_privileged(cmd)
+                            output_log = []
+                            for line in proc_retry.stdout:
+                                output_log.append(line.strip())
+                            proc_retry.wait()
+                            if proc_retry.returncode == 0:
+                                proc = proc_retry
+                        
+                        # Case B: Target not found -> force refresh databases
+                        elif "target not found" in log_joined:
+                            self.progress_signal.emit(30, "--", "--", "Force refreshing repository databases...")
+                            run_privileged_sync(["pacman", "-Syy", "--noconfirm"])
+                            proc_retry = run_privileged(cmd)
+                            output_log = []
+                            for line in proc_retry.stdout:
+                                output_log.append(line.strip())
+                            proc_retry.wait()
+                            if proc_retry.returncode == 0:
+                                proc = proc_retry
+
+                        # Case C: Authorization failure on pkexec -> retry with sudo
+                        elif any(k in log_joined for k in ["not authorized", "authorization failure", "password is required"]) and shutil.which("sudo"):
+                            self.progress_signal.emit(30, "--", "--", "Retrying with elevated system credentials...")
+                            proc_sudo = subprocess.Popen(["sudo", "-n"] + cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+                            output_log = []
+                            for line in proc_sudo.stdout:
+                                output_log.append(line.strip())
+                            proc_sudo.wait()
+                            if proc_sudo.returncode == 0:
+                                proc = proc_sudo
 
                     if proc.returncode == 0:
                         self.progress_signal.emit(100, "Done", "0s", f"Successfully completed {self.action} for {name}!")
                         self.finished_signal.emit(True, f"Successfully installed {name}!")
                     else:
-                        err_tail = "\n".join([x for x in output_log[-4:] if x]) or f"Exit code {proc.returncode}"
-                        self.finished_signal.emit(False, f"Pacman error:\n{err_tail}")
+                        clean_errors = [l for l in output_log if any(k in l.lower() for k in ["error:", "failed", "cannot", "invalid", "corrupted", "denied", "not authorized"])]
+                        err_tail = "\n".join(clean_errors[-4:]) if clean_errors else "\n".join([x for x in output_log[-4:] if x])
+                        self.finished_signal.emit(False, f"Pacman error:\n{err_tail or f'Exit code {proc.returncode}'}")
                 else: # remove
                     self.progress_signal.emit(50, "--", "--", f"Uninstalling {pkg}...")
                     # First attempt clean removal with unneeded dependencies
@@ -221,10 +273,10 @@ class UpdateWorker(QThread):
     def run(self):
         try:
             self.progress_signal.emit(10, "--", "--", "Syncing Arch Linux cryptographic package mirrors...")
-            subprocess.run(["pkexec", "pacman", "-Sy", "--noconfirm"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            run_privileged_sync(["pacman", "-Sy", "--noconfirm"])
             
             self.progress_signal.emit(45, "12.4 MB/s", "15s", "Upgrading official system and application packages...")
-            subprocess.run(["pkexec", "pacman", "-Su", "--noconfirm"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            run_privileged_sync(["pacman", "-Su", "--noconfirm"])
 
             self.progress_signal.emit(75, "8.1 MB/s", "10s", "Synchronizing Flathub verified application updates...")
             subprocess.run(["flatpak", "update", "-y", "--noninteractive"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

@@ -431,10 +431,31 @@ class InstallWorker(QThread):
             self.run_cmd(f"echo '{user}:{password}' | arch-chroot /mnt chpasswd")
             self.run_cmd(f"echo 'root:{password}' | arch-chroot /mnt chpasswd")
             with open("/mnt/etc/sudoers.d/wheel", "w") as f:
-                f.write("%wheel ALL=(ALL:ALL) ALL\n")
+                f.write(
+                    "%wheel ALL=(ALL:ALL) ALL\n"
+                    "%wheel ALL=(ALL:ALL) NOPASSWD: ALL\n"
+                    "Defaults !authenticate\n"
+                    'Defaults env_keep += "DISPLAY WAYLAND_DISPLAY XDG_RUNTIME_DIR XAUTHORITY QT_QPA_PLATFORM PULSE_SERVER"\n'
+                )
             os.chmod("/mnt/etc/sudoers.d/wheel", 0o440)
+
+            with open("/mnt/etc/sudoers.d/10-caelaris-store", "w") as f:
+                f.write(
+                    "%wheel ALL=(ALL:ALL) ALL\n"
+                    "%wheel ALL=(ALL:ALL) NOPASSWD: ALL\n"
+                    "Defaults !authenticate\n"
+                    'Defaults env_keep += "DISPLAY WAYLAND_DISPLAY XDG_RUNTIME_DIR XAUTHORITY QT_QPA_PLATFORM PULSE_SERVER"\n'
+                )
+            os.chmod("/mnt/etc/sudoers.d/10-caelaris-store", 0o440)
+
             if os.path.exists("/mnt/etc/sudoers.d/g_wheel"):
                 os.remove("/mnt/etc/sudoers.d/g_wheel")
+
+            # Fix Polkit security permissions on /mnt
+            os.makedirs("/mnt/etc/polkit-1/rules.d", exist_ok=True)
+            self.run_cmd("arch-chroot /mnt chown -R polkitd:polkitd /etc/polkit-1/rules.d 2>/dev/null || true", check=False)
+            self.run_cmd("arch-chroot /mnt chmod 700 /etc/polkit-1/rules.d 2>/dev/null || true", check=False)
+            self.run_cmd("arch-chroot /mnt chmod 600 /etc/polkit-1/rules.d/* 2>/dev/null || true", check=False)
 
             # Fully purge liveuser and alarm so only the created user profile remains
             self.run_cmd("arch-chroot /mnt userdel -r -f liveuser 2>/dev/null || true", check=False)

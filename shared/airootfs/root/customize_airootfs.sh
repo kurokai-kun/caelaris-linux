@@ -108,5 +108,15 @@ ln -sf /dev/null /etc/systemd/system/getty@tty1.service 2>/dev/null || true
 systemctl enable caelaris-shutdown-clean.service 2>/dev/null || true
 chmod +x /usr/bin/caelaris-shutdown-clean /usr/lib/systemd/system-shutdown/caelaris-clean.shutdown 2>/dev/null || true
 
+# 14. Ensure proper security permissions for Polkit rules and Sudoers
+mkdir -p /etc/polkit-1/rules.d
+chown -R polkitd:polkitd /etc/polkit-1/rules.d 2>/dev/null || true
+chmod 700 /etc/polkit-1/rules.d 2>/dev/null || true
+chmod 600 /etc/polkit-1/rules.d/* 2>/dev/null || true
+
+mkdir -p /etc/sudoers.d
+chmod 0440 /etc/sudoers.d/* 2>/dev/null || true
+chown -R root:root /etc/sudoers.d 2>/dev/null || true
+
 echo "=== customize_airootfs.sh completed successfully ==="
 
