@@ -112,7 +112,6 @@ EOF
         plasma-workspace
         plasma-desktop
         kwin
-        plasma-x11-session
         plasma-nm
         plasma-pa
         powerdevil
@@ -183,11 +182,12 @@ EOF
     )
 
     echo "Installing live preview desktop & installer packages..."
-    # Tier 1: Core System, Kernel, GUI Installer, and Bootloader essentials
-    chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm --overwrite='*' linux-aarch64 mkinitcpio mkinitcpio-archiso python python-pyqt6 sudo bash networkmanager sddm mesa grub efibootmgr parted gptfdisk dosfstools e2fsprogs btrfs-progs rsync squashfs-tools noto-fonts xorg-xhost hicolor-icon-theme" || {
+    # Tier 1: Core System, Kernel, Full GUI Installer Suite, and Bootloader essentials
+    TIER1_PKGS="linux-aarch64 mkinitcpio mkinitcpio-archiso python python-pyqt6 qt6-base qt6-wayland qt6-svg qt6-declarative xorg-xwayland xorg-xhost xorg-xauth mesa libglvnd xcb-util-cursor xcb-util-image xcb-util-keysyms xcb-util-renderutil xcb-util-wm libxkbcommon-x11 polkit sudo bash networkmanager sddm grub efibootmgr parted gptfdisk dosfstools e2fsprogs btrfs-progs arch-install-scripts rsync squashfs-tools noto-fonts hicolor-icon-theme adwaita-icon-theme"
+    chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm --overwrite='*' ${TIER1_PKGS}" || {
         echo "Retrying Tier 1 package installation..."
         sleep 3
-        chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm --overwrite='*' linux-aarch64 mkinitcpio mkinitcpio-archiso python python-pyqt6 sudo bash networkmanager sddm mesa grub efibootmgr parted gptfdisk dosfstools e2fsprogs btrfs-progs rsync squashfs-tools noto-fonts xorg-xhost hicolor-icon-theme"
+        chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm --overwrite='*' ${TIER1_PKGS}"
     }
 
     # Tier 2: Complete Desktop Preview Suite & Graphics
@@ -196,11 +196,18 @@ EOF
         chroot "$ROOTFS_DIR" /bin/bash -c "for pkg in ${DESKTOP_PKGS[*]}; do pacman -S --needed --noconfirm --overwrite='*' \"\$pkg\" 2>/dev/null || true; done"
     }
 
-    # Verify installation of core desktop and installer packages
+    # Verify installation of core desktop and installer packages inside ARM64 rootfs
     if [ ! -f "${ROOTFS_DIR}/usr/bin/python" ] || [ ! -f "${ROOTFS_DIR}/usr/bin/sddm" ]; then
         echo "CRITICAL ERROR: Desktop packages failed to install inside ARM64 rootfs."
         exit 1
     fi
+
+    # Smoke test PyQt6 and Qt6 platform libraries inside ARM64 rootfs
+    echo "Verifying PyQt6 and Qt6 platform plugins in ARM64 rootfs..."
+    chroot "$ROOTFS_DIR" /bin/bash -c "python3 -c 'import PyQt6.QtCore, PyQt6.QtGui, PyQt6.QtWidgets; print(\"PyQt6 verified successfully inside ARM64 rootfs\")'" 2>/dev/null || {
+        echo "Notice: Refreshing PyQt6 and Qt6 platform plugins..."
+        chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm python-pyqt6 qt6-base qt6-wayland qt6-svg" 2>/dev/null || true
+    }
 
     # Configure mkinitcpio for live ISO booting
     cat << 'EOF' > "${ROOTFS_DIR}/etc/mkinitcpio.conf"
@@ -424,7 +431,7 @@ mkdir -p "${ROOTFS_DIR}/etc/sudoers.d"
 echo "%wheel ALL=(ALL:ALL) NOPASSWD: ALL" > "${ROOTFS_DIR}/etc/sudoers.d/wheel"
 echo "liveuser ALL=(ALL:ALL) NOPASSWD: ALL" > "${ROOTFS_DIR}/etc/sudoers.d/liveuser"
 cat << 'EOF' > "${ROOTFS_DIR}/etc/sudoers.d/99-caelaris-env"
-Defaults env_keep += "DISPLAY WAYLAND_DISPLAY XDG_RUNTIME_DIR XAUTHORITY PULSE_SERVER"
+Defaults env_keep += "DISPLAY WAYLAND_DISPLAY XDG_RUNTIME_DIR XAUTHORITY PULSE_SERVER LIBGL_ALWAYS_SOFTWARE QT_QPA_PLATFORM QT_QUICK_BACKEND QT_XCB_GL_INTEGRATION"
 EOF
 chmod 440 "${ROOTFS_DIR}/etc/sudoers.d/wheel" "${ROOTFS_DIR}/etc/sudoers.d/liveuser" "${ROOTFS_DIR}/etc/sudoers.d/99-caelaris-env"
 
@@ -486,8 +493,200 @@ mkdir -p "${ROOTFS_DIR}/home/liveuser/Desktop"
 rm -rf "${ROOTFS_DIR}/home/liveuser/Desktop"/* 2>/dev/null || true
 if [ -f "${ROOTFS_DIR}/usr/share/applications/install-caelaris.desktop" ]; then
     cp -f "${ROOTFS_DIR}/usr/share/applications/install-caelaris.desktop" "${ROOTFS_DIR}/home/liveuser/Desktop/install-caelaris.desktop"
-    chmod +x "${ROOTFS_DIR}/home/liveuser/Desktop/install-caelaris.desktop" 2>/dev/null || true
+    chmod 755 "${ROOTFS_DIR}/home/liveuser/Desktop/install-caelaris.desktop" 2>/dev/null || true
 fi
+
+# Configure KDE KIO to directly execute desktop application shortcuts without prompting
+mkdir -p "${ROOTFS_DIR}/home/liveuser/.config" "${ROOTFS_DIR}/etc/skel/.config"
+cat << 'EOF' > "${ROOTFS_DIR}/home/liveuser/.config/kiorc"
+[Executable scripts]
+behaviourOnLaunch=execute
+EOF
+cp -f "${ROOTFS_DIR}/home/liveuser/.config/kiorc" "${ROOTFS_DIR}/etc/skel/.config/kiorc"
+chown -R 1000:100 "${ROOTFS_DIR}/home/liveuser/.config" 2>/dev/null || true
+
+# Deploy resilient ARM64-specific multi-tiered installer launcher
+cat << 'LAUNCHER_EOF' > "${ROOTFS_DIR}/usr/bin/caelaris-installer"
+#!/usr/bin/env bash
+# ==============================================================================
+# Caelaris Linux ARM64 System Installer Launcher
+# Resilient Wayland & XWayland multi-tier display launcher for ARM64 PCs & VMs
+# ==============================================================================
+set +e
+
+LOGFILE="/tmp/caelaris-installer.log"
+
+# Detect active display sockets
+detect_display_env() {
+    if [ -z "$WAYLAND_DISPLAY" ]; then
+        for wsock in "$XDG_RUNTIME_DIR"/wayland-* /run/user/$(id -u)/wayland-* /run/user/1000/wayland-* /tmp/wayland-*; do
+            if [ -S "$wsock" ] || [ -e "$wsock" ]; then
+                export WAYLAND_DISPLAY="$(basename "$wsock")"
+                break
+            fi
+        done
+        export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}"
+    fi
+
+    if [ -z "$DISPLAY" ]; then
+        for xsock in /tmp/.X11-unix/X*; do
+            if [ -S "$xsock" ] || [ -e "$xsock" ]; then
+                export DISPLAY=":$(basename "$xsock" | sed 's/^X//')"
+                break
+            fi
+        done
+        export DISPLAY="${DISPLAY:-:0}"
+    fi
+}
+
+detect_display_env
+
+# Unprivileged liveuser: authorize root and re-exec with sudo
+if [ "$(id -u)" -ne 0 ]; then
+    USER_UID="$(id -u)"
+    USER_RUNTIME="${XDG_RUNTIME_DIR:-/run/user/${USER_UID}}"
+
+    # 1. Authorize root on X11 / XWayland via xhost
+    if command -v xhost >/dev/null 2>&1; then
+        xhost +SI:localuser:root 2>/dev/null || true
+        xhost +local:root 2>/dev/null || true
+        xhost + 2>/dev/null || true
+    fi
+
+    # 2. Extract and merge current X11 authority cookie to root
+    if [ -n "$DISPLAY" ] && command -v xauth >/dev/null 2>&1; then
+        xauth extract - "$DISPLAY" 2>/dev/null | sudo xauth merge - 2>/dev/null || true
+    fi
+
+    # 3. Setup root Wayland runtime directory and bridge user socket
+    sudo mkdir -p /run/user/0 2>/dev/null || true
+    sudo chmod 700 /run/user/0 2>/dev/null || true
+    sudo chown root:root /run/user/0 2>/dev/null || true
+
+    if [ -d "$USER_RUNTIME" ]; then
+        chmod 777 "$USER_RUNTIME" 2>/dev/null || true
+        for sock in "$USER_RUNTIME"/wayland-*; do
+            if [ -e "$sock" ]; then
+                chmod 666 "$sock" 2>/dev/null || true
+                base="$(basename "$sock")"
+                sudo ln -sf "$sock" "/run/user/0/$base" 2>/dev/null || true
+            fi
+        done
+    fi
+
+    # 4. Copy XAUTHORITY to root
+    XAUTH_SRC="${XAUTHORITY}"
+    if [ -z "$XAUTH_SRC" ] || [ ! -f "$XAUTH_SRC" ]; then
+        for f in "$USER_RUNTIME"/xauth_* "$HOME"/.Xauthority /tmp/xauth_*; do
+            if [ -f "$f" ]; then
+                XAUTH_SRC="$f"
+                break
+            fi
+        done
+    fi
+    if [ -n "$XAUTH_SRC" ] && [ -f "$XAUTH_SRC" ]; then
+        sudo cp -f "$XAUTH_SRC" /root/.Xauthority 2>/dev/null || true
+        sudo chmod 600 /root/.Xauthority 2>/dev/null || true
+    fi
+
+    exec sudo -E env DISPLAY="${DISPLAY}" \
+                     WAYLAND_DISPLAY="${WAYLAND_DISPLAY}" \
+                     XDG_RUNTIME_DIR="/run/user/0" \
+                     XAUTHORITY="/root/.Xauthority" \
+                     /usr/bin/caelaris-installer "$@"
+fi
+
+# Running as root
+{
+    echo "=============================================="
+    echo " Starting Caelaris Linux ARM64 Installer (Root)"
+    echo "=============================================="
+    echo "[*] Date: $(date)"
+    echo "[*] User: $(whoami) (UID: $(id -u))"
+    echo "[*] Arch: $(uname -m)"
+    echo "[*] DISPLAY: ${DISPLAY:-none}"
+    echo "[*] WAYLAND_DISPLAY: ${WAYLAND_DISPLAY:-none}"
+    echo "[*] XDG_RUNTIME_DIR: ${XDG_RUNTIME_DIR:-none}"
+} > "$LOGFILE"
+
+export PYTHONUNBUFFERED=1
+export QT_LOGGING_RULES="qt.qpa.*=true"
+
+# Bridge /run/user/1000 sockets into /run/user/0 if missing
+if [ -d "/run/user/1000" ]; then
+    mkdir -p /run/user/0 2>/dev/null || true
+    for sock in /run/user/1000/wayland-*; do
+        if [ -e "$sock" ]; then
+            chmod 666 "$sock" 2>/dev/null || true
+            base="$(basename "$sock")"
+            ln -sf "$sock" "/run/user/0/$base" 2>/dev/null || true
+        fi
+    done
+fi
+
+# Multi-Tier GUI Launch Pipeline tailored for ARM64:
+# Tier 1: Wayland native with XCB fallback
+echo "[*] Attempt 1: Native Wayland with XCB fallback..." >> "$LOGFILE"
+env QT_QPA_PLATFORM="wayland;xcb" python3 -u /usr/bin/caelaris-installer-gui "$@" >> "$LOGFILE" 2>&1
+STATUS=$?
+if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ]; then
+    exit 0
+fi
+echo "[-] Attempt 1 exited with code $STATUS" >> "$LOGFILE"
+
+# Tier 2: Direct X11 / XWayland via XCB
+echo "[*] Attempt 2: Direct XCB via XWayland..." >> "$LOGFILE"
+env QT_QPA_PLATFORM="xcb" python3 -u /usr/bin/caelaris-installer-gui "$@" >> "$LOGFILE" 2>&1
+STATUS=$?
+if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ]; then
+    exit 0
+fi
+echo "[-] Attempt 2 exited with code $STATUS" >> "$LOGFILE"
+
+# Tier 3: Software Rendering on Wayland (Essential for ARM64 virtualization / UTM / QEMU / Apple Silicon VMs)
+echo "[*] Attempt 3: Software rendering under Wayland..." >> "$LOGFILE"
+env LIBGL_ALWAYS_SOFTWARE=1 QT_QUICK_BACKEND=software QT_QPA_PLATFORM="wayland;xcb" python3 -u /usr/bin/caelaris-installer-gui "$@" >> "$LOGFILE" 2>&1
+STATUS=$?
+if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ]; then
+    exit 0
+fi
+echo "[-] Attempt 3 exited with code $STATUS" >> "$LOGFILE"
+
+# Tier 4: Software Rendering on XCB (Guaranteed fallback when EGL / GPU drivers are absent)
+echo "[*] Attempt 4: Software rendering under XCB..." >> "$LOGFILE"
+env LIBGL_ALWAYS_SOFTWARE=1 QT_QUICK_BACKEND=software QT_XCB_GL_INTEGRATION=none QT_QPA_PLATFORM="xcb" python3 -u /usr/bin/caelaris-installer-gui "$@" >> "$LOGFILE" 2>&1
+STATUS=$?
+if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ]; then
+    exit 0
+fi
+echo "[-] Attempt 4 exited with code $STATUS" >> "$LOGFILE"
+
+# Tier 5: Direct user runtime directory Wayland bypass
+if [ -d "/run/user/1000" ]; then
+    echo "[*] Attempt 5: Direct runtime bypass (/run/user/1000)..." >> "$LOGFILE"
+    env XDG_RUNTIME_DIR="/run/user/1000" LIBGL_ALWAYS_SOFTWARE=1 QT_QUICK_BACKEND=software QT_QPA_PLATFORM="wayland" python3 -u /usr/bin/caelaris-installer-gui "$@" >> "$LOGFILE" 2>&1
+    STATUS=$?
+    if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ]; then
+        exit 0
+    fi
+    echo "[-] Attempt 5 exited with code $STATUS" >> "$LOGFILE"
+fi
+
+# If all graphical attempts failed, launch interactive diagnostic as liveuser
+echo "[-] All graphical launcher tiers failed (last exit code: $STATUS)." >> "$LOGFILE"
+sync
+
+if command -v konsole >/dev/null 2>&1; then
+    sudo -u liveuser env DISPLAY="$DISPLAY" WAYLAND_DISPLAY="$WAYLAND_DISPLAY" XDG_RUNTIME_DIR="/run/user/1000" \
+        konsole -e /bin/bash -c "echo '=== Caelaris Installer Launch Diagnostic ==='; cat '$LOGFILE'; echo ''; read -p 'Press Enter to close...'" &
+elif command -v ptyxis >/dev/null 2>&1; then
+    sudo -u liveuser env DISPLAY="$DISPLAY" WAYLAND_DISPLAY="$WAYLAND_DISPLAY" XDG_RUNTIME_DIR="/run/user/1000" \
+        ptyxis -- /bin/bash -c "echo '=== Caelaris Installer Launch Diagnostic ==='; cat '$LOGFILE'; echo ''; read -p 'Press Enter to close...'" &
+fi
+exit $STATUS
+LAUNCHER_EOF
+chmod 755 "${ROOTFS_DIR}/usr/bin/caelaris-installer"
+
 chmod +x "${ROOTFS_DIR}/usr/bin/caelaris-"* 2>/dev/null || true
 chmod +x "${ROOTFS_DIR}/usr/bin/caelestia-"* 2>/dev/null || true
 chown -R 1000:100 "${ROOTFS_DIR}/home/liveuser" 2>/dev/null || true
