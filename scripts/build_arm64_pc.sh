@@ -840,7 +840,7 @@ fi
 
 menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --class gnu --class os {
     search --no-floppy --set=root --file /live/vmlinuz
-    linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 session=plasma plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
+    linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 session=plasma plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
     initrd /live/initrd.img
 }
 
@@ -867,7 +867,7 @@ menuentry "Boot Installed Operating System" --class disk --class os {
 
 menuentry "Caelaris Linux (Safe Graphics / Fallback)" --class caelaris --class gnu-linux {
     search --no-floppy --set=root --file /live/vmlinuz
-    linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live nomodeset quiet plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
+    linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live nomodeset quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
     initrd /live/initrd.img
 }
 

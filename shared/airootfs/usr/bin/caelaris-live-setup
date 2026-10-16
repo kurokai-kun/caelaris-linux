@@ -192,9 +192,13 @@ chown -R liveuser:users /home/liveuser
     chmod 600 /etc/polkit-1/rules.d/* 2>/dev/null || true
     chmod 0440 /etc/sudoers.d/* 2>/dev/null || true
 
+    ARCH_KEY="archlinux"
+    if [ "$(uname -m)" = "aarch64" ] || [ "$(uname -m)" = "arm64" ]; then
+        ARCH_KEY="archlinuxarm"
+    fi
     if [ ! -f /etc/pacman.d/gnupg/trustdb.gpg ] || [ ! -f /etc/pacman.d/gnupg/pubring.kbx ]; then
         pacman-key --init 2>/dev/null || true
-        pacman-key --populate archlinux 2>/dev/null || true
+        pacman-key --populate "$ARCH_KEY" 2>/dev/null || true
         gpgconf --homedir /etc/pacman.d/gnupg --kill all 2>/dev/null || true
         killall -9 gpg-agent dirmngr 2>/dev/null || true
     fi

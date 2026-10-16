@@ -641,12 +641,17 @@ class InstallWorker(QThread):
                 )
 
             # Deactivate clutter generator scripts in grub.d
-            for clut_pattern in ["*bootnext*", "*memtest*", "*xen*", "*os-prober*", "*caelaris_gnome*"]:
+            for clut_pattern in ["*bootnext*", "*memtest*", "*xen*", "*os-prober*", "*caelaris_gnome*", "*uefi-firmware*"]:
                 for cp in glob.glob(f"/mnt/etc/grub.d/{clut_pattern}"):
                     try:
                         os.chmod(cp, 0o644)
                     except Exception:
                         pass
+
+            # Ensure quiet systemd boot configuration on target disk to suppress skip notifications
+            os.makedirs("/mnt/etc/systemd/system.conf.d", exist_ok=True)
+            with open("/mnt/etc/systemd/system.conf.d/10-caelaris-quiet.conf", "w") as f:
+                f.write("[Manager]\nShowStatus=no\nStatusUnitFormat=name\n")
 
             # ── Step 1: Ensure firmware stubs exist & regenerate initramfs ──────
             self.progress_changed.emit(90, "Configuring firmware and generating initramfs with mkinitcpio...")
@@ -733,16 +738,20 @@ class InstallWorker(QThread):
                     cleaned_lines = []
                     skip_block = False
                     brace_depth = 0
+                    has_seen_open_brace = False
                     for line in cfg_text.splitlines():
-                        if re.search(r"menuentry\s+['\"].*(?:BootNext|Unsupported option).*['\"]", line, re.IGNORECASE):
+                        if not skip_block and re.search(r"menuentry\s+['\"].*(?:BootNext|Unsupported option)", line, re.IGNORECASE):
                             skip_block = True
+                            has_seen_open_brace = "{" in line
                             brace_depth = line.count("{") - line.count("}")
-                            if brace_depth <= 0:
+                            if has_seen_open_brace and brace_depth <= 0:
                                 skip_block = False
                             continue
                         if skip_block:
+                            if "{" in line:
+                                has_seen_open_brace = True
                             brace_depth += line.count("{") - line.count("}")
-                            if brace_depth <= 0:
+                            if has_seen_open_brace and brace_depth <= 0:
                                 skip_block = False
                             continue
                         cleaned_lines.append(line)

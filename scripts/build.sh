@@ -160,7 +160,7 @@ ENDTEXT
 MENU LABEL Caelaris Linux
 LINUX /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
 INITRD /%INSTALL_DIR%/boot/intel-ucode.img,/%INSTALL_DIR%/boot/amd-ucode.img,/%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp systemd.unified_cgroup_hierarchy=1
+APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp systemd.unified_cgroup_hierarchy=1
 
 LABEL caelaris_safe
 TEXT HELP
@@ -169,7 +169,7 @@ ENDTEXT
 MENU LABEL Caelaris Linux (Safe Graphics)
 LINUX /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
 INITRD /%INSTALL_DIR%/boot/intel-ucode.img,/%INSTALL_DIR%/boot/amd-ucode.img,/%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma nomodeset quiet plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
+APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma nomodeset quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
 EOF
 fi
 
@@ -181,7 +181,7 @@ set timeout=12
 
 menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --class gnu --class os {
     set gfxpayload=keep
-    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp systemd.unified_cgroup_hierarchy=1
+    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp systemd.unified_cgroup_hierarchy=1
     initrd /%INSTALL_DIR%/boot/intel-ucode.img /%INSTALL_DIR%/boot/amd-ucode.img /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
 }
 
@@ -208,7 +208,7 @@ menuentry "Boot Installed Operating System" --class disk --class os {
 
 menuentry "Caelaris Linux (Safe Graphics / Fallback)" --class caelaris --class gnu-linux {
     set gfxpayload=keep
-    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma nomodeset quiet plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
+    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma nomodeset quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
     initrd /%INSTALL_DIR%/boot/intel-ucode.img /%INSTALL_DIR%/boot/amd-ucode.img /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
 }
 

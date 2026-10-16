@@ -168,16 +168,20 @@ class InstallWorker(QThread):
                         pass
 
                 if self.action in ["install", "update"]:
+                    is_arm = platform.machine().lower() in ["aarch64", "arm64"]
+                    keyring_name = "archlinuxarm" if is_arm else "archlinux"
+                    keyring_pkg = "archlinuxarm-keyring" if is_arm else "archlinux-keyring"
+
                     # Auto-initialize pacman keyring if not yet populated
                     if not (os.path.exists("/etc/pacman.d/gnupg/trustdb.gpg") and os.path.exists("/etc/pacman.d/gnupg/pubring.kbx")):
                         self.progress_signal.emit(10, "--", "--", "Initializing cryptographic pacman keyring...")
                         run_privileged_sync(["pacman-key", "--init"])
-                        run_privileged_sync(["pacman-key", "--populate", "archlinux"])
+                        run_privileged_sync(["pacman-key", "--populate", keyring_name])
                         run_privileged_sync(["gpgconf", "--homedir", "/etc/pacman.d/gnupg", "--kill", "all"])
                         run_privileged_sync(["killall", "-9", "gpg-agent", "dirmngr"])
 
                     self.progress_signal.emit(15, "Connecting", "20s", f"Querying official repository for {pkg}...")
-                    cmd = ["pacman", "-Sy", "--noconfirm", "--needed", "--disable-download-timeout", pkg]
+                    cmd = ["pacman", "-Sy", "--noconfirm", "--needed", pkg]
                     proc = run_privileged(cmd)
                     
                     pct = 25
@@ -203,9 +207,9 @@ class InstallWorker(QThread):
                         
                         # Case A: Signature or Keyring error -> update keyring & retry
                         if any(k in log_joined for k in ["pgp signature", "unknown trust", "invalid or corrupted package", "keyring", "signature from", "gpgme error"]):
-                            self.progress_signal.emit(30, "--", "--", "Refreshing Arch Linux package signing keys & retrying...")
-                            run_privileged_sync(["pacman", "-Sy", "--noconfirm", "archlinux-keyring"])
-                            run_privileged_sync(["pacman-key", "--populate", "archlinux"])
+                            self.progress_signal.emit(30, "--", "--", "Refreshing package signing keys & retrying...")
+                            run_privileged_sync(["pacman", "-Sy", "--noconfirm", keyring_pkg])
+                            run_privileged_sync(["pacman-key", "--populate", keyring_name])
                             run_privileged_sync(["rm", "-f", f"/var/cache/pacman/pkg/{pkg}*"])
                             
                             proc_retry = run_privileged(cmd)
