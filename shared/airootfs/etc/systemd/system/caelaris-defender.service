@@ -4,7 +4,7 @@ After=local-fs.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/python /usr/bin/caelaris-defender-guard
+ExecStart=/usr/bin/python3 /usr/bin/caelaris-defender-guard
 Restart=always
 RestartSec=5
 User=root

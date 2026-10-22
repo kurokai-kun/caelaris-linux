@@ -1359,10 +1359,11 @@ class CaelarisInstaller(QMainWindow):
         cl10.addSpacing(10)
         self.chk_reboot = QCheckBox("Restart computer now")
         self.chk_reboot.setChecked(True)
+        self.chk_reboot.toggled.connect(lambda chk: self.btn_next.setText("Restart Now 🚀" if chk else "Finish & Close") if hasattr(self, 'btn_next') else None)
         cl10.addWidget(self.chk_reboot)
         l10.addWidget(c10)
         l10.addStretch()
-        btn_done = QPushButton("Done / Reboot System 🚀", objectName="successBtn")
+        btn_done = QPushButton("Restart System Now 🚀", objectName="successBtn")
         btn_done.clicked.connect(self.finish_installation)
         l10.addWidget(btn_done)
         self.stack.addWidget(p10)
@@ -1459,9 +1460,20 @@ class CaelarisInstaller(QMainWindow):
             self.btn_back.setText("◀ Back")
             self.btn_next.setText("Install Now 🚀")
             self.btn_next.setObjectName("successBtn")
-        elif self.current_step >= 8:
+        elif self.current_step == 8:
             self.btn_back.setVisible(False)
             self.btn_next.setVisible(False)
+        elif self.current_step >= 9:
+            self.btn_back.setVisible(False)
+            self.btn_next.setVisible(True)
+            self.btn_next.setEnabled(True)
+            self.btn_next.setText("Restart Now 🚀" if self.chk_reboot.isChecked() else "Finish & Close")
+            self.btn_next.setObjectName("successBtn")
+            try:
+                self.btn_next.clicked.disconnect()
+            except TypeError:
+                pass
+            self.btn_next.clicked.connect(self.finish_installation)
         else:
             self.btn_back.setVisible(True)
             self.btn_next.setVisible(True)
