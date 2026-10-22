@@ -98,7 +98,7 @@ linux   /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
 initrd  /%INSTALL_DIR%/boot/intel-ucode.img
 initrd  /%INSTALL_DIR%/boot/amd-ucode.img
 initrd  /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-options archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp systemd.unified_cgroup_hierarchy=1
+options archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp systemd.unified_cgroup_hierarchy=1 split_lock_mitigate=0 amd_pstate=active
 EOF
 
         cat > "${loader_dir}/entries/02-caelaris-safe.conf" << 'EOF'
@@ -160,7 +160,7 @@ ENDTEXT
 MENU LABEL Caelaris Linux
 LINUX /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux
 INITRD /%INSTALL_DIR%/boot/intel-ucode.img,/%INSTALL_DIR%/boot/amd-ucode.img,/%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
-APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp systemd.unified_cgroup_hierarchy=1
+APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp systemd.unified_cgroup_hierarchy=1 split_lock_mitigate=0 amd_pstate=active
 
 LABEL caelaris_safe
 TEXT HELP
@@ -181,7 +181,7 @@ set timeout=12
 
 menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --class gnu --class os {
     set gfxpayload=keep
-    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp systemd.unified_cgroup_hierarchy=1
+    linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp systemd.unified_cgroup_hierarchy=1 split_lock_mitigate=0 amd_pstate=active
     initrd /%INSTALL_DIR%/boot/intel-ucode.img /%INSTALL_DIR%/boot/amd-ucode.img /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
 }
 
@@ -273,6 +273,7 @@ ln -sf /usr/lib/systemd/system/vboxservice.service "${BUILD_PROFILE}/airootfs/et
 ln -sf /usr/lib/systemd/system/vmtoolsd.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/vmtoolsd.service" 2>/dev/null || true
 ln -sf /usr/lib/systemd/system/vmware-vmblock-fuse.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/vmware-vmblock-fuse.service" 2>/dev/null || true
 ln -sf /usr/lib/systemd/system/spice-vdagentd.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/spice-vdagentd.service" 2>/dev/null || true
+ln -sf /usr/lib/systemd/system/ananicy-cpp.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/ananicy-cpp.service" 2>/dev/null || true
 ln -sf /etc/systemd/system/dmemcg-booster.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/dmemcg-booster.service" 2>/dev/null || true
 ln -sf /etc/systemd/system/caelaris-vram-booster.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/caelaris-vram-booster.service" 2>/dev/null || true
 ln -sf /etc/systemd/system/caelaris-defender.service "${BUILD_PROFILE}/airootfs/etc/systemd/system/multi-user.target.wants/caelaris-defender.service" 2>/dev/null || true

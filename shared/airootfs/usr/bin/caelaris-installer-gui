@@ -630,7 +630,7 @@ class InstallWorker(QThread):
                     'GRUB_TIMEOUT_STYLE=menu\n'
                     'GRUB_RECORDFAIL_TIMEOUT=12\n'
                     'GRUB_DISTRIBUTOR="Caelaris"\n'
-                    f'GRUB_CMDLINE_LINUX_DEFAULT="{subvol_arg} quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 systemd.unified_cgroup_hierarchy=1"\n'
+                    f'GRUB_CMDLINE_LINUX_DEFAULT="{subvol_arg} quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 systemd.unified_cgroup_hierarchy=1 split_lock_mitigate=0 amd_pstate=active"\n'
                     'GRUB_CMDLINE_LINUX=""\n'
                     'GRUB_GFXMODE=auto\n'
                     'GRUB_GFXPAYLOAD_LINUX=keep\n'
@@ -847,6 +847,16 @@ class InstallWorker(QThread):
                     os.chmod("/mnt/usr/lib/systemd/system-shutdown/caelaris-clean.shutdown", 0o755)
                 except Exception:
                     pass
+
+            # Gaming performance and resource limits configuration
+            if os.path.isfile("/etc/security/limits.d/99-caelaris-gaming.conf"):
+                os.makedirs("/mnt/etc/security/limits.d", exist_ok=True)
+                shutil.copy2("/etc/security/limits.d/99-caelaris-gaming.conf", "/mnt/etc/security/limits.d/99-caelaris-gaming.conf")
+            if os.path.isfile("/etc/gamemode.ini"):
+                shutil.copy2("/etc/gamemode.ini", "/mnt/etc/gamemode.ini")
+            if os.path.isfile("/etc/sysctl.d/99-caelaris-gaming.conf"):
+                os.makedirs("/mnt/etc/sysctl.d", exist_ok=True)
+                shutil.copy2("/etc/sysctl.d/99-caelaris-gaming.conf", "/mnt/etc/sysctl.d/99-caelaris-gaming.conf")
 
             self.run_cmd("arch-chroot /mnt systemctl enable NetworkManager sddm pipewire wireplumber systemd-timesyncd ananicy-cpp caelaris-defender dmemcg-booster caelaris-vram-booster caelaris-shutdown-clean 2>/dev/null || true", check=False)
             for guest_srv in ["vmtoolsd", "vmware-vmblock-fuse", "vboxservice", "spice-vdagentd", "qemu-guest-agent"]:
