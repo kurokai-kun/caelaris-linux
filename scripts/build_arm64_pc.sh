@@ -209,9 +209,9 @@ EOF
         chroot "$ROOTFS_DIR" /bin/bash -c "pacman -S --needed --noconfirm python-pyqt6 qt6-base qt6-wayland qt6-svg" 2>/dev/null || true
     }
 
-    # Configure mkinitcpio for live ISO booting
+    # Configure mkinitcpio for live ISO booting with NVMe, USB, and XHCI storage drivers
     cat << 'EOF' > "${ROOTFS_DIR}/etc/mkinitcpio.conf"
-MODULES=(loop squashfs isofs overlay xz)
+MODULES=(loop squashfs isofs overlay xz nvme usb_storage uas xhci_pci xhci_hcd)
 BINARIES=()
 FILES=()
 HOOKS=(base udev archiso archiso_loop_mnt block filesystems keyboard)
@@ -248,6 +248,20 @@ insmod search_label
 insmod test
 insmod echo
 insmod normal
+insmod devicetree
+insmod fdt
+insmod smbios
+insmod terminal
+insmod terminfo
+insmod at_keyboard
+insmod usb
+insmod usb_keyboard
+insmod xhci
+
+terminal_input --append console
+terminal_input --append at_keyboard
+terminal_input --append usb_keyboard
+terminal_output gfxterm console
 
 if [ -n "$cmdpath" ]; then
     set prefix=$cmdpath
@@ -284,7 +298,7 @@ GRUB_EARLY
                 --output=/boot/BOOTAA64.EFI \
                 --locales='' \
                 --fonts='' \
-                --modules='part_gpt part_msdos iso9660 fat ext2 btrfs search search_fs_file search_fs_uuid search_label test echo normal linux all_video gfxterm font loadenv configfile' \
+                --modules='part_gpt part_msdos iso9660 fat ext2 btrfs search search_fs_file search_fs_uuid search_label test echo normal linux devicetree fdt smbios terminal terminfo at_keyboard usb usbms usb_keyboard uhci ohci ehci xhci all_video gfxterm font loadenv configfile reboot sleep' \
                 'boot/grub/grub.cfg=/tmp/early_grub.cfg' 2>/dev/null || {
                 grub-mkstandalone \
                     --format=arm64-efi \
@@ -292,6 +306,7 @@ GRUB_EARLY
                     --output=/boot/BOOTAA64.EFI \
                     --locales='' \
                     --fonts='' \
+                    --modules='part_gpt part_msdos iso9660 fat ext2 btrfs search search_fs_file search_fs_uuid search_label test echo normal linux devicetree fdt smbios terminal terminfo at_keyboard usb usbms usb_keyboard uhci ohci ehci xhci all_video gfxterm font loadenv configfile reboot sleep' \
                     'boot/grub/grub.cfg=/tmp/early_grub.cfg' 2>/dev/null || true
             }
         fi
@@ -811,6 +826,15 @@ elif [ -f "${ROOTFS_DIR}/boot/initramfs-linux-fallback.img" ]; then
     cp "${ROOTFS_DIR}/boot/initramfs-linux-fallback.img" "${ISO_STAGING}/live/initrd.img"
 fi
 
+# Copy ARM64 Device Tree Blobs (DTBs) for Snapdragon X Elite, Apple Silicon, etc.
+mkdir -p "${ISO_STAGING}/live/dtbs" "${ISO_STAGING}/boot/dtbs"
+for dtb_src in "${ROOTFS_DIR}/boot/dtbs" "${ROOTFS_DIR}/boot/dtb" "${ROOTFS_DIR}/usr/lib/modules"/*/dtb "${ROOTFS_DIR}/usr/lib/linux-aarch64"; do
+    if [ -d "$dtb_src" ]; then
+        cp -r "$dtb_src"/* "${ISO_STAGING}/live/dtbs/" 2>/dev/null || true
+        cp -r "$dtb_src"/* "${ISO_STAGING}/boot/dtbs/" 2>/dev/null || true
+    fi
+done
+
 # Ensure kernel and initramfs are non-empty
 if [ ! -s "${ISO_STAGING}/live/vmlinuz" ]; then
     echo "CRITICAL ERROR: ARM64 kernel image (/boot/Image) missing or 0 bytes!"
@@ -821,7 +845,7 @@ if [ ! -s "${ISO_STAGING}/live/initrd.img" ]; then
     exit 1
 fi
 
-# Create GRUB EFI configuration for ARM64 PCs & Apple Silicon
+# Create GRUB EFI configuration for ARM64 PCs & Snapdragon X Elite Laptops
 mkdir -p "${ISO_STAGING}/EFI/BOOT"
 mkdir -p "${ISO_STAGING}/boot/grub/arm64-efi"
 
@@ -832,13 +856,128 @@ set timeout=12
 set color_normal=light-gray/black
 set color_highlight=white/magenta
 
+# Load EFI display, devicetree, SMBIOS, and multi-input drivers
+insmod devicetree
+insmod fdt
+insmod smbios
+insmod terminal
+insmod terminfo
+insmod at_keyboard
+insmod usb
+insmod usb_keyboard
+insmod xhci
+insmod all_video
+insmod gfxterm
+insmod font
+
+# Hook all input drivers so laptop keyboards (HP OmniBook X, Lenovo, etc.) and USB work in GRUB
+terminal_input --append console
+terminal_input --append at_keyboard
+terminal_input --append usb_keyboard
+terminal_output gfxterm console
+
 # Search and switch root to partition containing live kernel
 search --no-floppy --set=root --file /live/vmlinuz
 if [ -z "$root" ]; then
     search --no-floppy --set=root --label CAELARIS_ARM64_PC
 fi
 
-menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --class gnu --class os {
+# Auto-detect Snapdragon X Elite & ARM64 Laptop hardware via SMBIOS
+set dtb_file=""
+smbios -t 1 -s 4 --set=smbios_vendor
+smbios -t 1 -s 5 --set=smbios_product
+smbios -t 2 -s 5 --set=smbios_board
+
+# 1. HP OmniBook X 14 (fe0xxx)
+if [ "$smbios_product" == "*OmniBook*" ] || [ "$smbios_product" == "*Omnibook*" ] || [ "$smbios_vendor" == "*HP*" -a "$smbios_product" == "*14*" ] || [ "$smbios_board" == "*8C78*" ] || [ "$smbios_board" == "*8C79*" ]; then
+    if [ -f /live/dtbs/qcom/x1e80100-hp-omnibook-x14.dtb ]; then
+        set dtb_file="/live/dtbs/qcom/x1e80100-hp-omnibook-x14.dtb"
+    elif [ -f /live/dtbs/x1e80100-hp-omnibook-x14.dtb ]; then
+        set dtb_file="/live/dtbs/x1e80100-hp-omnibook-x14.dtb"
+    fi
+# 2. Lenovo Yoga Slim 7x
+elif [ "$smbios_product" == "*Yoga Slim 7*" ] || [ "$smbios_product" == "*83ED*" ]; then
+    if [ -f /live/dtbs/qcom/x1e80100-lenovo-yoga-slim7x.dtb ]; then
+        set dtb_file="/live/dtbs/qcom/x1e80100-lenovo-yoga-slim7x.dtb"
+    fi
+# 3. Lenovo ThinkPad T14s Gen 6
+elif [ "$smbios_product" == "*ThinkPad T14s*" ] || [ "$smbios_product" == "*21N1*" ] || [ "$smbios_product" == "*21N2*" ]; then
+    if [ -f /live/dtbs/qcom/x1e80100-lenovo-thinkpad-t14s.dtb ]; then
+        set dtb_file="/live/dtbs/qcom/x1e80100-lenovo-thinkpad-t14s.dtb"
+    fi
+# 4. ASUS Vivobook S 15
+elif [ "$smbios_product" == "*S5507*" ] || [ "$smbios_product" == "*Vivobook S 15*" ]; then
+    if [ -f /live/dtbs/qcom/x1e80100-asus-vivobook-s15.dtb ]; then
+        set dtb_file="/live/dtbs/qcom/x1e80100-asus-vivobook-s15.dtb"
+    fi
+# 5. Dell XPS 13 9345
+elif [ "$smbios_product" == "*XPS 13 9345*" ] || [ "$smbios_product" == "*9345*" ]; then
+    if [ -f /live/dtbs/qcom/x1e80100-dell-xps13-9345.dtb ]; then
+        set dtb_file="/live/dtbs/qcom/x1e80100-dell-xps13-9345.dtb"
+    fi
+# 6. Microsoft Surface Laptop 7 / Surface Pro 11 / Reference CRD
+elif [ "$smbios_product" == "*Surface*" ]; then
+    if [ -f /live/dtbs/qcom/x1e80100-crd.dtb ]; then
+        set dtb_file="/live/dtbs/qcom/x1e80100-crd.dtb"
+    fi
+fi
+
+# Fallback generic Snapdragon X Elite DTB if vendor matched but exact model DTB wasn't found
+if [ -z "$dtb_file" ]; then
+    if [ -f /live/dtbs/qcom/x1e80100-hp-omnibook-x14.dtb ]; then
+        set dtb_file="/live/dtbs/qcom/x1e80100-hp-omnibook-x14.dtb"
+    elif [ -f /live/dtbs/qcom/x1e80100-crd.dtb ]; then
+        set dtb_file="/live/dtbs/qcom/x1e80100-crd.dtb"
+    fi
+fi
+
+menuentry "Caelaris Linux (Auto-Detect / Snapdragon X Elite & ARM64 Laptop)" --class caelaris --class kde --class gnu-linux --class gnu --class os {
+    search --no-floppy --set=root --file /live/vmlinuz
+    linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live clk_ignore_unused pd_ignore_unused arm64.nopauth earlycon=efifb console=tty0 panic=60 efi=noruntime session=plasma plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
+    initrd /live/initrd.img
+    if [ -n "$dtb_file" -a -f "$dtb_file" ]; then
+        devicetree $dtb_file
+    elif [ -f /live/dtbs/qcom/x1e80100-hp-omnibook-x14.dtb ]; then
+        devicetree /live/dtbs/qcom/x1e80100-hp-omnibook-x14.dtb
+    fi
+}
+
+menuentry "Caelaris Linux - HP OmniBook X 14 (Snapdragon X Elite)" --class caelaris --class gnu-linux {
+    search --no-floppy --set=root --file /live/vmlinuz
+    linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live clk_ignore_unused pd_ignore_unused arm64.nopauth earlycon=efifb console=tty0 panic=60 efi=noruntime session=plasma plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
+    initrd /live/initrd.img
+    if [ -f /live/dtbs/qcom/x1e80100-hp-omnibook-x14.dtb ]; then
+        devicetree /live/dtbs/qcom/x1e80100-hp-omnibook-x14.dtb
+    elif [ -f /live/dtbs/x1e80100-hp-omnibook-x14.dtb ]; then
+        devicetree /live/dtbs/x1e80100-hp-omnibook-x14.dtb
+    fi
+}
+
+menuentry "Caelaris Linux - Lenovo Yoga Slim 7x / ThinkPad T14s (Snapdragon X Elite)" --class caelaris --class gnu-linux {
+    search --no-floppy --set=root --file /live/vmlinuz
+    linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live clk_ignore_unused pd_ignore_unused arm64.nopauth earlycon=efifb console=tty0 panic=60 efi=noruntime session=plasma plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
+    initrd /live/initrd.img
+    if [ -f /live/dtbs/qcom/x1e80100-lenovo-yoga-slim7x.dtb ]; then
+        devicetree /live/dtbs/qcom/x1e80100-lenovo-yoga-slim7x.dtb
+    elif [ -f /live/dtbs/qcom/x1e80100-lenovo-thinkpad-t14s.dtb ]; then
+        devicetree /live/dtbs/qcom/x1e80100-lenovo-thinkpad-t14s.dtb
+    fi
+}
+
+menuentry "Caelaris Linux - ASUS Vivobook S 15 / Dell XPS 13 (Snapdragon X Elite)" --class caelaris --class gnu-linux {
+    search --no-floppy --set=root --file /live/vmlinuz
+    linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live clk_ignore_unused pd_ignore_unused arm64.nopauth earlycon=efifb console=tty0 panic=60 efi=noruntime session=plasma plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
+    initrd /live/initrd.img
+    if [ -f /live/dtbs/qcom/x1e80100-asus-vivobook-s15.dtb ]; then
+        devicetree /live/dtbs/qcom/x1e80100-asus-vivobook-s15.dtb
+    elif [ -f /live/dtbs/qcom/x1e80100-dell-xps13-9345.dtb ]; then
+        devicetree /live/dtbs/qcom/x1e80100-dell-xps13-9345.dtb
+    elif [ -f /live/dtbs/qcom/x1e80100-crd.dtb ]; then
+        devicetree /live/dtbs/qcom/x1e80100-crd.dtb
+    fi
+}
+
+menuentry "Caelaris Linux - Generic ARM64 PC / Server (ACPI Mode)" --class caelaris --class gnu-linux {
     search --no-floppy --set=root --file /live/vmlinuz
     linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 session=plasma plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
     initrd /live/initrd.img
@@ -867,8 +1006,11 @@ menuentry "Boot Installed Operating System" --class disk --class os {
 
 menuentry "Caelaris Linux (Safe Graphics / Fallback)" --class caelaris --class gnu-linux {
     search --no-floppy --set=root --file /live/vmlinuz
-    linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live nomodeset quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
+    linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live nomodeset clk_ignore_unused pd_ignore_unused arm64.nopauth earlycon=efifb console=tty0 panic=60 session=plasma plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
     initrd /live/initrd.img
+    if [ -n "$dtb_file" -a -f "$dtb_file" ]; then
+        devicetree $dtb_file
+    fi
 }
 
 if [ "$grub_platform" = "efi" ]; then
@@ -902,6 +1044,20 @@ insmod search_label
 insmod test
 insmod echo
 insmod normal
+insmod devicetree
+insmod fdt
+insmod smbios
+insmod terminal
+insmod terminfo
+insmod at_keyboard
+insmod usb
+insmod usb_keyboard
+insmod xhci
+
+terminal_input --append console
+terminal_input --append at_keyboard
+terminal_input --append usb_keyboard
+terminal_output gfxterm console
 
 if [ -n "$cmdpath" ]; then
     set prefix=$cmdpath
@@ -935,7 +1091,7 @@ GRUB_EARLY
         --output="${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" \
         --locales="" \
         --fonts="" \
-        --modules="part_gpt part_msdos iso9660 fat ext2 btrfs search search_fs_file search_fs_uuid search_label test echo normal linux all_video gfxterm font loadenv configfile" \
+        --modules="part_gpt part_msdos iso9660 fat ext2 btrfs search search_fs_file search_fs_uuid search_label test echo normal linux devicetree fdt smbios terminal terminfo at_keyboard usb usbms usb_keyboard uhci ohci ehci xhci all_video gfxterm font loadenv configfile reboot sleep" \
         "boot/grub/grub.cfg=${WORK_DIR}/host_early_grub.cfg" 2>/dev/null || {
         grub-mkstandalone \
             --format=arm64-efi \
@@ -943,15 +1099,16 @@ GRUB_EARLY
             --output="${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" \
             --locales="" \
             --fonts="" \
+            --modules="part_gpt part_msdos iso9660 fat ext2 btrfs search search_fs_file search_fs_uuid search_label test echo normal linux devicetree fdt smbios terminal terminfo at_keyboard usb usbms usb_keyboard uhci ohci ehci xhci all_video gfxterm font loadenv configfile reboot sleep" \
             "boot/grub/grub.cfg=${WORK_DIR}/host_early_grub.cfg" 2>/dev/null || true
     }
     rm -f "${WORK_DIR}/host_early_grub.cfg"
 fi
 
-# Create FAT32 EFI boot partition image (with BOOTAA64.EFI, grub.cfg, and live kernel/initrd fallback)
-truncate -s 256M "${ISO_STAGING}/efi.img"
+# Create FAT32 EFI boot partition image (with BOOTAA64.EFI, grub.cfg, live kernel/initrd, and DTBs)
+truncate -s 512M "${ISO_STAGING}/efi.img"
 mkfs.vfat -F 32 -n "EFI" "${ISO_STAGING}/efi.img"
-mmd -i "${ISO_STAGING}/efi.img" ::EFI ::EFI/BOOT ::boot ::boot/grub ::live || true
+mmd -i "${ISO_STAGING}/efi.img" ::EFI ::EFI/BOOT ::boot ::boot/grub ::live ::live/dtbs || true
 if [ -f "${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" ]; then
     mcopy -i "${ISO_STAGING}/efi.img" "${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" ::EFI/BOOT/ || true
 fi
@@ -962,6 +1119,9 @@ if [ -f "${ISO_STAGING}/live/vmlinuz" ]; then
 fi
 if [ -f "${ISO_STAGING}/live/initrd.img" ]; then
     mcopy -i "${ISO_STAGING}/efi.img" "${ISO_STAGING}/live/initrd.img" ::live/initrd.img || true
+fi
+if [ -d "${ISO_STAGING}/live/dtbs" ]; then
+    mcopy -s -i "${ISO_STAGING}/efi.img" "${ISO_STAGING}/live/dtbs" ::live/ 2>/dev/null || true
 fi
 
 # Generate Hybrid GPT/UEFI ISO with El Torito for virtual CD-ROM (VMware Fusion, UTM, QEMU) and GPT for USB flash drives

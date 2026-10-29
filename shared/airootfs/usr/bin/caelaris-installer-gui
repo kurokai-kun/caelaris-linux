@@ -568,12 +568,22 @@ class InstallWorker(QThread):
 
             if k_copied:
                 os.chmod("/mnt/boot/vmlinuz-linux", 0o755)
-                if is_aarch64 and not os.path.isfile("/mnt/boot/Image"):
-                    try:
-                        shutil.copy2("/mnt/boot/vmlinuz-linux", "/mnt/boot/Image")
-                        os.chmod("/mnt/boot/Image", 0o755)
-                    except Exception:
-                        pass
+                if is_aarch64:
+                    if not os.path.isfile("/mnt/boot/Image"):
+                        try:
+                            shutil.copy2("/mnt/boot/vmlinuz-linux", "/mnt/boot/Image")
+                            os.chmod("/mnt/boot/Image", 0o755)
+                        except Exception:
+                            pass
+                    # Ensure Device Tree Blobs (DTBs) are copied to /mnt/boot/dtbs
+                    for dtb_src in ["/run/archiso/bootmnt/live/dtbs", "/run/archiso/bootmnt/boot/dtbs", "/boot/dtbs", "/boot/dtb"]:
+                        if os.path.isdir(dtb_src) and not os.path.exists("/mnt/boot/dtbs"):
+                            try:
+                                shutil.copytree(dtb_src, "/mnt/boot/dtbs", dirs_exist_ok=True)
+                                self.log(f"[OK] ARM64 Device Tree Blobs installed from {dtb_src} to /mnt/boot/dtbs")
+                                break
+                            except Exception:
+                                pass
                 self.log(f"[OK] Kernel placed: /mnt/boot/vmlinuz-linux ({os.path.getsize('/mnt/boot/vmlinuz-linux')} bytes)")
             else:
                 self.log("[ERROR] Could not find vmlinuz kernel binary to copy into /mnt/boot!")
@@ -622,6 +632,11 @@ class InstallWorker(QThread):
             subvol_arg = "rootflags=subvol=@" if fs_type == "btrfs" else ""
 
             # ── Write /etc/default/grub ──────────────────────────────────────
+            if is_aarch64:
+                grub_cmdline = f'{subvol_arg} quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 systemd.unified_cgroup_hierarchy=1 clk_ignore_unused pd_ignore_unused arm64.nopauth earlycon=efifb console=tty0 panic=60 efi=noruntime'
+            else:
+                grub_cmdline = f'{subvol_arg} quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 systemd.unified_cgroup_hierarchy=1 split_lock_mitigate=0 amd_pstate=active'
+
             os.makedirs("/mnt/etc/default", exist_ok=True)
             with open("/mnt/etc/default/grub", "w") as f:
                 f.write(
@@ -630,7 +645,7 @@ class InstallWorker(QThread):
                     'GRUB_TIMEOUT_STYLE=menu\n'
                     'GRUB_RECORDFAIL_TIMEOUT=12\n'
                     'GRUB_DISTRIBUTOR="Caelaris"\n'
-                    f'GRUB_CMDLINE_LINUX_DEFAULT="{subvol_arg} quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 systemd.unified_cgroup_hierarchy=1 split_lock_mitigate=0 amd_pstate=active"\n'
+                    f'GRUB_CMDLINE_LINUX_DEFAULT="{grub_cmdline}"\n'
                     'GRUB_CMDLINE_LINUX=""\n'
                     'GRUB_GFXMODE=auto\n'
                     'GRUB_GFXPAYLOAD_LINUX=keep\n'
@@ -787,13 +802,26 @@ class InstallWorker(QThread):
             try:
                 root_uuid = subprocess.check_output(["blkid", "-s", "UUID", "-o", "value", p_root], text=True).strip()
                 if root_uuid:
+                    arm_inputs = (
+                        "insmod terminal\n"
+                        "insmod terminfo\n"
+                        "insmod at_keyboard\n"
+                        "insmod usb\n"
+                        "insmod usb_keyboard\n"
+                        "insmod xhci\n"
+                        "terminal_input --append console\n"
+                        "terminal_input --append at_keyboard\n"
+                        "terminal_input --append usb_keyboard\n"
+                    ) if is_aarch64 else ""
+
                     esp_stub = (
                         "# Standalone GRUB locator for Caelaris Linux\n"
                         "insmod part_gpt\n"
                         "insmod part_msdos\n"
                         "insmod btrfs\n"
                         "insmod ext2\n"
-                        "insmod fat\n\n"
+                        "insmod fat\n"
+                        f"{arm_inputs}\n"
                         f"search --no-floppy --fs-uuid --set=root {root_uuid}\n"
                         "set prefix=($root)'/@/boot/grub'\n"
                         "if [ ! -f $prefix/grub.cfg ]; then\n"
