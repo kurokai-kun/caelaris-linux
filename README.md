@@ -24,7 +24,7 @@
 **Caelaris Linux** is a modern, rolling-release operating system built upon the rock-solid foundation of Arch Linux. Engineered for enthusiasts, gamers, creators, and developers, Caelaris delivers out-of-the-box hardware acceleration, low-latency responsiveness, and a unified tri-desktop experience (KDE Plasma 6, GNOME 4x, and Hyprland dynamic tiling) across modern x86_64 PCs and ARM64 devices.
 
 <p align="center">
-  <img src="assets/preview.png" alt="Caelaris Linux Desktop Preview" width="100%">
+  <img src="assets/preview.png?v=3" alt="Caelaris Linux Desktop Preview" width="100%">
 </p>
 
 ---
