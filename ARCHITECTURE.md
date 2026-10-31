@@ -16,7 +16,7 @@ Caelaris Linux is organized into distinct, modular subsystem layers that separat
 ```
 +---------------------------------------------------------------------------------------+
 |                                USER EXPERIENCE LAYER                                  |
-|   KDE Plasma 6 (Wayland)   |   GNOME 4x (Wayland)   |  Caelestia Shell (Hyprland)     |
+|   KDE Plasma 6 (Wayland)   |   GNOME 4x (Wayland)   |     Hyprland (Wayland)         |
 |   Caelaris Welcome (GTK3)  |   Tri-Desktop Hot-Switcher (caelaris-switch-desktop)     |
 +---------------------------------------------------------------------------------------+
 |                      DISPLAY & SESSION MANAGEMENT                                     |
@@ -161,13 +161,13 @@ Caelaris Linux standardizes on **SDDM (Simple Desktop Display Manager)** running
 - **Wayland First:** All three desktop sessions execute natively on Wayland:
   - KDE Plasma 6: `/usr/share/wayland-sessions/plasma.desktop`
   - GNOME 4x: `/usr/share/wayland-sessions/gnome.desktop`
-  - Caelestia Shell (Hyprland): `/usr/share/wayland-sessions/caelestia.desktop` (executing `/usr/bin/caelestia-session`)
+  - Hyprland: `/usr/share/wayland-sessions/hyprland.desktop` (executing `/usr/bin/hyprland-session`)
 
-### 4.2 Caelestia Shell & Hyprland Subsystem Architecture
+### 4.2 Hyprland Subsystem Architecture
 - **Compositor Engine:** Hyprland dynamic tiling Wayland compositor written in modern C++, featuring custom bezier curve animations, hardware-accelerated dual-layer blur, and 0ms window splitting.
-- **Why It Is Used:** Solves the traditional window stacking bottleneck. Eliminates the barrier of manual Hyprland configuration ("ricing") by providing a pre-configured, cohesive glassmorphic desktop layer with Waybar, Rofi Wayland, Dunst, and Polkit KDE Agent out of the box.
+- **Why It Is Used:** Solves the traditional window stacking bottleneck. Eliminates the barrier of manual Hyprland configuration ("ricing") by providing a clean, cohesive desktop layer with Waybar, Rofi Wayland, Dunst, and Polkit KDE Agent out of the box.
 - **What Is the Use of Adding It:** Provides power users, software engineers, and gamers with an ultra-lightweight environment consuming <400MB RAM at idle, minimizing compositor latency for high-framerate competitive gaming and heavy compilation, while remaining fully hot-switchable with KDE and GNOME in under 2 seconds.
-- **Session Pipeline:** Executed via `/usr/bin/caelestia-session`, which initializes Wayland environment flags (`QT_QPA_PLATFORM=wayland;xcb`, `GDK_BACKEND=wayland,x11`, `MOZ_ENABLE_WAYLAND=1`), checks for user customizations in `~/.config/hypr/hyprland.conf`, and falls back to global system configurations at `/etc/caelestia/hyprland.conf`.
+- **Session Pipeline:** Executed via `/usr/bin/hyprland-session`, which initializes Wayland environment flags (`QT_QPA_PLATFORM=wayland;xcb`, `GDK_BACKEND=wayland,x11`, `MOZ_ENABLE_WAYLAND=1`), checks for user customizations in `~/.config/hypr/hyprland.conf`, and falls back to global system configurations at `/etc/hypr/hyprland.conf`.
 
 ### 4.3 Single User Profile Architecture
 To prevent profile duplication on installed systems:
@@ -294,7 +294,7 @@ flowchart TD
         booster["caelaris-vram-booster.service<br/>(Tracks active window & PID)"]
         kwin["KDE KWin"]
         mutter["GNOME Mutter"]
-        hypr["Caelestia Hyprland"]
+        hypr["Hyprland IPC"]
         kwin -. Focus .-> booster
         mutter -. Focus .-> booster
         hypr -. Focus .-> booster
@@ -334,7 +334,7 @@ flowchart TD
    - Traverses `/sys/fs/cgroup`, dynamically mounting and writing `+dmem` to `cgroup.subtree_control` from root to `user.slice`, `session.slice`, and `app.slice`.
    - Detects GPU topology and dedicated VRAM capacities across DRM adapters.
 3. **Cross-Desktop Dynamic Foreground Booster (`caelaris-vram-booster`):**
-   - Continuously resolves the active foreground application across KDE Plasma 6 (KWin D-Bus), GNOME 4x (Mutter D-Bus), and Caelestia Shell (Hyprland IPC).
+   - Continuously resolves the active foreground application across KDE Plasma 6 (KWin D-Bus), GNOME 4x (Mutter D-Bus), and Hyprland (Hyprland IPC).
    - Dynamically elevates the active game's cgroup `dmem.low` to ~88% of total dedicated hardware VRAM (e.g. 7.2 GiB on an 8 GiB card).
    - Protects critical game textures, shaders, and geometry buffers from being evicted into GTT (system RAM) during memory saturation, guaranteeing rock-solid frametimes and eliminating 1% low frame stutter.
 

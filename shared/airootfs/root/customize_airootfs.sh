@@ -51,9 +51,9 @@ fi
 if [ -f /usr/share/wayland-sessions/gnome.desktop ]; then
     sed -i 's/^Name=.*/Name=GNOME/' /usr/share/wayland-sessions/gnome.desktop
 fi
-for h_sess in /usr/share/wayland-sessions/hyprland.desktop /usr/share/wayland-sessions/caelestia.desktop; do
-    mkdir -p "$(dirname "$h_sess")"
-    cat > "$h_sess" << 'EOF'
+h_sess=/usr/share/wayland-sessions/hyprland.desktop
+mkdir -p "$(dirname "$h_sess")"
+cat > "$h_sess" << 'EOF'
 [Desktop Entry]
 Name=Hyprland
 Comment=Hyprland dynamic tiling Wayland compositor
@@ -62,7 +62,6 @@ TryExec=/usr/bin/hyprland-session
 Type=Application
 DesktopNames=Hyprland
 EOF
-done
 
 # Instruct SDDM to only look for Wayland sessions and ignore X11 sessions
 mkdir -p /etc/sddm.conf.d

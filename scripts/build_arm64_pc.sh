@@ -460,7 +460,7 @@ ConditionPathExists=/etc/sddm.conf.d/autologin.conf
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash -c 'if grep -qE "session=caelestia|desktop=caelestia|session=hyprland|desktop=hyprland" /proc/cmdline; then sed -i "s/Session=.*/Session=hyprland/" /etc/sddm.conf.d/autologin.conf; elif grep -qw "session=gnome" /proc/cmdline; then sed -i "s/Session=.*/Session=gnome/" /etc/sddm.conf.d/autologin.conf; else sed -i "s/Session=.*/Session=plasma/" /etc/sddm.conf.d/autologin.conf; fi'
+ExecStart=/bin/bash -c 'if grep -qE "session=hyprland|desktop=hyprland" /proc/cmdline; then sed -i "s/Session=.*/Session=hyprland/" /etc/sddm.conf.d/autologin.conf; elif grep -qw "session=gnome" /proc/cmdline; then sed -i "s/Session=.*/Session=gnome/" /etc/sddm.conf.d/autologin.conf; else sed -i "s/Session=.*/Session=plasma/" /etc/sddm.conf.d/autologin.conf; fi'
 RemainAfterExit=yes
 
 [Install]
@@ -703,7 +703,7 @@ LAUNCHER_EOF
 chmod 755 "${ROOTFS_DIR}/usr/bin/caelaris-installer"
 
 chmod +x "${ROOTFS_DIR}/usr/bin/caelaris-"* 2>/dev/null || true
-chmod +x "${ROOTFS_DIR}/usr/bin/caelestia-"* 2>/dev/null || true
+chmod +x "${ROOTFS_DIR}/usr/bin/hyprland-session" 2>/dev/null || true
 chown -R 1000:100 "${ROOTFS_DIR}/home/liveuser" 2>/dev/null || true
 
 # Strictly configure 3 SDDM sessions: Plasma, GNOME, and Hyprland
@@ -716,9 +716,9 @@ fi
 if [ -f "${ROOTFS_DIR}/usr/share/wayland-sessions/gnome.desktop" ]; then
     sed -i 's/^Name=.*/Name=GNOME/' "${ROOTFS_DIR}/usr/share/wayland-sessions/gnome.desktop"
 fi
-for h_sess in "${ROOTFS_DIR}/usr/share/wayland-sessions/hyprland.desktop" "${ROOTFS_DIR}/usr/share/wayland-sessions/caelestia.desktop"; do
-    mkdir -p "$(dirname "$h_sess")"
-    cat > "$h_sess" << 'EOF'
+h_sess="${ROOTFS_DIR}/usr/share/wayland-sessions/hyprland.desktop"
+mkdir -p "$(dirname "$h_sess")"
+cat > "$h_sess" << 'EOF'
 [Desktop Entry]
 Name=Hyprland
 Comment=Hyprland dynamic tiling Wayland compositor
@@ -727,7 +727,6 @@ TryExec=/usr/bin/hyprland-session
 Type=Application
 DesktopNames=Hyprland
 EOF
-done
 
 # Isolate KDE and GNOME application menus to avoid clutter in both environments
 for kapp in org.kde.dolphin dolphin org.kde.konsole konsole org.kde.kate kate \

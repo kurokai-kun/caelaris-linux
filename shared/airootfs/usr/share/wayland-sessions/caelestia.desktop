@@ -1,7 +1,0 @@
-[Desktop Entry]
-Name=Hyprland
-Comment=Hyprland dynamic tiling Wayland compositor
-Exec=/usr/bin/hyprland-session
-TryExec=/usr/bin/hyprland-session
-Type=Application
-DesktopNames=Hyprland

@@ -476,7 +476,7 @@ class InstallWorker(QThread):
                     except OSError:
                         pass
 
-            if "caelestia" in str(desktop).lower() or "hyprland" in str(desktop).lower():
+            if "hyprland" in str(desktop).lower() or "caelestia" in str(desktop).lower():
                 sess_name = "hyprland"
             elif "gnome" in str(desktop).lower():
                 sess_name = "gnome"
@@ -513,22 +513,23 @@ class InstallWorker(QThread):
 
             # Ensure target SDDM displays only Plasma, GNOME, and Hyprland
             self.run_cmd("rm -rf /mnt/usr/share/xsessions/* 2>/dev/null || true", check=False)
+            self.run_cmd("rm -f /mnt/usr/share/wayland-sessions/caelestia.desktop 2>/dev/null || true", check=False)
             if os.path.exists("/mnt/usr/share/wayland-sessions/plasma.desktop"):
                 self.run_cmd("sed -i 's/^Name=.*/Name=Plasma/' /mnt/usr/share/wayland-sessions/plasma.desktop", check=False)
             if os.path.exists("/mnt/usr/share/wayland-sessions/gnome.desktop"):
                 self.run_cmd("sed -i 's/^Name=.*/Name=GNOME/' /mnt/usr/share/wayland-sessions/gnome.desktop", check=False)
-            for h_desk in ["/mnt/usr/share/wayland-sessions/hyprland.desktop", "/mnt/usr/share/wayland-sessions/caelestia.desktop"]:
-                os.makedirs(os.path.dirname(h_desk), exist_ok=True)
-                with open(h_desk, "w") as f:
-                    f.write(
-                        "[Desktop Entry]\n"
-                        "Name=Hyprland\n"
-                        "Comment=Hyprland dynamic tiling Wayland compositor\n"
-                        "Exec=/usr/bin/hyprland-session\n"
-                        "TryExec=/usr/bin/hyprland-session\n"
-                        "Type=Application\n"
-                        "DesktopNames=Hyprland\n"
-                    )
+            h_desk = "/mnt/usr/share/wayland-sessions/hyprland.desktop"
+            os.makedirs(os.path.dirname(h_desk), exist_ok=True)
+            with open(h_desk, "w") as f:
+                f.write(
+                    "[Desktop Entry]\n"
+                    "Name=Hyprland\n"
+                    "Comment=Hyprland dynamic tiling Wayland compositor\n"
+                    "Exec=/usr/bin/hyprland-session\n"
+                    "TryExec=/usr/bin/hyprland-session\n"
+                    "Type=Application\n"
+                    "DesktopNames=Hyprland\n"
+                )
 
             # ── Ensure Linux Kernel & Microcodes exist in /mnt/boot ──────────
             self.progress_changed.emit(85, "Installing Linux Kernel & Microcode binaries...")
@@ -1301,12 +1302,12 @@ class CaelarisInstaller(QMainWindow):
         self.rb_kde = QRadioButton("KDE Plasma 6 (Default) - Modern, fast, and customizable")
         self.rb_kde.setChecked(True)
         self.rb_gnome = QRadioButton("GNOME Desktop - Clean, elegant, distraction-free environment")
-        self.rb_caelestia = QRadioButton("Hyprland - Dynamic tiling Wayland compositor")
+        self.rb_hyprland = QRadioButton("Hyprland - Dynamic tiling Wayland compositor")
         cl6.addWidget(self.rb_kde)
         cl6.addSpacing(10)
         cl6.addWidget(self.rb_gnome)
         cl6.addSpacing(10)
-        cl6.addWidget(self.rb_caelestia)
+        cl6.addWidget(self.rb_hyprland)
         cl6.addSpacing(10)
         cl6.addWidget(QLabel("<small style='color: #64748b;'>Note: All three desktops are installed. Your selected desktop boots by default, and you can switch between them anytime at the SDDM login screen.</small>"))
         l6.addWidget(c6)
@@ -1572,7 +1573,7 @@ class CaelarisInstaller(QMainWindow):
     def update_summary(self):
         fs = "Btrfs" if self.rb_btrfs.isChecked() else "Ext4"
         tz = f"{self.cb_region.currentText()}/{self.cb_city.currentText()}"
-        if self.rb_caelestia.isChecked():
+        if self.rb_hyprland.isChecked():
             dt = "Hyprland"
         elif self.rb_gnome.isChecked():
             dt = "GNOME Desktop"
@@ -1596,8 +1597,8 @@ class CaelarisInstaller(QMainWindow):
         self.ins_status.setText("Preparing target disk...")
         self.update_step_ui()
 
-        if self.rb_caelestia.isChecked():
-            chosen_desktop = "caelestia"
+        if self.rb_hyprland.isChecked():
+            chosen_desktop = "hyprland"
         elif self.rb_gnome.isChecked():
             chosen_desktop = "gnome"
         else:

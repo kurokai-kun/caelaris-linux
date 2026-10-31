@@ -204,8 +204,9 @@ fi
 if [ -f /usr/share/wayland-sessions/gnome.desktop ]; then
     sed -i 's/^Name=.*/Name=GNOME/' /usr/share/wayland-sessions/gnome.desktop
 fi
-for h_sess in /usr/share/wayland-sessions/hyprland.desktop /usr/share/wayland-sessions/caelestia.desktop; do
-    cat > "$h_sess" << 'EOF'
+rm -f /usr/share/wayland-sessions/caelestia.desktop 2>/dev/null || true
+h_sess=/usr/share/wayland-sessions/hyprland.desktop
+cat > "$h_sess" << 'EOF'
 [Desktop Entry]
 Name=Hyprland
 Comment=Hyprland dynamic tiling Wayland compositor
@@ -214,7 +215,6 @@ TryExec=/usr/bin/hyprland-session
 Type=Application
 DesktopNames=Hyprland
 EOF
-done
 
 mkdir -p /etc/sddm.conf.d
 cat > /etc/sddm.conf.d/10-wayland-only.conf << 'EOF'

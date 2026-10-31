@@ -70,8 +70,6 @@ HYPR_CONF="$HOME/.config/hypr/hyprland.conf"
 if [ ! -s "$HYPR_CONF" ]; then
     if [ -f /etc/hypr/hyprland.conf ]; then
         HYPR_CONF="/etc/hypr/hyprland.conf"
-    elif [ -f /etc/caelestia/hyprland.conf ]; then
-        HYPR_CONF="/etc/caelestia/hyprland.conf"
     fi
 fi
 

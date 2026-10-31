@@ -11,7 +11,7 @@
 
 ## 1. Executive Product Overview
 
-**Caelaris Linux** is a next-generation Arch-based operating system designed for gamers, software engineers, and power users who demand cutting-edge performance with zero configuration headaches. By combining Arch Linux's rolling package model with pre-configured tri-desktop environments (KDE Plasma 6, GNOME 4x, and Caelestia Shell powered by Hyprland), automated hardware/virtualization drivers, a custom graphical installer, and pro-grade gaming enhancements, Caelaris Linux offers an uncompromising desktop experience straight from the ISO.
+**Caelaris Linux** is a next-generation Arch-based operating system designed for gamers, software engineers, and power users who demand cutting-edge performance with zero configuration headaches. By combining Arch Linux's rolling package model with pre-configured tri-desktop environments (KDE Plasma 6, GNOME 4x, and Hyprland dynamic tiling), automated hardware/virtualization drivers, a custom graphical installer, and pro-grade gaming enhancements, Caelaris Linux offers an uncompromising desktop experience straight from the ISO.
 
 ---
 
@@ -21,8 +21,8 @@
 ==================================================================================
                      CAELARIS LINUX FEATURE HIGHLIGHTS
 ==================================================================================
-  [1] Tri-Desktop Wayland Stack   -> KDE Plasma 6 + GNOME 4x + Caelestia Shell (Hyprland)
-  [2] Seamless SDDM Switcher      -> Select Plasma, GNOME, or Caelestia Shell at login
+  [1] Tri-Desktop Wayland Stack   -> KDE Plasma 6 + GNOME 4x + Hyprland
+  [2] Seamless SDDM Switcher      -> Select Plasma, GNOME, or Hyprland at login
   [3] Native Graphical Installer  -> Python/PyQt6 wizard with guided Btrfs & Ext4
   [4] Silent Direct Bootloader    -> Clean single "Caelaris Linux" entry to SDDM
   [5] Single User Profile Purity  -> Zero leftover liveuser profiles after setup
@@ -50,21 +50,21 @@ Caelaris Linux provides an unprecedented **Tri-Desktop Wayland Architecture**, a
 - **Modern Workflow:** Streamlined Activities Overview, dynamic workspaces, and integrated search.
 - **Included Applications:** Nautilus file manager, Ptyxis terminal, Loupe image viewer, and GNOME Text Editor.
 
-### 3.3 Caelestia Shell — Hyprland Dynamic Tiling Environment
-Caelestia Shell is a next-generation, animated, dynamic tiling desktop environment designed specifically for the **Hyprland** Wayland compositor.
+### 3.3 Hyprland Dynamic Tiling Environment
+Hyprland is a next-generation, animated, dynamic tiling desktop environment designed for peak efficiency and responsiveness.
 
 #### Why It Is Used (The Engineering Rationale):
-1. **Eliminating the "Linux Ricing" Barrier:** Setting up a dynamic tiling window manager like Hyprland on standard Arch or other distros typically requires dozens of hours of hunting for dotfiles, writing custom shell configs, fixing Waybar scripts, and resolving package incompatibilities. Caelestia Shell provides an out-of-the-box, show-stopping tiling experience with frosted glassmorphism, blur, and fluid bezier animations.
-2. **Keyboard-Driven Velocity:** Traditional floating desktops (KDE/GNOME) require constant mouse dragging, minimizing, and window re-centering. Caelestia Shell automatically tiles windows into optimal split grids as they open. Every essential workflow action is bound to ergonomic hotkeys (`Super + Return` for terminal, `Super + Space` for app launcher, `Super + E` for file manager, `Super + S` for Hot Switcher).
+1. **Eliminating the "Linux Ricing" Barrier:** Setting up a dynamic tiling window manager like Hyprland on standard Arch or other distros typically requires dozens of hours of hunting for dotfiles, writing custom shell configs, fixing Waybar scripts, and resolving package incompatibilities. Hyprland in Caelaris provides an out-of-the-box, show-stopping tiling experience with frosted glassmorphism, blur, and fluid bezier animations.
+2. **Keyboard-Driven Velocity:** Traditional floating desktops (KDE/GNOME) require constant mouse dragging, minimizing, and window re-centering. Hyprland automatically tiles windows into optimal split grids as they open. Every essential workflow action is bound to ergonomic hotkeys (`Super + Return` for terminal, `Super + Space` for app launcher, `Super + E` for file manager, `Super + S` for Hot Switcher).
 3. **Overcoming Window Overlap Bottlenecks:** In multi-window development and server administration, floating windows constantly obscure critical terminal outputs. Dynamic tiling ensures 100% of display real estate is utilized without a single wasted pixel.
 
 #### What Is the Use of Adding It (Practical Advantages & Use Cases):
-1. **Ultra-Low Compositor Latency for Competitive Gaming:** Hyprland is written in modern C++ with an exceptionally lean footprint. At idle, the Caelestia session consumes under **400 MB of RAM**—freeing up massive system memory, CPU cycles, and GPU resources for high-framerate competitive gaming and heavy Docker/Rust compilations.
-2. **Tri-Desktop Freedom & Coexistence:** Users are never trapped in a tiling-only OS. If a user needs a full desktop suite for creative work, they can use KDE Plasma; for minimalist laptop trackpad gestures, GNOME; and for coding or gaming sprints, Caelestia Shell.
-3. **Selectable Post-Installation & At Every Login:** Users can choose Caelestia Shell as their default desktop during the graphical installation wizard (`caelaris-installer-gui`) or select it from the SDDM display manager session dropdown on every boot.
+1. **Ultra-Low Compositor Latency for Competitive Gaming:** Hyprland is written in modern C++ with an exceptionally lean footprint. At idle, the Hyprland session consumes under **400 MB of RAM**—freeing up massive system memory, CPU cycles, and GPU resources for high-framerate competitive gaming and heavy Docker/Rust compilations.
+2. **Tri-Desktop Freedom & Coexistence:** Users are never trapped in a tiling-only OS. If a user needs a full desktop suite for creative work, they can use KDE Plasma; for minimalist laptop trackpad gestures, GNOME; and for coding or gaming sprints, Hyprland.
+3. **Selectable Post-Installation & At Every Login:** Users can choose Hyprland as their default desktop during the graphical installation wizard (`caelaris-installer-gui`) or select it from the SDDM display manager session dropdown on every boot.
 
 ### 3.4 Interactive Tri-Desktop Hot-Switcher (`caelaris-switch-desktop`)
-- **Instant Hot-Switching:** Run `caelaris-switch-desktop` (or press `Super + S` in Caelestia) to open a modern glassmorphic selector dialog allowing instant 2-second switching between KDE Plasma 6, GNOME, and Caelestia Shell.
+- **Instant Hot-Switching:** Run `caelaris-switch-desktop` (or press `Super + S` in Hyprland) to open a modern glassmorphic selector dialog allowing instant 2-second switching between KDE Plasma 6, GNOME, and Hyprland.
 - **Universal Availability:** Works seamlessly in the Live ISO preview session, inside installed systems, and is directly accessible from the Caelaris Welcome Assistant.
 - **State Preservation:** Updates both SDDM autologin and AccountsService records so your choice persists cleanly across reboots.
 
@@ -113,7 +113,7 @@ Caelestia Shell is a next-generation, animated, dynamic tiling desktop environme
 - **VRAM Starvation & GTT Eviction Elimination:** On GPUs with 8 GB of VRAM or less, running modern graphics-intensive games alongside desktop background applications (browsers with multiple open tabs, Discord, Spotify, Electron tools) rapidly saturates physical video memory. Under memory pressure, the Linux kernel TTM (Translation Table Manager) evicts graphics buffers into system RAM via the Graphics Translation Table (GTT), dropping memory bandwidth from ~256+ GB/s down to PCIe speeds (~16 GB/s), causing severe 1% low frame drops and micro-stuttering.
 - **Device Memory Control Groups (`dmemcg`):** Implements Natalie Vock's (Valve independent contractor) kernel-level Device Memory Cgroup architecture, introducing per-cgroup VRAM protection guarantees (`dmem.low`), ceilings (`dmem.max`), and real-time usage telemetry (`dmem.current`).
 - **`dmemcg-booster` System Daemon:** Boot-time systemd service (`dmemcg-booster.service`) that initializes cgroup v2 subtree control, propagating `+dmem` into user and session slices without waiting for upstream systemd unit exposure.
-- **Cross-Desktop Dynamic VRAM Booster (`caelaris-vram-booster`):** Real-time foreground focus tracking daemon supporting all three desktop environments (KDE Plasma 6 KWin, GNOME 4x Mutter, and Caelestia Shell Hyprland). When a game or high-performance 3D process is active, it dynamically assigns ~88% of total dedicated VRAM to the game's cgroup via `dmem.low`.
+- **Cross-Desktop Dynamic VRAM Booster (`caelaris-vram-booster`):** Real-time foreground focus tracking daemon supporting all three desktop environments (KDE Plasma 6 KWin, GNOME 4x Mutter, and Hyprland). When a game or high-performance 3D process is active, it dynamically assigns ~88% of total dedicated VRAM to the game's cgroup via `dmem.low`.
 - **Zero-Stutter Gaming Guarantee:** Forces background applications (not the active game) to spill into system RAM (GTT) during VRAM contention, keeping textures, shaders, and geometry strictly pinned inside high-speed hardware VRAM.
 - **Upstream Tool Compatibility:** Ships with built-in compatibility wrappers for `plasma-foreground-booster` and `gnome-vram-booster` to integrate seamlessly with AUR and upstream tooling.
 
@@ -172,7 +172,7 @@ Caelestia Shell is a next-generation, animated, dynamic tiling desktop environme
 
 | Feature / Capability | Caelaris Linux | Vanilla Arch | Manjaro | Pop!_OS | Fedora Workstation |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Tri-Desktop (KDE + GNOME + Caelestia)** | Yes (Unified ISO) | Manual | Separate ISOs | Separate Spins | Separate Spins |
+| **Tri-Desktop (KDE + GNOME + Hyprland)** | Yes (Unified ISO) | Manual | Separate ISOs | Separate Spins | Separate Spins |
 | **Login Session Switcher (SDDM)** | Yes (Instant) | No | No | No | No |
 | **Custom Graphical Installer** | Yes (PyQt6) | No (CLI) | Calamares | Custom | Anaconda |
 | **Valve VRAM Optimizer (Natalie Vock dmemcg)** | Yes (Tri-Desktop) | No | No | No | No |
@@ -212,4 +212,4 @@ Caelestia Shell is a next-generation, animated, dynamic tiling desktop environme
   - **ARM64 Workstations & Cloud:** Lenovo ThinkPad X13s, Ampere Altra workstations, and standard ARM64 hypervisors.
 - **Kernel & GPU Stack:** Standard AArch64 Linux kernel with Mesa Freedreno (Qualcomm Adreno) and Mesa Apple AGX drivers under Wayland.
 - **Distribution Format:** Bootable Hybrid UEFI ARM64 ISO (`caelaris-arm64-pc.iso`) with full live graphical desktop preview and installer on dedicated `arm64-pc-release`.
-- **Desktop & Gaming:** Tri-Desktop Wayland architecture (KDE Plasma 6, GNOME 4x, and Caelestia Shell powered by Hyprland), native PyQt6 graphical installer, zstd ZRAM memory compression, and Box64 / FEX-Emu x86 emulation.
+- **Desktop & Gaming:** Tri-Desktop Wayland architecture (KDE Plasma 6, GNOME 4x, and Hyprland dynamic tiling), native PyQt6 graphical installer, zstd ZRAM memory compression, and Box64 / FEX-Emu x86 emulation.

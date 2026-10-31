@@ -248,15 +248,15 @@
 <!-- SECTION 1: OVERVIEW -->
 <h1>1. Executive Product Overview</h1>
 <p>
-  <strong>Caelaris Linux</strong> is a next-generation Arch-based operating system designed for gamers, software engineers, and power users who demand cutting-edge performance with zero configuration headaches. By combining Arch Linux's rolling package model with pre-configured tri-desktop environments (KDE Plasma 6, GNOME 4x, and Caelestia Shell powered by Hyprland), automated hardware/virtualization drivers, a custom graphical installer, and pro-grade gaming enhancements, Caelaris Linux delivers an uncompromising desktop experience straight from the ISO.
+  <strong>Caelaris Linux</strong> is a next-generation Arch-based operating system designed for gamers, software engineers, and power users who demand cutting-edge performance with zero configuration headaches. By combining Arch Linux's rolling package model with pre-configured tri-desktop environments (KDE Plasma 6, GNOME 4x, and Hyprland dynamic tiling), automated hardware/virtualization drivers, a custom graphical installer, and pro-grade gaming enhancements, Caelaris Linux delivers an uncompromising desktop experience straight from the ISO.
 </p>
 
 <pre>
 ==================================================================================
                      CAELARIS LINUX FEATURE HIGHLIGHTS
 ==================================================================================
-  [1] Tri-Desktop Wayland Stack   -> KDE Plasma 6 + GNOME 4x + Caelestia Shell (Hyprland)
-  [2] Seamless SDDM Switcher      -> Select Plasma, GNOME, or Caelestia Shell at login
+  [1] Tri-Desktop Wayland Stack   -> KDE Plasma 6 + GNOME 4x + Hyprland
+  [2] Seamless SDDM Switcher      -> Select Plasma, GNOME, or Hyprland at login
   [3] Native Graphical Installer  -> Python/PyQt6 wizard with guided Btrfs & Ext4
   [4] Silent Direct Bootloader    -> Clean single "Caelaris Linux" entry to SDDM
   [5] Single User Profile Purity  -> Zero leftover liveuser profiles after setup
@@ -371,7 +371,7 @@
   <li><strong>VRAM Contention Protection:</strong> On GPUs with 8 GB or less VRAM, running modern titles alongside web browsers, Discord, or Electron apps causes kernel TTM to evict textures to system RAM via GTT, dropping bandwidth from ~256+ GB/s to ~16 GB/s and causing severe stuttering.</li>
   <li><strong>Device Memory Control Groups (<code>dmemcg</code>):</strong> Implements Natalie Vock's kernel architecture, providing per-cgroup VRAM protection guarantees (<code>dmem.low</code>) and real-time usage telemetry (<code>dmem.current</code>).</li>
   <li><strong>dmemcg-booster System Daemon:</strong> Boot-time service (<code>dmemcg-booster.service</code>) that initializes cgroup v2 subtree control, propagating <code>+dmem</code> to user and application slices.</li>
-  <li><strong>Cross-Desktop Dynamic VRAM Booster (<code>caelaris-vram-booster</code>):</strong> Dynamically tracks active window focus across KDE Plasma 6, GNOME 4x, and Caelestia Shell (Hyprland), reserving ~88% of dedicated VRAM for the active game via <code>dmem.low</code>, safely spilling background apps to GTT and keeping game frametimes stutter-free.</li>
+  <li><strong>Cross-Desktop Dynamic VRAM Booster (<code>caelaris-vram-booster</code>):</strong> Dynamically tracks active window focus across KDE Plasma 6, GNOME 4x, and Hyprland, reserving ~88% of dedicated VRAM for the active game via <code>dmem.low</code>, safely spilling background apps to GTT and keeping game frametimes stutter-free.</li>
   <li><strong>Upstream Compatibility:</strong> Includes compatibility wrappers for <code>plasma-foreground-booster</code> and <code>gnome-vram-booster</code>.</li>
 </ul>
 
@@ -438,7 +438,7 @@
   </thead>
   <tbody>
     <tr>
-      <td><strong>Tri-Desktop (KDE + GNOME + Caelestia)</strong></td>
+      <td><strong>Tri-Desktop (KDE + GNOME + Hyprland)</strong></td>
       <td><strong>Yes (Unified)</strong></td>
       <td>Manual</td>
       <td>Separate ISOs</td>

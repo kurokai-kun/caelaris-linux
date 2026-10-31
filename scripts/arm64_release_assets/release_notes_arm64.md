@@ -4,13 +4,13 @@
 
 # Caelaris Linux ARM64 Laptop & PC Edition (Apple Silicon & Snapdragon)
 
-Official 64-bit ARM (`aarch64`) operating system engineered for modern ARM laptops, Apple Silicon Macs, and ARM workstations, featuring a versatile tri-desktop architecture (**KDE Plasma 6**, **GNOME 4x**, and **Caelestia Shell** powered by Hyprland dynamic tiling).
+Official 64-bit ARM (`aarch64`) operating system engineered for modern ARM laptops, Apple Silicon Macs, and ARM workstations, featuring a versatile tri-desktop architecture (**KDE Plasma 6**, **GNOME 4x**, and **Hyprland** dynamic tiling).
 
 ---
 
 ### 🎨 Tri-Desktop Wayland Architecture
-* **KDE Plasma 6, GNOME 4x, & Caelestia Shell (Hyprland)**: Fully integrated into the unified ISO. Choose your default desktop during installation via `caelaris-installer-gui`, or freely select between all three environments directly from the SDDM login screen at any time.
-* **Caelestia Shell (Hyprland Dynamic Tiling)**: Pre-configured out-of-the-box with glassmorphism, fluid Bezier physics animations, zero window overlap, under 400MB idle RAM, and ultra-low latency.
+* **KDE Plasma 6, GNOME 4x, & Hyprland**: Fully integrated into the unified ISO. Choose your default desktop during installation via `caelaris-installer-gui`, or freely select between all three environments directly from the SDDM login screen at any time.
+* **Hyprland Dynamic Tiling**: Pre-configured out-of-the-box with glassmorphism, fluid Bezier physics animations, zero window overlap, under 400MB idle RAM, and ultra-low latency.
 
 ---
 
