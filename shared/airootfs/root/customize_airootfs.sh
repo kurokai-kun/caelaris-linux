@@ -41,7 +41,7 @@ blacklist pcspkr
 blacklist snd_pcsp
 EOF
 
-# 7. Configure SDDM sessions: Strictly Plasma, GNOME, and Caelestia (No duplicate Plasma, No X11)
+# 7. Configure SDDM sessions: Strictly Plasma, GNOME, and Hyprland (No duplicate Plasma, No X11)
 rm -rf /usr/share/xsessions/* 2>/dev/null || true
 rm -f /usr/share/wayland-sessions/caelestia.desktop 2>/dev/null || true
 
@@ -55,12 +55,12 @@ for h_sess in /usr/share/wayland-sessions/hyprland.desktop /usr/share/wayland-se
     mkdir -p "$(dirname "$h_sess")"
     cat > "$h_sess" << 'EOF'
 [Desktop Entry]
-Name=Caelestia
-Comment=Caelestia Shell powered by Hyprland dynamic tiling Wayland compositor
-Exec=/usr/bin/caelestia-session
-TryExec=/usr/bin/caelestia-session
+Name=Hyprland
+Comment=Hyprland dynamic tiling Wayland compositor
+Exec=/usr/bin/hyprland-session
+TryExec=/usr/bin/hyprland-session
 Type=Application
-DesktopNames=Hyprland;Caelestia
+DesktopNames=Hyprland
 EOF
 done
 

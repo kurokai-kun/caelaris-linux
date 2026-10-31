@@ -142,7 +142,7 @@ def get_desktop_info():
     elif "gnome" in de_lower:
         return "GNOME 4x (Wayland)"
     elif "hyprland" in de_lower or "caelestia" in de_lower:
-        return "Caelestia Shell (Hyprland Dynamic Tiling)"
+        return "Hyprland (Dynamic Tiling Wayland)"
     return de or "Wayland Desktop Session"
 
 class UpdateWorker(QThread):
@@ -374,7 +374,7 @@ class CaelarisAbout(QMainWindow):
         lbl_os_name.setStyleSheet("font-size: 22px; font-weight: 800; color: #2d2621;")
         lbl_os_version = QLabel("Edition: Tri-Desktop 2026.09 (Rolling Release)")
         lbl_os_version.setStyleSheet("font-size: 13px; font-weight: 600; color: #7d7065;")
-        lbl_os_desc = QLabel("Pure Wayland architecture with KDE Plasma 6, GNOME 4x, and Caelestia Shell.")
+        lbl_os_desc = QLabel("Pure Wayland architecture with KDE Plasma 6, GNOME 4x, and Hyprland.")
         lbl_os_desc.setWordWrap(True)
         lbl_os_desc.setStyleSheet("font-size: 12px; color: #9c8e82;")
         os_title_box.addWidget(lbl_os_name)

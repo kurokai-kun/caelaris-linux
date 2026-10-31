@@ -4,7 +4,7 @@
 # Enforces strict isolation across the Tri-Desktop environments:
 #   - KDE Plasma 6: Only KDE apps + Universal (Firefox, VLC, Steam, Update)
 #   - GNOME 4x: Only GNOME apps + Universal (Zero KDE apps, Zero duplicate apps)
-#   - Caelestia Shell: Dynamic tiling suite + Universal (Zero GNOME duplicates)
+#   - Hyprland: Dynamic tiling suite + Universal (Zero GNOME duplicates)
 # And purges developer, daemon, and subsystem clutter icons from all environments.
 # ==============================================================================
 set -e
@@ -105,7 +105,7 @@ for dir in "${APP_DIRS[@]}"; do
         fi
     done
 
-    # C. Process GNOME Exclusive Apps (Show only in GNOME, hiding from KDE & Caelestia Shell)
+    # C. Process GNOME Exclusive Apps (Show only in GNOME, hiding from KDE & Hyprland)
     for app in "${GNOME_EXCLUSIVE_APPS[@]}"; do
         df="${dir}/${app}.desktop"
         if [ -f "$df" ]; then

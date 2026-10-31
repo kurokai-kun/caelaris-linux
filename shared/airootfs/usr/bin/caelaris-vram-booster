@@ -2,12 +2,12 @@
 # ==============================================================================
 # Caelaris Linux — caelaris-vram-booster
 # Dynamic Real-Time Foreground VRAM Protection Daemon (Natalie Vock / Valve)
-# Supports KDE Plasma 6, GNOME 4x, and Caelestia Shell (Hyprland)
+# Supports KDE Plasma 6, GNOME 4x, and Hyprland
 # ==============================================================================
 """
 caelaris-vram-booster dynamically identifies the active/foreground application
 or game (Steam Proton, Lutris, Heroic, Wine, Native) across KDE Plasma, GNOME,
-and Hyprland (Caelestia Shell). It elevates the active app's cgroup 'dmem.low'
+and Hyprland. It elevates the active app's cgroup 'dmem.low'
 protection limit to prevent Linux TTM from evicting active game assets to system
 RAM via GTT when VRAM is saturated on <= 8GB GPUs.
 """

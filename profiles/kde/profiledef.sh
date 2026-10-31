@@ -29,6 +29,7 @@ file_permissions=(
   ["/usr/bin/caelaris-switch-desktop"]="0:0:755"
   ["/usr/bin/caelaris-post-install-reboot"]="0:0:755"
   ["/usr/bin/caelaris-update"]="0:0:755"
+  ["/usr/bin/hyprland-session"]="0:0:755"
   ["/usr/bin/caelestia-session"]="0:0:755"
   ["/usr/bin/caelestia-autostart"]="0:0:755"
   ["/usr/bin/caelestia-dashboard"]="0:0:755"

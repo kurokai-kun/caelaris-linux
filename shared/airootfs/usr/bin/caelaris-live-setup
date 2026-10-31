@@ -26,7 +26,7 @@ chmod 700 /run/user/0 2>/dev/null || true
 # Ensure display name is set to "Caelaris Live" in GECOS
 chfn -f "Caelaris Live" liveuser 2>/dev/null || true
 
-# 2. Check kernel command-line for desktop preference (Plasma, GNOME, or Caelestia Shell)
+# 2. Check kernel command-line for desktop preference (Plasma, GNOME, or Hyprland)
 DESKTOP_CHOICE="plasma"
 if grep -qE "desktop=caelestia|session=caelestia|desktop=hyprland|session=hyprland" /proc/cmdline 2>/dev/null; then
     DESKTOP_CHOICE="hyprland"
@@ -98,7 +98,7 @@ SessionDir=/usr/share/wayland-sessions
 SessionDir=/dev/null
 EOF
 
-# Ensure SDDM strictly displays the clean Wayland options: Plasma, GNOME, Caelestia
+# Ensure SDDM strictly displays the clean Wayland options: Plasma, GNOME, Hyprland
 rm -rf /usr/share/xsessions/* 2>/dev/null || true
 
 if [ -f /usr/share/wayland-sessions/plasma.desktop ]; then
@@ -110,12 +110,12 @@ fi
 for h_sess in /usr/share/wayland-sessions/hyprland.desktop /usr/share/wayland-sessions/caelestia.desktop; do
     cat > "$h_sess" << 'EOF'
 [Desktop Entry]
-Name=Caelestia
-Comment=Caelestia Shell powered by Hyprland dynamic tiling Wayland compositor
-Exec=/usr/bin/caelestia-session
-TryExec=/usr/bin/caelestia-session
+Name=Hyprland
+Comment=Hyprland dynamic tiling Wayland compositor
+Exec=/usr/bin/hyprland-session
+TryExec=/usr/bin/hyprland-session
 Type=Application
-DesktopNames=Hyprland;Caelestia
+DesktopNames=Hyprland
 EOF
 done
 
@@ -174,7 +174,7 @@ X-GNOME-Autostart-enabled=true
 Name=Caelaris Auto-Resize
 EOF
 
-# 5. Clean up desktop application menus so GNOME, KDE, and Caelestia Shell each have a pristine app drawer
+# 5. Clean up desktop application menus so GNOME, KDE, and Hyprland each have a pristine app drawer
 if [ -x /usr/bin/caelaris-sanitize-apps ]; then
     /usr/bin/caelaris-sanitize-apps
 fi

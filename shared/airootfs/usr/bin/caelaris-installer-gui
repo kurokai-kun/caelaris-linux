@@ -487,10 +487,10 @@ class InstallWorker(QThread):
             with open(f"/mnt/var/lib/AccountsService/users/{user}", "w") as f:
                 f.write(f"[User]\nLanguage=en_US.UTF-8\nSession={sess_name}\nXSession={sess_name}\nSystemAccount=false\nRealName={realname}\nIcon=/usr/share/pixmaps/caelaris-logo.png\n")
 
-            # Setup user Hyprland / Caelestia configuration
+            # Setup user Hyprland configuration
             os.makedirs(f"/mnt/home/{user}/.config/hypr", exist_ok=True)
             with open(f"/mnt/home/{user}/.config/hypr/hyprland.conf", "w") as f:
-                f.write("# Caelestia Shell configuration for Caelaris Linux\nsource = /etc/caelestia/hyprland.conf\n")
+                f.write("# Hyprland configuration for Caelaris Linux\nsource = /etc/hypr/hyprland.conf\n")
             self.run_cmd(f"arch-chroot /mnt chown -R '{user}:users' '/home/{user}/.config'", check=False)
 
             os.makedirs("/mnt/etc/sddm.conf.d", exist_ok=True)
@@ -511,7 +511,7 @@ class InstallWorker(QThread):
             with open("/mnt/etc/sddm.conf.d/10-caelaris.conf", "w") as f:
                 f.write(sddm_cfg)
 
-            # Ensure target SDDM displays only Plasma, GNOME, and Caelestia
+            # Ensure target SDDM displays only Plasma, GNOME, and Hyprland
             self.run_cmd("rm -rf /mnt/usr/share/xsessions/* 2>/dev/null || true", check=False)
             if os.path.exists("/mnt/usr/share/wayland-sessions/plasma.desktop"):
                 self.run_cmd("sed -i 's/^Name=.*/Name=Plasma/' /mnt/usr/share/wayland-sessions/plasma.desktop", check=False)
@@ -522,12 +522,12 @@ class InstallWorker(QThread):
                 with open(h_desk, "w") as f:
                     f.write(
                         "[Desktop Entry]\n"
-                        "Name=Caelestia\n"
-                        "Comment=Caelestia Shell powered by Hyprland dynamic tiling Wayland compositor\n"
-                        "Exec=/usr/bin/caelestia-session\n"
-                        "TryExec=/usr/bin/caelestia-session\n"
+                        "Name=Hyprland\n"
+                        "Comment=Hyprland dynamic tiling Wayland compositor\n"
+                        "Exec=/usr/bin/hyprland-session\n"
+                        "TryExec=/usr/bin/hyprland-session\n"
                         "Type=Application\n"
-                        "DesktopNames=Hyprland;Caelestia\n"
+                        "DesktopNames=Hyprland\n"
                     )
 
             # ── Ensure Linux Kernel & Microcodes exist in /mnt/boot ──────────
@@ -1184,7 +1184,7 @@ class CaelarisInstaller(QMainWindow):
         arch_name = "64-bit ARM64 (AArch64)" if platform.machine().lower() in ["aarch64", "arm64"] else "64-bit modern x86_64"
         cl1.addWidget(QLabel("<b>Live Preview Active:</b> You can explore the system freely before installing."))
         cl1.addWidget(QLabel(f"✔ {arch_name} system ready"))
-        cl1.addWidget(QLabel("✔ Tri-Desktop ready: KDE Plasma 6, GNOME & Caelestia Shell (Hyprland)"))
+        cl1.addWidget(QLabel("✔ Tri-Desktop ready: KDE Plasma 6, GNOME & Hyprland"))
         cl1.addWidget(QLabel("✔ PipeWire modern audio stack loaded"))
         l1.addWidget(c1)
         l1.addStretch()
@@ -1301,7 +1301,7 @@ class CaelarisInstaller(QMainWindow):
         self.rb_kde = QRadioButton("KDE Plasma 6 (Default) - Modern, fast, and customizable")
         self.rb_kde.setChecked(True)
         self.rb_gnome = QRadioButton("GNOME Desktop - Clean, elegant, distraction-free environment")
-        self.rb_caelestia = QRadioButton("Caelestia Shell (Hyprland) - Modern animated dynamic tiling Wayland interface")
+        self.rb_caelestia = QRadioButton("Hyprland - Dynamic tiling Wayland compositor")
         cl6.addWidget(self.rb_kde)
         cl6.addSpacing(10)
         cl6.addWidget(self.rb_gnome)
@@ -1367,7 +1367,7 @@ class CaelarisInstaller(QMainWindow):
         l10.addWidget(QLabel("Caelaris Linux has been installed successfully onto your disk.", objectName="pageSubtitle"))
         c10 = QFrame(objectName="card")
         cl10 = QVBoxLayout(c10)
-        cl10.addWidget(QLabel("<b>Tri-Desktop Architecture Ready:</b> KDE Plasma 6, GNOME, and Caelestia Shell (Hyprland) are installed."))
+        cl10.addWidget(QLabel("<b>Tri-Desktop Architecture Ready:</b> KDE Plasma 6, GNOME, and Hyprland are installed."))
         cl10.addWidget(QLabel("Your selected desktop environment will boot by default. You can freely switch between all three from the session dropdown at the SDDM login screen."))
         cl10.addSpacing(12)
 
@@ -1573,7 +1573,7 @@ class CaelarisInstaller(QMainWindow):
         fs = "Btrfs" if self.rb_btrfs.isChecked() else "Ext4"
         tz = f"{self.cb_region.currentText()}/{self.cb_city.currentText()}"
         if self.rb_caelestia.isChecked():
-            dt = "Caelestia Shell (Hyprland)"
+            dt = "Hyprland"
         elif self.rb_gnome.isChecked():
             dt = "GNOME Desktop"
         else:

@@ -706,7 +706,7 @@ chmod +x "${ROOTFS_DIR}/usr/bin/caelaris-"* 2>/dev/null || true
 chmod +x "${ROOTFS_DIR}/usr/bin/caelestia-"* 2>/dev/null || true
 chown -R 1000:100 "${ROOTFS_DIR}/home/liveuser" 2>/dev/null || true
 
-# Strictly configure 3 SDDM sessions: Plasma, GNOME, and Caelestia
+# Strictly configure 3 SDDM sessions: Plasma, GNOME, and Hyprland
 rm -rf "${ROOTFS_DIR}/usr/share/xsessions"/* 2>/dev/null || true
 rm -f "${ROOTFS_DIR}/usr/share/wayland-sessions/caelestia.desktop" 2>/dev/null || true
 
@@ -720,12 +720,12 @@ for h_sess in "${ROOTFS_DIR}/usr/share/wayland-sessions/hyprland.desktop" "${ROO
     mkdir -p "$(dirname "$h_sess")"
     cat > "$h_sess" << 'EOF'
 [Desktop Entry]
-Name=Caelestia
-Comment=Caelestia Shell powered by Hyprland dynamic tiling Wayland compositor
-Exec=/usr/bin/caelestia-session
-TryExec=/usr/bin/caelestia-session
+Name=Hyprland
+Comment=Hyprland dynamic tiling Wayland compositor
+Exec=/usr/bin/hyprland-session
+TryExec=/usr/bin/hyprland-session
 Type=Application
-DesktopNames=Hyprland;Caelestia
+DesktopNames=Hyprland
 EOF
 done
 
@@ -777,7 +777,7 @@ if [ -f "${ROOT_DIR}/assets/logo.png" ]; then
     done
 fi
 
-# Enforce desktop application separation across KDE, GNOME, and Caelestia Shell and purge clutter
+# Enforce desktop application separation across KDE, GNOME, and Hyprland and purge clutter
 if [ -x "${ROOTFS_DIR}/usr/bin/caelaris-sanitize-apps" ]; then
     "${ROOTFS_DIR}/usr/bin/caelaris-sanitize-apps" "${ROOTFS_DIR}" 2>/dev/null || true
 fi

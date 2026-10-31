@@ -173,16 +173,15 @@ if [ -f "$SYNC_DIR/shared/airootfs/etc/systemd/zram-generator.conf" ]; then
     echo -e "   -> Updated: ZRAM compressed swap settings"
 fi
 
-# G. Synchronize Caelestia Shell configuration & wallpaper
-if [ -d "$SYNC_DIR/shared/airootfs/etc/caelestia" ]; then
-    mkdir -p /etc/caelestia
-    cp -rf "$SYNC_DIR/shared/airootfs/etc/caelestia/"* /etc/caelestia/ 2>/dev/null || true
-    echo -e "   -> Updated: Caelestia Shell configs, Waybar theme, and Rofi styles"
+# G. Synchronize Hyprland configuration
+if [ -d "$SYNC_DIR/shared/airootfs/etc/hypr" ]; then
+    mkdir -p /etc/hypr
+    cp -rf "$SYNC_DIR/shared/airootfs/etc/hypr/"* /etc/hypr/ 2>/dev/null || true
+    echo -e "   -> Updated: Hyprland system configuration"
 fi
 if [ -d "$SYNC_DIR/shared/airootfs/usr/share/backgrounds" ]; then
     mkdir -p /usr/share/backgrounds
     cp -rf "$SYNC_DIR/shared/airootfs/usr/share/backgrounds/"* /usr/share/backgrounds/ 2>/dev/null || true
-    echo -e "   -> Updated: Caelestia wallpapers"
 fi
 
 # Purge standalone window-manager launchers from desktop app drawers (GNOME & KDE have native menus)
@@ -195,8 +194,8 @@ update-desktop-database /usr/share/applications >/dev/null 2>&1 || true
 echo -e "   -> Refreshing system font caches (preventing glycin-svg sandbox crashes)..."
 fc-cache -r >/dev/null 2>&1 || true
 
-# Enforce strictly 3 SDDM sessions: Plasma, GNOME, Caelestia
-echo -e "   -> Normalizing SDDM sessions to Plasma, GNOME, and Caelestia (purging X11 duplicates)..."
+# Enforce strictly 3 SDDM sessions: Plasma, GNOME, Hyprland
+echo -e "   -> Normalizing SDDM sessions to Plasma, GNOME, and Hyprland (purging X11 duplicates)..."
 rm -rf /usr/share/xsessions/* 2>/dev/null || true
 
 if [ -f /usr/share/wayland-sessions/plasma.desktop ]; then
@@ -208,12 +207,12 @@ fi
 for h_sess in /usr/share/wayland-sessions/hyprland.desktop /usr/share/wayland-sessions/caelestia.desktop; do
     cat > "$h_sess" << 'EOF'
 [Desktop Entry]
-Name=Caelestia
-Comment=Caelestia Shell powered by Hyprland dynamic tiling Wayland compositor
-Exec=/usr/bin/caelestia-session
-TryExec=/usr/bin/caelestia-session
+Name=Hyprland
+Comment=Hyprland dynamic tiling Wayland compositor
+Exec=/usr/bin/hyprland-session
+TryExec=/usr/bin/hyprland-session
 Type=Application
-DesktopNames=Hyprland;Caelestia
+DesktopNames=Hyprland
 EOF
 done
 
@@ -231,7 +230,7 @@ EOF
 
 # Enforce desktop application separation and remove menu clutter across all environments
 if [ -x /usr/bin/caelaris-sanitize-apps ]; then
-    echo -e "   -> Isolating KDE, GNOME, & Caelestia Shell menus and purging clutter..."
+    echo -e "   -> Isolating KDE, GNOME, & Hyprland menus and purging clutter..."
     /usr/bin/caelaris-sanitize-apps >/dev/null 2>&1 || true
 fi
 

@@ -51,7 +51,7 @@ xdg-user-dirs-gtk
 dconf
 
 # ==========================================================
-# Caelestia Shell & Hyprland Dynamic Tiling Wayland Stack
+# Hyprland Dynamic Tiling Wayland Stack
 # ==========================================================
 hyprland
 xdg-desktop-portal-hyprland

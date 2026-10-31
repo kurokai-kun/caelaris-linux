@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==========================================================
-# Caelestia Shell Session Launcher for Caelaris Linux
-# Powered by Hyprland dynamic tiling Wayland compositor
+# Hyprland Session Launcher for Caelaris Linux
+# Pure Dynamic Tiling Wayland Compositor
 # ==========================================================
 set +e
 
@@ -22,8 +22,6 @@ export MOZ_ENABLE_WAYLAND="1"
 export ELECTRON_OZONE_PLATFORM_HINT="auto"
 
 # 3. Hardware Acceleration & VM Dynamic Tuning
-# If running inside a virtual machine, apply safe linear buffers and no-atomic flags to prevent VM black screens.
-# On bare-metal, unlock full hardware tiling modifiers, atomic KMS, and direct scanout for maximum native gaming FPS.
 IS_VM=0
 if command -v systemd-detect-virt >/dev/null 2>&1 && systemd-detect-virt -q; then
     IS_VM=1
@@ -46,7 +44,7 @@ export XCURSOR_SIZE="24"
 export HYPRCURSOR_THEME="breeze_cursors"
 export HYPRCURSOR_SIZE="24"
 
-# NVIDIA Wayland Compatibility (Do NOT force GBM_BACKEND=nvidia-drm as it breaks hybrid laptops)
+# NVIDIA Wayland Compatibility
 if [ -d /dev/dri ]; then
     if lspci -k 2>/dev/null | grep -iE 'nvidia' >/dev/null 2>&1; then
         export __GLX_VENDOR_LIBRARY_NAME="nvidia"
@@ -58,22 +56,23 @@ fi
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 mkdir -p "$XDG_RUNTIME_DIR" 2>/dev/null || true
 
-# Ensure default Caelestia Hyprland config is initialized in user profile
+# Ensure default Hyprland config is initialized in user profile
 mkdir -p "$HOME/.config/hypr"
 if [ ! -f "$HOME/.config/hypr/hyprland.conf" ]; then
     cat << 'EOF' > "$HOME/.config/hypr/hyprland.conf"
-# Caelestia Shell configuration for Caelaris Linux
-source = /etc/caelestia/hyprland.conf
+# Hyprland configuration for Caelaris Linux
+source = /etc/hypr/hyprland.conf
 EOF
-fi
-if [ -f /etc/caelestia/hyprland.lua ] && [ ! -f "$HOME/.config/hypr/hyprland.lua" ]; then
-    cp /etc/caelestia/hyprland.lua "$HOME/.config/hypr/hyprland.lua" 2>/dev/null || true
 fi
 
 # Determine authoritative Hyprland configuration file
 HYPR_CONF="$HOME/.config/hypr/hyprland.conf"
 if [ ! -s "$HYPR_CONF" ]; then
-    HYPR_CONF="/etc/caelestia/hyprland.conf"
+    if [ -f /etc/hypr/hyprland.conf ]; then
+        HYPR_CONF="/etc/hypr/hyprland.conf"
+    elif [ -f /etc/caelestia/hyprland.conf ]; then
+        HYPR_CONF="/etc/caelestia/hyprland.conf"
+    fi
 fi
 
 # Launch Hyprland with explicit config
