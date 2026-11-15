@@ -640,11 +640,14 @@ if [ -d "/run/user/1000" ]; then
 fi
 
 # Multi-Tier GUI Launch Pipeline tailored for ARM64:
+rm -f /tmp/caelaris-installer-running /tmp/caelaris-installer-completed 2>/dev/null || true
+
 # Tier 1: Wayland native with XCB fallback
 echo "[*] Attempt 1: Native Wayland with XCB fallback..." >> "$LOGFILE"
 env QT_QPA_PLATFORM="wayland;xcb" python3 -u /usr/bin/caelaris-installer-gui "$@" >> "$LOGFILE" 2>&1
 STATUS=$?
-if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ]; then
+if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ] || [ -f /tmp/caelaris-installer-completed ] || [ -f /tmp/caelaris-installed-success ] || [ -f /tmp/caelaris-installer-running ]; then
+    rm -f /tmp/caelaris-installer-running 2>/dev/null || true
     exit 0
 fi
 echo "[-] Attempt 1 exited with code $STATUS" >> "$LOGFILE"
@@ -653,7 +656,8 @@ echo "[-] Attempt 1 exited with code $STATUS" >> "$LOGFILE"
 echo "[*] Attempt 2: Direct XCB via XWayland..." >> "$LOGFILE"
 env QT_QPA_PLATFORM="xcb" python3 -u /usr/bin/caelaris-installer-gui "$@" >> "$LOGFILE" 2>&1
 STATUS=$?
-if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ]; then
+if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ] || [ -f /tmp/caelaris-installer-completed ] || [ -f /tmp/caelaris-installed-success ] || [ -f /tmp/caelaris-installer-running ]; then
+    rm -f /tmp/caelaris-installer-running 2>/dev/null || true
     exit 0
 fi
 echo "[-] Attempt 2 exited with code $STATUS" >> "$LOGFILE"
@@ -662,7 +666,8 @@ echo "[-] Attempt 2 exited with code $STATUS" >> "$LOGFILE"
 echo "[*] Attempt 3: Software rendering under Wayland..." >> "$LOGFILE"
 env LIBGL_ALWAYS_SOFTWARE=1 QT_QUICK_BACKEND=software QT_QPA_PLATFORM="wayland;xcb" python3 -u /usr/bin/caelaris-installer-gui "$@" >> "$LOGFILE" 2>&1
 STATUS=$?
-if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ]; then
+if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ] || [ -f /tmp/caelaris-installer-completed ] || [ -f /tmp/caelaris-installed-success ] || [ -f /tmp/caelaris-installer-running ]; then
+    rm -f /tmp/caelaris-installer-running 2>/dev/null || true
     exit 0
 fi
 echo "[-] Attempt 3 exited with code $STATUS" >> "$LOGFILE"
@@ -671,7 +676,8 @@ echo "[-] Attempt 3 exited with code $STATUS" >> "$LOGFILE"
 echo "[*] Attempt 4: Software rendering under XCB..." >> "$LOGFILE"
 env LIBGL_ALWAYS_SOFTWARE=1 QT_QUICK_BACKEND=software QT_XCB_GL_INTEGRATION=none QT_QPA_PLATFORM="xcb" python3 -u /usr/bin/caelaris-installer-gui "$@" >> "$LOGFILE" 2>&1
 STATUS=$?
-if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ]; then
+if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ] || [ -f /tmp/caelaris-installer-completed ] || [ -f /tmp/caelaris-installed-success ] || [ -f /tmp/caelaris-installer-running ]; then
+    rm -f /tmp/caelaris-installer-running 2>/dev/null || true
     exit 0
 fi
 echo "[-] Attempt 4 exited with code $STATUS" >> "$LOGFILE"
@@ -681,7 +687,8 @@ if [ -d "/run/user/1000" ]; then
     echo "[*] Attempt 5: Direct runtime bypass (/run/user/1000)..." >> "$LOGFILE"
     env XDG_RUNTIME_DIR="/run/user/1000" LIBGL_ALWAYS_SOFTWARE=1 QT_QUICK_BACKEND=software QT_QPA_PLATFORM="wayland" python3 -u /usr/bin/caelaris-installer-gui "$@" >> "$LOGFILE" 2>&1
     STATUS=$?
-    if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ]; then
+    if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ] || [ -f /tmp/caelaris-installer-completed ] || [ -f /tmp/caelaris-installed-success ] || [ -f /tmp/caelaris-installer-running ]; then
+        rm -f /tmp/caelaris-installer-running 2>/dev/null || true
         exit 0
     fi
     echo "[-] Attempt 5 exited with code $STATUS" >> "$LOGFILE"

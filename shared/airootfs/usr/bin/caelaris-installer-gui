@@ -1392,9 +1392,6 @@ class CaelarisInstaller(QMainWindow):
         cl10.addWidget(self.chk_reboot)
         l10.addWidget(c10)
         l10.addStretch()
-        btn_done = QPushButton("Restart System Now 🚀", objectName="successBtn")
-        btn_done.clicked.connect(self.finish_installation)
-        l10.addWidget(btn_done)
         self.stack.addWidget(p10)
 
     def populate_cities(self, region):
@@ -1624,6 +1621,12 @@ class CaelarisInstaller(QMainWindow):
 
     def on_finish(self, success, message):
         if success:
+            for fpath in ["/tmp/caelaris-installed-success", "/tmp/caelaris-installer-completed"]:
+                try:
+                    with open(fpath, "w") as f:
+                        f.write("1\n")
+                except Exception:
+                    pass
             self.current_step = 9
             self.stack.setCurrentIndex(self.current_step)
             self.update_step_ui()
@@ -1652,17 +1655,26 @@ class CaelarisInstaller(QMainWindow):
             QMessageBox.critical(self, "Installation Failed", message)
 
     def finish_installation(self):
+        # Prevent duplicate clicks
+        if hasattr(self, 'btn_next'):
+            self.btn_next.setEnabled(False)
+
+        # Mark sentinels so the launcher script never retries or loops
+        for fpath in ["/tmp/caelaris-installed-success", "/tmp/caelaris-installer-completed"]:
+            try:
+                with open(fpath, "w") as f:
+                    f.write("1\n")
+            except Exception:
+                pass
+
         if self.chk_reboot.isChecked():
-            # Release all GPG locks, unmount /tmp, and deactivate swap before rebooting
-            if os.path.isfile("/usr/bin/caelaris-shutdown-clean"):
-                try:
-                    subprocess.run(["/usr/bin/caelaris-shutdown-clean"], check=False)
-                except Exception:
-                    pass
+            if hasattr(self, 'btn_next'):
+                self.btn_next.setText("Rebooting System... ⏳")
+            QApplication.processEvents()
+
             # Flush filesystem buffers to disk
             subprocess.run(["sync"], check=False)
             # Unmount target partitions if still mounted
-            subprocess.run(["umount", "-R", "-f", "/mnt"], check=False)
             subprocess.run(["umount", "-R", "-l", "/mnt"], check=False)
             # Attempt to eject optical drive/ISO media to avoid booting back into live ISO
             for cd in ["/dev/sr0", "/dev/cdrom"]:
@@ -1670,9 +1682,35 @@ class CaelarisInstaller(QMainWindow):
                     subprocess.run(["eject", "-s", cd], check=False)
                     subprocess.run(["eject", cd], check=False)
             subprocess.run(["sync"], check=False)
-            time.sleep(0.5)
-            subprocess.Popen(["systemctl", "reboot"])
-        self.close()
+
+            # Trigger non-blocking system reboot with fallbacks
+            reboot_cmds = [
+                ["systemctl", "--no-block", "reboot"],
+                ["systemctl", "reboot", "-i"],
+                ["systemctl", "--force", "reboot"],
+                ["reboot", "-f"]
+            ]
+            for cmd in reboot_cmds:
+                try:
+                    res = subprocess.run(cmd, check=False)
+                    if res.returncode == 0:
+                        break
+                except Exception:
+                    continue
+
+            time.sleep(1)
+            app = QApplication.instance()
+            if app:
+                app.quit()
+            os._exit(0)
+        else:
+            if hasattr(self, 'btn_next'):
+                self.btn_next.setText("Closing... ⏳")
+            QApplication.processEvents()
+            app = QApplication.instance()
+            if app:
+                app.quit()
+            os._exit(0)
 
     def closeEvent(self, event):
         if self.current_step == 8 and hasattr(self, 'worker') and self.worker.isRunning():
@@ -1684,10 +1722,22 @@ class CaelarisInstaller(QMainWindow):
                 QMessageBox.StandardButton.No
             )
             if reply == QMessageBox.StandardButton.Yes:
+                for fpath in ["/tmp/caelaris-installer-completed"]:
+                    try:
+                        with open(fpath, "w") as f:
+                            f.write("1\n")
+                    except Exception:
+                        pass
                 event.accept()
             else:
                 event.ignore()
         else:
+            for fpath in ["/tmp/caelaris-installer-completed"]:
+                try:
+                    with open(fpath, "w") as f:
+                        f.write("1\n")
+                except Exception:
+                    pass
             event.accept()
 
 def ensure_ui_assets():
@@ -1753,5 +1803,16 @@ if __name__ == "__main__":
 
     installer = CaelarisInstaller()
     installer.show()
-    sys.exit(app.exec())
+    try:
+        with open("/tmp/caelaris-installer-running", "w") as f:
+            f.write(str(os.getpid()))
+    except Exception:
+        pass
+    ret = app.exec()
+    try:
+        with open("/tmp/caelaris-installer-completed", "w") as f:
+            f.write("1\n")
+    except Exception:
+        pass
+    sys.exit(ret)
 

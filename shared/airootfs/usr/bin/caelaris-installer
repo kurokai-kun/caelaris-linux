@@ -75,10 +75,13 @@ fi
 export DISPLAY="${DISPLAY:-:0}"
 export PYTHONUNBUFFERED=1
 
+rm -f /tmp/caelaris-installer-running /tmp/caelaris-installer-completed 2>/dev/null || true
+
 # Attempt 1: Direct XCB via XWayland / X11 (most compatible for root GUI on desktop)
 env QT_QPA_PLATFORM="xcb" python3 -u /usr/bin/caelaris-installer-gui "$@" >> "$LOGFILE" 2>&1
 STATUS=$?
-if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ]; then
+if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ] || [ -f /tmp/caelaris-installer-completed ] || [ -f /tmp/caelaris-installed-success ] || [ -f /tmp/caelaris-installer-running ]; then
+    rm -f /tmp/caelaris-installer-running 2>/dev/null || true
     exit 0
 fi
 
@@ -86,7 +89,8 @@ fi
 if [ -n "$WAYLAND_DISPLAY" ] && [ -e "/run/user/0/$WAYLAND_DISPLAY" ]; then
     env QT_QPA_PLATFORM="wayland;xcb" python3 -u /usr/bin/caelaris-installer-gui "$@" >> "$LOGFILE" 2>&1
     STATUS=$?
-    if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ]; then
+    if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ] || [ -f /tmp/caelaris-installer-completed ] || [ -f /tmp/caelaris-installed-success ] || [ -f /tmp/caelaris-installer-running ]; then
+        rm -f /tmp/caelaris-installer-running 2>/dev/null || true
         exit 0
     fi
 fi
@@ -95,7 +99,8 @@ fi
 if [ -n "$WAYLAND_DISPLAY" ] && [ -e "/run/user/0/$WAYLAND_DISPLAY" ]; then
     env QT_QPA_PLATFORM="wayland" python3 -u /usr/bin/caelaris-installer-gui "$@" >> "$LOGFILE" 2>&1
     STATUS=$?
-    if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ]; then
+    if [ $STATUS -eq 0 ] || [ $STATUS -eq 130 ] || [ -f /tmp/caelaris-installer-completed ] || [ -f /tmp/caelaris-installed-success ] || [ -f /tmp/caelaris-installer-running ]; then
+        rm -f /tmp/caelaris-installer-running 2>/dev/null || true
         exit 0
     fi
 fi
