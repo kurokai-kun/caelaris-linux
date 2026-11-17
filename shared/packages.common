@@ -107,6 +107,7 @@ swaybg
 dunst
 brightnessctl
 playerctl
+firefox
 
 # AMD Vulkan & Video Acceleration
 vulkan-radeon

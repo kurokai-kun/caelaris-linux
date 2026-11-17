@@ -316,10 +316,9 @@ if [ -f "${BUILD_PROFILE}/airootfs/usr/share/applications/install-caelaris.deskt
     chmod +x "${BUILD_PROFILE}/airootfs/home/liveuser/Desktop/install-caelaris.desktop" 2>/dev/null || true
 fi
 
-# Clean up any lingering switch-desktop entries, duplicate wayland sessions, or conflicting package files
+# Clean up any lingering switch-desktop entries or legacy sessions
 rm -f "${BUILD_PROFILE}/airootfs/usr/share/applications/caelaris-switch-desktop.desktop" \
-      "${BUILD_PROFILE}/airootfs/usr/share/wayland-sessions/caelestia.desktop" \
-      "${BUILD_PROFILE}/airootfs/usr/share/wayland-sessions/hyprland.desktop" 2>/dev/null || true
+      "${BUILD_PROFILE}/airootfs/usr/share/wayland-sessions/caelestia.desktop" 2>/dev/null || true
 rm -rf "${BUILD_PROFILE}/airootfs/usr/share/xsessions"/* 2>/dev/null || true
 
 # Remove console autologin on tty1 so graphical display manager takes the screen

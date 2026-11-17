@@ -1,0 +1,7 @@
+#!/bin/bash
+for f in dolphin nautilus thunar pcmanfm; do
+    if command -v "$f" >/dev/null 2>&1; then
+        exec "$f" "$@"
+    fi
+done
+exit 1

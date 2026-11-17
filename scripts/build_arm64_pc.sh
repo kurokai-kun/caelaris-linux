@@ -179,6 +179,9 @@ EOF
         waybar
         rofi-wayland
         swaybg
+        firefox
+        ttf-font-awesome
+        pavucontrol
     )
 
     echo "Installing live preview desktop & installer packages..."

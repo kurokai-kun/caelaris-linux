@@ -105,7 +105,7 @@ ln -sf /dev/null /etc/systemd/system/getty@tty1.service 2>/dev/null || true
 
 # 13. Enable Clean Shutdown and unmount safeguards
 systemctl enable caelaris-shutdown-clean.service 2>/dev/null || true
-chmod +x /usr/bin/caelaris-shutdown-clean /usr/lib/systemd/system-shutdown/caelaris-clean.shutdown 2>/dev/null || true
+chmod +x /usr/bin/caelaris-* /usr/bin/hyprland-session /usr/lib/systemd/system-shutdown/caelaris-clean.shutdown 2>/dev/null || true
 
 # 14. Ensure proper security permissions for Polkit rules and Sudoers
 mkdir -p /etc/polkit-1/rules.d

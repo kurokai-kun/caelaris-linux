@@ -1,0 +1,7 @@
+#!/bin/bash
+for t in konsole ptyxis kitty foot alacritty xterm; do
+    if command -v "$t" >/dev/null 2>&1; then
+        exec "$t" "$@"
+    fi
+done
+exit 1

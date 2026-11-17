@@ -155,6 +155,7 @@ mkdir -p /etc/skel/Desktop
 rm -rf /etc/skel/Desktop/* 2>/dev/null || true
 
 chmod +x /usr/bin/caelaris-* 2>/dev/null || true
+chmod +x /usr/bin/hyprland-session 2>/dev/null || true
 chmod +x /usr/bin/yay 2>/dev/null || true
 
 # Autostart vboxclient in userspace if present

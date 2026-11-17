@@ -35,7 +35,12 @@ if [ "$IS_VM" = "1" ]; then
     export AQ_NO_MODIFIERS=1
     export AQ_FORCE_LINEAR=1
 else
-    unset AQ_NO_MODIFIERS
+    # On ARM64 (e.g. Snapdragon X Elite Freedreno / Adreno), experimental modifiers cause black screens
+    if [ "$(uname -m)" = "aarch64" ] || [ "$(uname -m)" = "arm64" ]; then
+        export AQ_NO_MODIFIERS=1
+    else
+        unset AQ_NO_MODIFIERS
+    fi
     unset AQ_FORCE_LINEAR
     unset AQ_NO_ATOMIC
 fi
@@ -47,6 +52,7 @@ export HYPRCURSOR_SIZE="24"
 # NVIDIA Wayland Compatibility
 if [ -d /dev/dri ]; then
     if lspci -k 2>/dev/null | grep -iE 'nvidia' >/dev/null 2>&1; then
+        export LIBVA_DRIVER_NAME="nvidia"
         export __GLX_VENDOR_LIBRARY_NAME="nvidia"
         export NVD_BACKEND="direct"
     fi

@@ -1,0 +1,7 @@
+#!/bin/bash
+for b in firefox chromium google-chrome-stable epiphany brave vivaldi; do
+    if command -v "$b" >/dev/null 2>&1; then
+        exec "$b" "$@"
+    fi
+done
+exit 1

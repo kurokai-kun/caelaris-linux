@@ -487,10 +487,21 @@ class InstallWorker(QThread):
             with open(f"/mnt/var/lib/AccountsService/users/{user}", "w") as f:
                 f.write(f"[User]\nLanguage=en_US.UTF-8\nSession={sess_name}\nXSession={sess_name}\nSystemAccount=false\nRealName={realname}\nIcon=/usr/share/pixmaps/caelaris-logo.png\n")
 
-            # Setup user Hyprland configuration
+            # Setup user Hyprland & Waybar configuration
             os.makedirs(f"/mnt/home/{user}/.config/hypr", exist_ok=True)
             with open(f"/mnt/home/{user}/.config/hypr/hyprland.conf", "w") as f:
                 f.write("# Hyprland configuration for Caelaris Linux\nsource = /etc/hypr/hyprland.conf\n")
+
+            os.makedirs(f"/mnt/home/{user}/.config/waybar", exist_ok=True)
+            for w_file in ["config", "style.css"]:
+                for src_dir in ["/etc/xdg/waybar", "/etc/skel/.config/waybar"]:
+                    sp = os.path.join(src_dir, w_file)
+                    if os.path.exists(sp):
+                        try:
+                            shutil.copy2(sp, f"/mnt/home/{user}/.config/waybar/{w_file}")
+                            break
+                        except Exception:
+                            pass
             self.run_cmd(f"arch-chroot /mnt chown -R '{user}:users' '/home/{user}/.config'", check=False)
 
             os.makedirs("/mnt/etc/sddm.conf.d", exist_ok=True)
@@ -920,6 +931,9 @@ class InstallWorker(QThread):
             for guest_srv in ["vmtoolsd", "vmware-vmblock-fuse", "vboxservice", "spice-vdagentd", "qemu-guest-agent"]:
                 if os.path.isfile(f"/mnt/usr/lib/systemd/system/{guest_srv}.service"):
                     self.run_cmd(f"arch-chroot /mnt systemctl enable {guest_srv} 2>/dev/null || true", check=False)
+
+            # Ensure all Caelaris desktop launchers and session scripts are executable
+            self.run_cmd("chmod +x /mnt/usr/bin/caelaris-* /mnt/usr/bin/hyprland-session 2>/dev/null || true", check=False)
 
             # Enable NVIDIA modesetting if NVIDIA hardware is present
             try:
