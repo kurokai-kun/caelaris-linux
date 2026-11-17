@@ -632,7 +632,24 @@ class InstallWorker(QThread):
             is_efi = os.path.exists("/sys/firmware/efi")
             subvol_arg = "rootflags=subvol=@" if fs_type == "btrfs" else ""
 
-            # ── Write /etc/default/grub ──────────────────────────────────────
+            # ── Write /etc/default/grub & /etc/os-release branding ───────────
+            os.makedirs("/mnt/etc", exist_ok=True)
+            with open("/mnt/etc/os-release", "w") as f:
+                f.write(
+                    'NAME="Caelaris Linux"\n'
+                    'PRETTY_NAME="Caelaris Linux"\n'
+                    'ID=caelaris\n'
+                    'ID_LIKE=arch\n'
+                    'BUILD_ID=rolling\n'
+                    'ANSI_COLOR="38;2;64;158;255"\n'
+                    'HOME_URL="https://github.com/kurokai-kun/caelaris-linux"\n'
+                    'SUPPORT_URL="https://github.com/kurokai-kun/caelaris-linux/issues"\n'
+                    'BUG_REPORT_URL="https://github.com/kurokai-kun/caelaris-linux/issues"\n'
+                    'LOGO=caelaris-logo\n'
+                )
+            with open("/mnt/etc/issue", "w") as f:
+                f.write("Caelaris Linux \\r (\\l)\n\n")
+
             if is_aarch64:
                 grub_cmdline = f'{subvol_arg} quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 systemd.unified_cgroup_hierarchy=1 clk_ignore_unused pd_ignore_unused arm64.nopauth earlycon=efifb console=tty0 panic=60 efi=noruntime'
             else:
@@ -645,7 +662,7 @@ class InstallWorker(QThread):
                     'GRUB_TIMEOUT=12\n'
                     'GRUB_TIMEOUT_STYLE=menu\n'
                     'GRUB_RECORDFAIL_TIMEOUT=12\n'
-                    'GRUB_DISTRIBUTOR="Caelaris"\n'
+                    'GRUB_DISTRIBUTOR="Caelaris Linux"\n'
                     f'GRUB_CMDLINE_LINUX_DEFAULT="{grub_cmdline}"\n'
                     'GRUB_CMDLINE_LINUX=""\n'
                     'GRUB_GFXMODE=auto\n'
@@ -750,13 +767,13 @@ class InstallWorker(QThread):
                         cfg_text = f.read()
 
                     import re
-                    # 1. Strip all (EFI BootNext) and unsupported option menuentry blocks
+                    # 1. Strip all (EFI BootNext), UEFI firmware settings, and unsupported option menuentry blocks
                     cleaned_lines = []
                     skip_block = False
                     brace_depth = 0
                     has_seen_open_brace = False
                     for line in cfg_text.splitlines():
-                        if not skip_block and re.search(r"menuentry\s+['\"].*(?:BootNext|Unsupported option)", line, re.IGNORECASE):
+                        if not skip_block and re.search(r"menuentry\s+['\"].*(?:BootNext|Unsupported option|UEFI Firmware Settings)", line, re.IGNORECASE):
                             skip_block = True
                             has_seen_open_brace = "{" in line
                             brace_depth = line.count("{") - line.count("}")
@@ -773,12 +790,24 @@ class InstallWorker(QThread):
                         cleaned_lines.append(line)
                     cfg_text = "\n".join(cleaned_lines)
 
-                    # 2. De-clutter menuentry names (only fallback kernel gets Safe Mode)
-                    cfg_text = re.sub(r"menuentry ['\"][^'\"]*(?:fallback initramfs|linux-fallback)[^'\"]*['\"]", "menuentry 'Caelaris Linux (Safe Mode)'", cfg_text, flags=re.IGNORECASE)
-                    cfg_text = re.sub(r"menuentry ['\"][^'\"]*(?:Caelaris|Arch Linux), with Linux[^'\"]*['\"]", "menuentry 'Caelaris Linux'", cfg_text, flags=re.IGNORECASE)
-                    cfg_text = re.sub(r"menuentry ['\"]Arch Linux[^'\"]*['\"]", "menuentry 'Caelaris Linux'", cfg_text)
-                    cfg_text = re.sub(r"menuentry ['\"]Caelaris\s*['\"]", "menuentry 'Caelaris Linux'", cfg_text)
-                    cfg_text = cfg_text.replace("Arch Linux", "Caelaris Linux")
+                    # 2. De-clutter & normalize menuentry titles strictly to "Caelaris Linux" or "Caelaris Linux (Safe Mode)"
+                    def sanitize_menuentry(match):
+                        quote = match.group(1)
+                        title = match.group(2)
+                        rest = match.group(3)
+                        if re.search(r"fallback|recovery|safe", title, re.IGNORECASE):
+                            new_title = "Caelaris Linux (Safe Mode)"
+                        else:
+                            new_title = "Caelaris Linux"
+                        return f"menuentry {quote}{new_title}{quote}{rest}"
+
+                    cfg_text = re.sub(r"menuentry\s+(['\"])(.*?)(['\"])(.*)", sanitize_menuentry, cfg_text)
+
+                    # 3. Clean any lingering Arch Linux, Arch Linux ARM, or Caelaris mentions
+                    cfg_text = re.sub(r"Arch Linux ARM", "Caelaris Linux", cfg_text)
+                    cfg_text = re.sub(r"Arch Linux", "Caelaris Linux", cfg_text)
+                    cfg_text = re.sub(r"Caelaris Linux ARM64", "Caelaris Linux", cfg_text)
+                    cfg_text = re.sub(r"Caelaris Linux ARM", "Caelaris Linux", cfg_text)
 
                     # 3. Ensure top-level default, timeout, and visible menu
                     cfg_text = re.sub(r'set timeout=\d+', 'set timeout=12', cfg_text)

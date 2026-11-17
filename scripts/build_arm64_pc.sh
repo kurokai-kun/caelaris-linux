@@ -335,8 +335,8 @@ echo "[3/5] Applying full Caelaris desktop customizations and configurations..."
 echo "caelaris-arm64" > "${ROOTFS_DIR}/etc/hostname"
 
 cat << 'EOF' > "${ROOTFS_DIR}/etc/os-release"
-NAME="Caelaris Linux ARM64"
-PRETTY_NAME="Caelaris Linux ARM64 (Laptop & PC Edition)"
+NAME="Caelaris Linux"
+PRETTY_NAME="Caelaris Linux"
 ID=caelaris
 ID_LIKE=archarm
 BUILD_ID=rolling
@@ -937,7 +937,7 @@ if [ -z "$dtb_file" ]; then
     fi
 fi
 
-menuentry "Caelaris Linux (Auto-Detect / Snapdragon X Elite & ARM64 Laptop)" --class caelaris --class kde --class gnu-linux --class gnu --class os {
+menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --class gnu --class os {
     search --no-floppy --set=root --file /live/vmlinuz
     linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live clk_ignore_unused pd_ignore_unused arm64.nopauth earlycon=efifb console=tty0 panic=60 efi=noruntime session=plasma plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
     initrd /live/initrd.img
@@ -948,7 +948,17 @@ menuentry "Caelaris Linux (Auto-Detect / Snapdragon X Elite & ARM64 Laptop)" --c
     fi
 }
 
-menuentry "Caelaris Linux - HP OmniBook X 14 (Snapdragon X Elite)" --class caelaris --class gnu-linux {
+menuentry "Caelaris Linux (Safe Graphics / Fallback)" --class caelaris --class gnu-linux {
+    search --no-floppy --set=root --file /live/vmlinuz
+    linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live nomodeset clk_ignore_unused pd_ignore_unused arm64.nopauth earlycon=efifb console=tty0 panic=60 session=plasma plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
+    initrd /live/initrd.img
+    if [ -n "$dtb_file" -a -f "$dtb_file" ]; then
+        devicetree $dtb_file
+    fi
+}
+
+submenu "Advanced Hardware Selection (Manual DTB Override)" {
+    menuentry "Caelaris Linux - HP OmniBook X 14 (Snapdragon X Elite)" --class caelaris --class gnu-linux {
     search --no-floppy --set=root --file /live/vmlinuz
     linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live clk_ignore_unused pd_ignore_unused arm64.nopauth earlycon=efifb console=tty0 panic=60 efi=noruntime session=plasma plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
     initrd /live/initrd.img
@@ -1010,20 +1020,12 @@ menuentry "Boot Installed Operating System" --class disk --class os {
     fi
 }
 
-menuentry "Caelaris Linux (Safe Graphics / Fallback)" --class caelaris --class gnu-linux {
-    search --no-floppy --set=root --file /live/vmlinuz
-    linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live nomodeset clk_ignore_unused pd_ignore_unused arm64.nopauth earlycon=efifb console=tty0 panic=60 session=plasma plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
-    initrd /live/initrd.img
-    if [ -n "$dtb_file" -a -f "$dtb_file" ]; then
-        devicetree $dtb_file
+    if [ "$grub_platform" = "efi" ]; then
+        menuentry "UEFI Firmware Settings" --class uefi {
+            fwsetup
+        }
     fi
 }
-
-if [ "$grub_platform" = "efi" ]; then
-    menuentry "UEFI Firmware Settings" --class uefi {
-        fwsetup
-    }
-fi
 EOF
 
 # Ensure grub.cfg is available at standard search locations

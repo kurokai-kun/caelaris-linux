@@ -185,12 +185,12 @@ if [[ "$FORMAT" == "both" || "$FORMAT" == "iso" ]]; then
 set default="0"
 set timeout=12
 
-menuentry "Caelaris Linux ARM64 (Live Session)" {
+menuentry "Caelaris Linux" {
     linux /live/vmlinuz boot=live quiet splash
     initrd /live/initrd.img
 }
 
-menuentry "Caelaris Linux ARM64 (Safe Graphics)" {
+menuentry "Caelaris Linux (Safe Graphics / Fallback)" {
     linux /live/vmlinuz boot=live nomodeset
     initrd /live/initrd.img
 }

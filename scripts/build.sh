@@ -185,38 +185,40 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
     initrd /%INSTALL_DIR%/boot/intel-ucode.img /%INSTALL_DIR%/boot/amd-ucode.img /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
 }
 
-menuentry "Boot Installed Operating System" --class disk --class os {
-    insmod chain
-    insmod part_gpt
-    insmod part_msdos
-    insmod fat
-    insmod btrfs
-    insmod ext2
-    search --no-floppy --file --set=root /EFI/Caelaris/grubx64.efi
-    if [ -f ($root)/EFI/Caelaris/grubx64.efi ]; then
-        chainloader ($root)/EFI/Caelaris/grubx64.efi
-    else
-        search --no-floppy --file --set=root /EFI/BOOT/BOOTX64.EFI
-        if [ -f ($root)/EFI/BOOT/BOOTX64.EFI ]; then
-            chainloader ($root)/EFI/BOOT/BOOTX64.EFI
-        else
-            search --no-floppy --file --set=root /boot/grub/grub.cfg
-            configfile ($root)/boot/grub/grub.cfg
-        fi
-    fi
-}
-
 menuentry "Caelaris Linux (Safe Graphics / Fallback)" --class caelaris --class gnu-linux {
     set gfxpayload=keep
     linux /%INSTALL_DIR%/boot/x86_64/vmlinuz-linux archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=graphical.target desktop=plasma nomodeset quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
     initrd /%INSTALL_DIR%/boot/intel-ucode.img /%INSTALL_DIR%/boot/amd-ucode.img /%INSTALL_DIR%/boot/x86_64/initramfs-linux.img
 }
 
-if [ "$grub_platform" = "efi" ]; then
-    menuentry "UEFI Firmware Settings" --class uefi {
-        fwsetup
+submenu "Advanced Boot Options" {
+    menuentry "Boot Installed Operating System" --class disk --class os {
+        insmod chain
+        insmod part_gpt
+        insmod part_msdos
+        insmod fat
+        insmod btrfs
+        insmod ext2
+        search --no-floppy --file --set=root /EFI/Caelaris/grubx64.efi
+        if [ -f ($root)/EFI/Caelaris/grubx64.efi ]; then
+            chainloader ($root)/EFI/Caelaris/grubx64.efi
+        else
+            search --no-floppy --file --set=root /EFI/BOOT/BOOTX64.EFI
+            if [ -f ($root)/EFI/BOOT/BOOTX64.EFI ]; then
+                chainloader ($root)/EFI/BOOT/BOOTX64.EFI
+            else
+                search --no-floppy --file --set=root /boot/grub/grub.cfg
+                configfile ($root)/boot/grub/grub.cfg
+            fi
+        fi
     }
-fi
+
+    if [ "$grub_platform" = "efi" ]; then
+        menuentry "UEFI Firmware Settings" --class uefi {
+            fwsetup
+        }
+    fi
+}
 EOF
 ' _ {} \;
 
