@@ -803,16 +803,18 @@ class InstallWorker(QThread):
 
                     # 2. De-clutter & normalize menuentry titles strictly to "Caelaris Linux" or "Caelaris Linux (Safe Mode)"
                     def sanitize_menuentry(match):
-                        quote = match.group(1)
-                        title = match.group(2)
-                        rest = match.group(3)
+                        prefix = match.group(1)
+                        open_quote = match.group(2)
+                        title = match.group(3)
+                        close_quote = match.group(4)
+                        rest = match.group(5)
                         if re.search(r"fallback|recovery|safe", title, re.IGNORECASE):
                             new_title = "Caelaris Linux (Safe Mode)"
                         else:
                             new_title = "Caelaris Linux"
-                        return f"menuentry {quote}{new_title}{quote}{rest}"
+                        return f"{prefix}{open_quote}{new_title}{close_quote}{rest}"
 
-                    cfg_text = re.sub(r"menuentry\s+(['\"])(.*?)(['\"])(.*)", sanitize_menuentry, cfg_text)
+                    cfg_text = re.sub(r"^(\s*menuentry\s+)(['\"])(.*?)(['\"])(.*)$", sanitize_menuentry, cfg_text, flags=re.MULTILINE)
 
                     # 3. Clean any lingering Arch Linux, Arch Linux ARM, or Caelaris mentions
                     cfg_text = re.sub(r"Arch Linux ARM", "Caelaris Linux", cfg_text)
