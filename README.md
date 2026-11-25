@@ -10,10 +10,11 @@
 
 <p align="center">
   <a href="https://caelaris.vercel.app"><img src="https://img.shields.io/badge/Website-caelaris.vercel.app-8b5cf6?style=for-the-badge&logo=vercel&logoColor=white" alt="Official Website"></a>
-  <a href="https://github.com/kurokai-kun/caelaris-linux/releases"><img src="https://img.shields.io/badge/Architecture-x86__64%20%7C%20AArch64-blue?style=for-the-badge" alt="Architecture"></a>
+  <a href="https://github.com/kurokai-kun/caelaris-linux/actions/workflows/build.yml"><img src="https://img.shields.io/github/actions/workflow/status/kurokai-kun/caelaris-linux/build.yml?branch=main&label=x86_64%20Build&style=for-the-badge&logo=github" alt="x86_64 CI Build Status"></a>
+  <a href="https://github.com/kurokai-kun/caelaris-linux/actions/workflows/build-arm64-pc.yml"><img src="https://img.shields.io/github/actions/workflow/status/kurokai-kun/caelaris-linux/build-arm64-pc.yml?branch=main&label=ARM64%20Build&style=for-the-badge&logo=github" alt="ARM64 CI Build Status"></a>
+  <a href="https://github.com/kurokai-kun/caelaris-linux/releases"><img src="https://img.shields.io/badge/Architecture-x86__64%20%7C%20ARM64-blue?style=for-the-badge" alt="Architecture"></a>
   <a href="https://archlinux.org"><img src="https://img.shields.io/badge/Base-Arch%20Linux%20Rolling-1793d1?style=for-the-badge&logo=arch-linux&logoColor=white" alt="Arch Linux Base"></a>
-  <img src="https://img.shields.io/badge/Desktops-Plasma%206%20%7C%20GNOME%20%7C%20Hyprland-6366f1?style=for-the-badge" alt="Desktops">
-  <img src="https://img.shields.io/badge/Filesystem-Btrfs%20%7C%20Ext4-10b981?style=for-the-badge" alt="Filesystem">
+  <img src="https://img.shields.io/badge/Desktops-Hyprland%20%7C%20Plasma%206%20%7C%20GNOME-6366f1?style=for-the-badge" alt="Desktops">
   <img src="https://img.shields.io/badge/License-GPL--3.0-orange?style=for-the-badge" alt="License">
 </p>
 
@@ -65,6 +66,24 @@
 * **ARM64 Laptops & PCs**: Native support for Apple Silicon Macs (M1/M2/M3/M4 via UTM & Asahi) and Qualcomm Snapdragon X Elite Copilot+ laptops.
 * **Raspberry Pi & SBCs**: Dedicated builds for Raspberry Pi 5, 4, and 3B+.
 * **Cloud & Server Editions**: Lean, headless images with Cloud-Init automation for hypervisors, VPS, and homelabs.
+
+---
+
+## ⚖️ Why Caelaris? (How It Compares to Other Distros)
+
+Linux users frequently ask: *"Why not just use Arch, CachyOS, or Nobara?"* Here is how Caelaris fundamentally differs in architecture, target hardware, and design philosophy:
+
+| Feature / Architecture | **Caelaris Linux** | **CachyOS** | **Nobara Linux** | **Vanilla Arch** |
+| :--- | :--- | :--- | :--- | :--- |
+| **Architectural Focus** | **Dual Flagship: x86_64 & Native ARM64 PCs** *(Snapdragon X Elite, Apple Silicon, etc.)* | x86_64 micro-architecture *(ARM is experimental / secondary)* | x86_64 only | Raw upstream x86_64 *(ARM is a separate community port)* |
+| **Default Workflow** | **Pure Hyprland dynamic tiling + Waybar** *(< 400MB idle RAM)* with tri-desktop option | Traditional KDE Plasma / GNOME / Hyprland | Heavily customized KDE Plasma / GNOME | No desktop by default *(CLI)* |
+| **Memory & VRAM Tuning** | **Valve `dmemcg` + Dynamic VRAM Booster** *(prioritizes games over browser/Discord VRAM)* | BORE / EEVDF schedulers & `-O3 / x86-64-v3` compiler flags | WineSync / Fsync patched kernel & bundled launchers | Upstream generic kernel defaults |
+| **System Delivery** | **Dedicated Python/PyQt6 GUI installer** + automated Btrfs subvolumes & quiet boot | Calamares installer | Calamares installer | Manual CLI `archinstall` / manual pacstrap |
+| **Ecosystem Tools** | In-house Store, Defender, Updater & Hot-Switcher | CachyOS Package Installer & kernel manager | Nobara Welcome, Driver & Update manager | Upstream Arch tools (`pacman`) |
+| **Continuous Integration** | Automated multi-arch GitHub Actions rolling builds | Hosted package build infrastructure | Custom Fedora RPM build coprs | Official package maintainers |
+
+> [!TIP]
+> **Not a "Post-Install Script Distro"**: Caelaris is built from source using automated ISO generation workflows (`mkarchiso` & `pacstrap` matrices), custom device-tree handling for ARM64 laptops, kernel memory management daemons, and an independent suite of native system applications.
 
 ---
 
