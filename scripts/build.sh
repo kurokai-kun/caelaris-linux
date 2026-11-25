@@ -173,11 +173,45 @@ APPEND archisobasedir=%INSTALL_DIR% archisolabel=%ARCHISO_LABEL% systemd.unit=gr
 EOF
 fi
 
-# C. GRUB configuration (UEFI & BIOS)
+# C. GRUB configuration (UEFI & BIOS) with Custom Caelaris Obsidian Glass Theme
+GRUB_THEME_AIROOTFS="${BUILD_PROFILE}/airootfs/usr/share/grub/themes/caelaris"
+if [ -d "${GRUB_THEME_AIROOTFS}" ]; then
+    if command -v grub-mkfont >/dev/null 2>&1; then
+        [ -f /usr/share/fonts/TTF/DejaVuSans.ttf ] && \
+            grub-mkfont -s 18 -n "Caelaris Sans" -o "${GRUB_THEME_AIROOTFS}/caelaris-sans-18.pf2" /usr/share/fonts/TTF/DejaVuSans.ttf 2>/dev/null || true
+        [ -f /usr/share/fonts/TTF/DejaVuSans.ttf ] && \
+            grub-mkfont -s 14 -n "Caelaris Sans" -o "${GRUB_THEME_AIROOTFS}/caelaris-sans-14.pf2" /usr/share/fonts/TTF/DejaVuSans.ttf 2>/dev/null || true
+        [ -f /usr/share/fonts/TTF/DejaVuSansMono.ttf ] && \
+            grub-mkfont -s 14 -n "Caelaris Mono" -o "${GRUB_THEME_AIROOTFS}/caelaris-mono-14.pf2" /usr/share/fonts/TTF/DejaVuSansMono.ttf 2>/dev/null || true
+    fi
+    if [ -d "${BUILD_PROFILE}/grub" ]; then
+        mkdir -p "${BUILD_PROFILE}/grub/themes/caelaris"
+        cp -rf "${GRUB_THEME_AIROOTFS}/." "${BUILD_PROFILE}/grub/themes/caelaris/"
+    fi
+fi
+
 find "${BUILD_PROFILE}" -type f \( -name "grub.cfg" -o -name "loopback.cfg" \) -exec sh -c '
     cat > "$1" << "EOF"
 set default="0"
-set timeout=12
+set timeout=5
+
+if [ -f /boot/grub/themes/caelaris/theme.txt ]; then
+    insmod all_video
+    insmod gfxterm
+    insmod png
+    set gfxmode=1920x1080x32,auto
+    terminal_output gfxterm
+    if [ -f /boot/grub/themes/caelaris/caelaris-sans-18.pf2 ]; then
+        loadfont /boot/grub/themes/caelaris/caelaris-sans-18.pf2
+    fi
+    if [ -f /boot/grub/themes/caelaris/caelaris-sans-14.pf2 ]; then
+        loadfont /boot/grub/themes/caelaris/caelaris-sans-14.pf2
+    fi
+    if [ -f /boot/grub/themes/caelaris/caelaris-mono-14.pf2 ]; then
+        loadfont /boot/grub/themes/caelaris/caelaris-mono-14.pf2
+    fi
+    set theme=/boot/grub/themes/caelaris/theme.txt
+fi
 
 menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --class gnu --class os {
     set gfxpayload=keep

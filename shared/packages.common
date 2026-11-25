@@ -18,6 +18,7 @@ ntfs-3g
 xfsprogs
 efibootmgr
 grub
+os-prober
 sysfsutils
 usbutils
 pciutils
@@ -37,6 +38,7 @@ syslinux
 # ==========================================================
 zram-generator
 ananicy-cpp
+scx-scheds
 power-profiles-daemon
 gamemode
 lib32-gamemode

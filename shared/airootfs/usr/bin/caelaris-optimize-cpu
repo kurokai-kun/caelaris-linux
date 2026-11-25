@@ -1,0 +1,197 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Caelaris Linux CPU & Kernel Optimizer (caelaris-optimize-cpu)
+# Safely enables CachyOS x86-64-v3 / x86-64-v4 / Zen4 optimized repositories
+# (LTO, PGO, BOLT) and installs linux-cachyos (BORE + EEVDF + sched-ext).
+# Automatically falls back safely on older x86-64-v1/v2 CPUs or VMs without AVX2.
+# ==============================================================================
+
+set -euo pipefail
+
+CYAN='\033[1;36m'
+GREEN='\033[1;32m'
+YELLOW='\033[1;33m'
+RED='\033[1;31m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+if [ "$(id -u)" -ne 0 ]; then
+    echo -e "${YELLOW}==>${NC} Administrative privileges required."
+    if command -v pkexec >/dev/null 2>&1; then
+        exec pkexec "$0" "$@"
+    elif command -v sudo >/dev/null 2>&1; then
+        exec sudo "$0" "$@"
+    else
+        echo -e "${RED}[ERROR]${NC} Run as root."
+        exit 1
+    fi
+fi
+
+AUTO_YES=false
+SKIP_UPGRADE=false
+for arg in "$@"; do
+    case "$arg" in
+        -y|--yes|--noconfirm|--auto) AUTO_YES=true ;;
+        --no-upgrade) SKIP_UPGRADE=true ;;
+    esac
+done
+
+echo -e "${CYAN}==========================================================${NC}"
+echo -e "${BOLD} Caelaris Linux — CPU & Kernel Performance Optimizer${NC}"
+echo -e "${CYAN}==========================================================${NC}"
+
+# 1. Detect Hardware ISA Capabilities via glibc ld.so
+ISA_INFO="$(/usr/lib/ld-linux-x86-64.so.2 --help 2>/dev/null || true)"
+SUPPORT_V4=false
+SUPPORT_V3=false
+
+if echo "$ISA_INFO" | grep -qE "x86-64-v4\s+\(supported"; then
+    SUPPORT_V4=true
+    SUPPORT_V3=true
+elif echo "$ISA_INFO" | grep -qE "x86-64-v3\s+\(supported"; then
+    SUPPORT_V3=true
+fi
+
+if [ "$SUPPORT_V4" = true ]; then
+    TARGET_TIER="v4"
+    echo -e "${GREEN}[DETECTED]${NC} CPU supports ${BOLD}x86-64-v4${NC} (AVX-512 / Zen4+)"
+elif [ "$SUPPORT_V3" = true ]; then
+    TARGET_TIER="v3"
+    echo -e "${GREEN}[DETECTED]${NC} CPU supports ${BOLD}x86-64-v3${NC} (AVX2 / FMA / BMI2)"
+else
+    TARGET_TIER="v1"
+    echo -e "${YELLOW}[DETECTED]${NC} CPU/VM only exposes baseline ${BOLD}x86-64-v1/v2${NC} (no AVX2)."
+    echo -e "           Caelaris will safely keep standard Arch repos to prevent SIGILL crashes."
+fi
+
+if [ "$AUTO_YES" = false ]; then
+    echo
+    echo "This optimizer will:"
+    if [ "$TARGET_TIER" != "v1" ]; then
+        echo "  1. Import & verify the official CachyOS GPG keyring."
+        echo "  2. Enable x86-64-${TARGET_TIER} LTO/PGO/BOLT optimized package repositories."
+        echo "  3. Install linux-cachyos (BORE + tuned EEVDF + sched-ext) alongside fallback kernel."
+    else
+        echo "  1. Import & verify the official CachyOS GPG keyring."
+        echo "  2. Enable generic [cachyos] repo and scx-scheds (sched-ext) without v3/v4 binaries."
+    fi
+    echo
+    read -r -p "Proceed? [Y/n] " resp
+    if [[ "$resp" =~ ^[Nn]$ ]]; then
+        echo "Cancelled."
+        exit 0
+    fi
+fi
+
+# 2. Import CachyOS GPG Key reliably over HTTPS + keyserver fallback
+echo -e "\n${CYAN}[1/4]${NC} Importing CachyOS GPG key..."
+CACHY_KEY="F3B607488DB35A47"
+if ! pacman-key --list-keys "$CACHY_KEY" >/dev/null 2>&1; then
+    KEY_TMP="/tmp/cachyos-key.asc"
+    if curl -fsSL --max-time 15 "https://keyserver.ubuntu.com/pks/lookup?op=get&options=mr&search=0x${CACHY_KEY}" -o "$KEY_TMP" 2>/dev/null; then
+        pacman-key --add "$KEY_TMP"
+        rm -f "$KEY_TMP"
+    else
+        pacman-key --recv-keys "$CACHY_KEY" --keyserver keyserver.ubuntu.com
+    fi
+fi
+pacman-key --lsign-key "$CACHY_KEY"
+
+# 3. Configure /etc/pacman.conf idempotently
+echo -e "${CYAN}[2/4]${NC} Configuring optimized repositories in /etc/pacman.conf..."
+PACMAN_CONF="/etc/pacman.conf"
+cp -n "$PACMAN_CONF" "${PACMAN_CONF}.bak" || true
+
+# Remove any previous Caelaris-managed CachyOS block to keep idempotency
+python3 - << 'PYEOF'
+import re
+with open("/etc/pacman.conf", "r") as f:
+    text = f.read()
+text = re.sub(r"\n?# >>> CAELARIS CACHYOS REPOS >>>.*?# <<< CAELARIS CACHYOS REPOS <<<\n?", "\n", text, flags=re.S)
+with open("/etc/pacman.conf", "w") as f:
+    f.write(text.strip() + "\n")
+PYEOF
+
+REPO_BLOCK="# >>> CAELARIS CACHYOS REPOS >>>"
+if [ "$TARGET_TIER" = "v4" ]; then
+    REPO_BLOCK="${REPO_BLOCK}
+[cachyos-v4]
+Include = /etc/pacman.d/cachyos-v4-mirrorlist
+
+[cachyos-core-v4]
+Include = /etc/pacman.d/cachyos-v4-mirrorlist
+
+[cachyos-extra-v4]
+Include = /etc/pacman.d/cachyos-v4-mirrorlist
+
+[cachyos-v3]
+Include = /etc/pacman.d/cachyos-v3-mirrorlist
+
+[cachyos-core-v3]
+Include = /etc/pacman.d/cachyos-v3-mirrorlist
+
+[cachyos-extra-v3]
+Include = /etc/pacman.d/cachyos-v3-mirrorlist"
+elif [ "$TARGET_TIER" = "v3" ]; then
+    REPO_BLOCK="${REPO_BLOCK}
+[cachyos-v3]
+Include = /etc/pacman.d/cachyos-v3-mirrorlist
+
+[cachyos-core-v3]
+Include = /etc/pacman.d/cachyos-v3-mirrorlist
+
+[cachyos-extra-v3]
+Include = /etc/pacman.d/cachyos-v3-mirrorlist"
+fi
+
+REPO_BLOCK="${REPO_BLOCK}
+
+[cachyos]
+Include = /etc/pacman.d/cachyos-mirrorlist
+# <<< CAELARIS CACHYOS REPOS <<<"
+
+# Ensure v3/v4 mirrorlists exist if not yet installed via cachyos-mirrorlist package
+if [ ! -f /etc/pacman.d/cachyos-v3-mirrorlist ]; then
+    sed 's/\$arch/\$arch_v3/g' /etc/pacman.d/cachyos-mirrorlist > /etc/pacman.d/cachyos-v3-mirrorlist
+fi
+if [ ! -f /etc/pacman.d/cachyos-v4-mirrorlist ]; then
+    sed 's/\$arch/\$arch_v4/g' /etc/pacman.d/cachyos-mirrorlist > /etc/pacman.d/cachyos-v4-mirrorlist
+fi
+
+# Insert right before [core] so optimized packages take priority
+python3 - << PYEOF
+with open("/etc/pacman.conf", "r") as f:
+    text = f.read()
+block = """${REPO_BLOCK}"""
+if "[core]" in text:
+    text = text.replace("[core]", block + "\n\n[core]", 1)
+else:
+    text = text + "\n" + block + "\n"
+with open("/etc/pacman.conf", "w") as f:
+    f.write(text)
+PYEOF
+
+# 4. Sync keyring, mirrorlist & install linux-cachyos
+echo -e "${CYAN}[3/4]${NC} Syncing databases and installing CachyOS keyring & optimized kernel..."
+pacman -Sy --noconfirm cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist cachyos-v4-mirrorlist
+
+if [ "$TARGET_TIER" != "v1" ]; then
+    pacman -S --needed --noconfirm linux-cachyos linux-cachyos-headers scx-scheds
+else
+    pacman -S --needed --noconfirm scx-scheds
+fi
+
+if [ "$SKIP_UPGRADE" = false ] && [ "$TARGET_TIER" != "v1" ]; then
+    echo -e "${CYAN}[4/4]${NC} Upgrading system packages to x86-64-${TARGET_TIER} LTO/PGO builds..."
+    pacman -Su --noconfirm
+else
+    echo -e "${CYAN}[4/4]${NC} Skipping full package rebuild upgrade."
+fi
+
+if command -v grub-mkconfig >/dev/null 2>&1 && [ -d /boot/grub ]; then
+    echo -e "${CYAN}==>${NC} Updating Caelaris GRUB boot entries..."
+    grub-mkconfig -o /boot/grub/grub.cfg || true
+fi
+
+echo -e "\n${GREEN}[SUCCESS]${NC} Optimization complete! Reboot to boot into the new kernel."
+echo -e "Tip: Run ${BOLD}sudo caelaris-scheduler${NC} to switch sched-ext schedulers (lavd, bpfland, rusty)."

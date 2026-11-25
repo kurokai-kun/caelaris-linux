@@ -1,13 +1,14 @@
 GRUB_DEFAULT=0
-GRUB_TIMEOUT=12
+GRUB_TIMEOUT=5
 GRUB_TIMEOUT_STYLE=menu
-GRUB_RECORDFAIL_TIMEOUT=12
+GRUB_RECORDFAIL_TIMEOUT=5
 GRUB_DISTRIBUTOR="Caelaris Linux"
-GRUB_CMDLINE_LINUX_DEFAULT="quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 systemd.unified_cgroup_hierarchy=1"
+GRUB_CMDLINE_LINUX_DEFAULT="quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 systemd.unified_cgroup_hierarchy=1 split_lock_mitigate=0 amd_pstate=active"
 GRUB_CMDLINE_LINUX=""
-GRUB_GFXMODE=auto
+GRUB_GFXMODE=1920x1080x32,auto
 GRUB_GFXPAYLOAD_LINUX=keep
+GRUB_THEME="/usr/share/grub/themes/caelaris/theme.txt"
 GRUB_DISABLE_SUBMENU=y
 GRUB_DISABLE_RECOVERY=true
-GRUB_DISABLE_OS_PROBER=true
+GRUB_DISABLE_OS_PROBER=false
 GRUB_DISABLE_BOOTNEXT=true

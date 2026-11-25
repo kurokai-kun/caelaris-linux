@@ -1,0 +1,6 @@
+# CachyOS Repository Mirrorlist (Global CDN & Official Mirrors)
+Server = https://cdn77.cachyos.org/repo/$arch/$repo
+Server = https://mirror.cachyos.org/repo/$arch/$repo
+Server = https://us.cachyos.org/repo/$arch/$repo
+Server = https://de-1.cachyos.org/repo/$arch/$repo
+Server = https://sg.cachyos.org/repo/$arch/$repo
