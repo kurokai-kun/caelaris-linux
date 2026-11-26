@@ -296,13 +296,17 @@ GRUB_EARLY
 
     chroot "$ROOTFS_DIR" /bin/bash -c "
         if which grub-mkstandalone >/dev/null 2>&1 && [ -d /usr/lib/grub/arm64-efi ]; then
+            VALID_MODS=''
+            for m in part_gpt part_msdos iso9660 fat ext2 btrfs search search_fs_file search_fs_uuid search_label test echo normal linux devicetree fdt smbios terminal terminfo at_keyboard usb usbms usb_keyboard uhci ohci ehci xhci all_video gfxterm gfxmenu png font loadenv configfile reboot sleep; do
+                [ -f \"/usr/lib/grub/arm64-efi/\${m}.mod\" ] && VALID_MODS=\"\${VALID_MODS} \${m}\"
+            done
             grub-mkstandalone \
                 -O arm64-efi \
                 --directory=/usr/lib/grub/arm64-efi \
                 --output=/boot/BOOTAA64.EFI \
                 --locales='' \
                 --fonts='' \
-                --modules='part_gpt part_msdos iso9660 fat ext2 btrfs search search_fs_file search_fs_uuid search_label test echo normal linux devicetree fdt smbios terminal terminfo at_keyboard usb usbms usb_keyboard uhci ohci ehci xhci all_video gfxterm gfxmenu png font loadenv configfile reboot sleep' \
+                --modules=\"\${VALID_MODS}\" \
                 'boot/grub/grub.cfg=/tmp/early_grub.cfg' || rm -f /boot/BOOTAA64.EFI
         fi
         if command -v grub-mkfont >/dev/null 2>&1 && [ -f /usr/share/fonts/TTF/DejaVuSans.ttf ]; then
@@ -1110,13 +1114,17 @@ fi
 GRUB_EARLY
     GRUB_ARM64_DIR="/usr/lib/grub/arm64-efi"
     [ ! -d "$GRUB_ARM64_DIR" ] && [ -d "${ROOTFS_DIR}/usr/lib/grub/arm64-efi" ] && GRUB_ARM64_DIR="${ROOTFS_DIR}/usr/lib/grub/arm64-efi"
+    VALID_MODS=""
+    for m in part_gpt part_msdos iso9660 fat ext2 btrfs search search_fs_file search_fs_uuid search_label test echo normal linux devicetree fdt smbios terminal terminfo at_keyboard usb usbms usb_keyboard uhci ohci ehci xhci all_video gfxterm gfxmenu png font loadenv configfile reboot sleep; do
+        [ -f "${GRUB_ARM64_DIR}/${m}.mod" ] && VALID_MODS="${VALID_MODS} ${m}"
+    done
     grub-mkstandalone \
         -O arm64-efi \
         --directory="$GRUB_ARM64_DIR" \
         --output="${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" \
         --locales="" \
         --fonts="" \
-        --modules="part_gpt part_msdos iso9660 fat ext2 btrfs search search_fs_file search_fs_uuid search_label test echo normal linux devicetree fdt smbios terminal terminfo at_keyboard usb usbms usb_keyboard uhci ohci ehci xhci all_video gfxterm gfxmenu png font loadenv configfile reboot sleep" \
+        --modules="${VALID_MODS}" \
         "boot/grub/grub.cfg=${WORK_DIR}/host_early_grub.cfg" || rm -f "${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI"
     rm -f "${WORK_DIR}/host_early_grub.cfg"
 fi
