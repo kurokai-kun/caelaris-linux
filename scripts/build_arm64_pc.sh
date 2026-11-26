@@ -295,24 +295,15 @@ fi
 GRUB_EARLY
 
     chroot "$ROOTFS_DIR" /bin/bash -c "
-        if which grub-mkstandalone >/dev/null 2>&1; then
+        if which grub-mkstandalone >/dev/null 2>&1 && [ -d /usr/lib/grub/arm64-efi ]; then
             grub-mkstandalone \
-                --format=arm64-efi \
                 -O arm64-efi \
+                --directory=/usr/lib/grub/arm64-efi \
                 --output=/boot/BOOTAA64.EFI \
                 --locales='' \
                 --fonts='' \
                 --modules='part_gpt part_msdos iso9660 fat ext2 btrfs search search_fs_file search_fs_uuid search_label test echo normal linux devicetree fdt smbios terminal terminfo at_keyboard usb usbms usb_keyboard uhci ohci ehci xhci all_video gfxterm gfxmenu png font loadenv configfile reboot sleep' \
-                'boot/grub/grub.cfg=/tmp/early_grub.cfg' 2>/dev/null || {
-                grub-mkstandalone \
-                    --format=arm64-efi \
-                    -O arm64-efi \
-                    --output=/boot/BOOTAA64.EFI \
-                    --locales='' \
-                    --fonts='' \
-                    --modules='part_gpt part_msdos iso9660 fat ext2 btrfs search search_fs_file search_fs_uuid search_label test echo normal linux devicetree fdt smbios terminal terminfo at_keyboard usb usbms usb_keyboard uhci ohci ehci xhci all_video gfxterm gfxmenu png font loadenv configfile reboot sleep' \
-                    'boot/grub/grub.cfg=/tmp/early_grub.cfg' 2>/dev/null || true
-            }
+                'boot/grub/grub.cfg=/tmp/early_grub.cfg' || rm -f /boot/BOOTAA64.EFI
         fi
         if command -v grub-mkfont >/dev/null 2>&1 && [ -f /usr/share/fonts/TTF/DejaVuSans.ttf ]; then
             mkdir -p /usr/share/grub/themes/caelaris
@@ -1056,12 +1047,12 @@ if [ -d "${ROOTFS_DIR}/usr/share/grub/themes/caelaris" ]; then
     cp -rf "${ROOTFS_DIR}/usr/share/grub/themes/caelaris/." "${ISO_STAGING}/boot/grub/themes/caelaris/"
 fi
 
-# Ensure BOOTAA64.EFI exists in ISO_STAGING
-if [ -f "${ROOTFS_DIR}/boot/BOOTAA64.EFI" ]; then
+# Ensure non-empty BOOTAA64.EFI exists in ISO_STAGING
+if [ -s "${ROOTFS_DIR}/boot/BOOTAA64.EFI" ]; then
     cp "${ROOTFS_DIR}/boot/BOOTAA64.EFI" "${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI"
 fi
 
-if [ ! -f "${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" ] && which grub-mkstandalone >/dev/null 2>&1; then
+if [ ! -s "${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" ] && which grub-mkstandalone >/dev/null 2>&1; then
     echo "Generating BOOTAA64.EFI via host grub-mkstandalone..."
     cat << 'GRUB_EARLY' > "${WORK_DIR}/host_early_grub.cfg"
 insmod part_gpt
@@ -1118,24 +1109,21 @@ elif [ -f ($root)/boot/grub/grub.cfg ]; then
 fi
 GRUB_EARLY
     grub-mkstandalone \
-        --format=arm64-efi \
         -O arm64-efi \
+        --directory=/usr/lib/grub/arm64-efi \
         --output="${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" \
         --locales="" \
         --fonts="" \
         --modules="part_gpt part_msdos iso9660 fat ext2 btrfs search search_fs_file search_fs_uuid search_label test echo normal linux devicetree fdt smbios terminal terminfo at_keyboard usb usbms usb_keyboard uhci ohci ehci xhci all_video gfxterm gfxmenu png font loadenv configfile reboot sleep" \
-        "boot/grub/grub.cfg=${WORK_DIR}/host_early_grub.cfg" 2>/dev/null || {
-        grub-mkstandalone \
-            --format=arm64-efi \
-            -O arm64-efi \
-            --output="${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" \
-            --locales="" \
-            --fonts="" \
-            --modules="part_gpt part_msdos iso9660 fat ext2 btrfs search search_fs_file search_fs_uuid search_label test echo normal linux devicetree fdt smbios terminal terminfo at_keyboard usb usbms usb_keyboard uhci ohci ehci xhci all_video gfxterm gfxmenu png font loadenv configfile reboot sleep" \
-            "boot/grub/grub.cfg=${WORK_DIR}/host_early_grub.cfg" 2>/dev/null || true
-    }
+        "boot/grub/grub.cfg=${WORK_DIR}/host_early_grub.cfg" || rm -f "${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI"
     rm -f "${WORK_DIR}/host_early_grub.cfg"
 fi
+
+if [ ! -s "${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" ]; then
+    echo "FATAL ERROR: EFI/BOOT/BOOTAA64.EFI is missing or 0 bytes! Cannot build an unbootable ISO."
+    exit 1
+fi
+ls -lh "${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI"
 
 # Create FAT32 EFI boot partition image (with BOOTAA64.EFI, grub.cfg, live kernel/initrd, and DTBs)
 truncate -s 512M "${ISO_STAGING}/efi.img"
