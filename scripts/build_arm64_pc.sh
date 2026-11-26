@@ -1108,9 +1108,11 @@ elif [ -f ($root)/boot/grub/grub.cfg ]; then
     configfile $prefix/grub.cfg
 fi
 GRUB_EARLY
+    GRUB_ARM64_DIR="/usr/lib/grub/arm64-efi"
+    [ ! -d "$GRUB_ARM64_DIR" ] && [ -d "${ROOTFS_DIR}/usr/lib/grub/arm64-efi" ] && GRUB_ARM64_DIR="${ROOTFS_DIR}/usr/lib/grub/arm64-efi"
     grub-mkstandalone \
         -O arm64-efi \
-        --directory=/usr/lib/grub/arm64-efi \
+        --directory="$GRUB_ARM64_DIR" \
         --output="${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" \
         --locales="" \
         --fonts="" \
