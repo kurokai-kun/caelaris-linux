@@ -174,6 +174,7 @@ EOF
         kwrite
         hicolor-icon-theme
         adwaita-icon-theme
+        ttf-dejavu
         hyprland
         xdg-desktop-portal-hyprland
         waybar
@@ -301,7 +302,7 @@ GRUB_EARLY
                 --output=/boot/BOOTAA64.EFI \
                 --locales='' \
                 --fonts='' \
-                --modules='part_gpt part_msdos iso9660 fat ext2 btrfs search search_fs_file search_fs_uuid search_label test echo normal linux devicetree fdt smbios terminal terminfo at_keyboard usb usbms usb_keyboard uhci ohci ehci xhci all_video gfxterm font loadenv configfile reboot sleep' \
+                --modules='part_gpt part_msdos iso9660 fat ext2 btrfs search search_fs_file search_fs_uuid search_label test echo normal linux devicetree fdt smbios terminal terminfo at_keyboard usb usbms usb_keyboard uhci ohci ehci xhci all_video gfxterm gfxmenu png font loadenv configfile reboot sleep' \
                 'boot/grub/grub.cfg=/tmp/early_grub.cfg' 2>/dev/null || {
                 grub-mkstandalone \
                     --format=arm64-efi \
@@ -309,9 +310,16 @@ GRUB_EARLY
                     --output=/boot/BOOTAA64.EFI \
                     --locales='' \
                     --fonts='' \
-                    --modules='part_gpt part_msdos iso9660 fat ext2 btrfs search search_fs_file search_fs_uuid search_label test echo normal linux devicetree fdt smbios terminal terminfo at_keyboard usb usbms usb_keyboard uhci ohci ehci xhci all_video gfxterm font loadenv configfile reboot sleep' \
+                    --modules='part_gpt part_msdos iso9660 fat ext2 btrfs search search_fs_file search_fs_uuid search_label test echo normal linux devicetree fdt smbios terminal terminfo at_keyboard usb usbms usb_keyboard uhci ohci ehci xhci all_video gfxterm gfxmenu png font loadenv configfile reboot sleep' \
                     'boot/grub/grub.cfg=/tmp/early_grub.cfg' 2>/dev/null || true
             }
+        fi
+        if command -v grub-mkfont >/dev/null 2>&1 && [ -f /usr/share/fonts/TTF/DejaVuSans.ttf ]; then
+            mkdir -p /usr/share/grub/themes/caelaris
+            grub-mkfont -s 18 -n 'Caelaris Sans' -o /usr/share/grub/themes/caelaris/caelaris-sans-18.pf2 /usr/share/fonts/TTF/DejaVuSans.ttf 2>/dev/null || true
+            grub-mkfont -s 14 -n 'Caelaris Sans' -o /usr/share/grub/themes/caelaris/caelaris-sans-14.pf2 /usr/share/fonts/TTF/DejaVuSans.ttf 2>/dev/null || true
+            [ -f /usr/share/fonts/TTF/DejaVuSansMono.ttf ] && \
+                grub-mkfont -s 14 -n 'Caelaris Mono' -o /usr/share/grub/themes/caelaris/caelaris-mono-14.pf2 /usr/share/fonts/TTF/DejaVuSansMono.ttf 2>/dev/null || true
         fi
     " || true
     rm -f "${ROOTFS_DIR}/tmp/early_grub.cfg"
@@ -877,6 +885,7 @@ insmod usb_keyboard
 insmod xhci
 insmod all_video
 insmod gfxterm
+insmod png
 insmod font
 
 # Hook all input drivers so laptop keyboards (HP OmniBook X, Lenovo, etc.) and USB work in GRUB
@@ -889,6 +898,20 @@ terminal_output gfxterm console
 search --no-floppy --set=root --file /live/vmlinuz
 if [ -z "$root" ]; then
     search --no-floppy --set=root --label CAELARIS_ARM64_PC
+fi
+
+if [ -f /boot/grub/themes/caelaris/theme.txt ]; then
+    set gfxmode=1920x1080x32,auto
+    if [ -f /boot/grub/themes/caelaris/caelaris-sans-18.pf2 ]; then
+        loadfont /boot/grub/themes/caelaris/caelaris-sans-18.pf2
+    fi
+    if [ -f /boot/grub/themes/caelaris/caelaris-sans-14.pf2 ]; then
+        loadfont /boot/grub/themes/caelaris/caelaris-sans-14.pf2
+    fi
+    if [ -f /boot/grub/themes/caelaris/caelaris-mono-14.pf2 ]; then
+        loadfont /boot/grub/themes/caelaris/caelaris-mono-14.pf2
+    fi
+    set theme=/boot/grub/themes/caelaris/theme.txt
 fi
 
 # Auto-detect Snapdragon X Elite & ARM64 Laptop hardware via SMBIOS
@@ -931,13 +954,9 @@ elif [ "$smbios_product" == "*Surface*" ]; then
     fi
 fi
 
-# Fallback generic Snapdragon X Elite DTB if vendor matched but exact model DTB wasn't found
-if [ -z "$dtb_file" ]; then
-    if [ -f /live/dtbs/qcom/x1e80100-hp-omnibook-x14.dtb ]; then
-        set dtb_file="/live/dtbs/qcom/x1e80100-hp-omnibook-x14.dtb"
-    elif [ -f /live/dtbs/qcom/x1e80100-crd.dtb ]; then
-        set dtb_file="/live/dtbs/qcom/x1e80100-crd.dtb"
-    fi
+# Virtualized ARM64 environments (VMware Fusion, QEMU, UTM, Parallels, Hyper-V) MUST boot in pure ACPI mode (no Qualcomm DTB)
+if [ "$smbios_vendor" == "*VMware*" ] || [ "$smbios_vendor" == "*QEMU*" ] || [ "$smbios_vendor" == "*Apple*" ] || [ "$smbios_vendor" == "*Parallels*" ] || [ "$smbios_product" == "*Virtual*" ]; then
+    set dtb_file=""
 fi
 
 menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --class gnu --class os {
@@ -946,8 +965,6 @@ menuentry "Caelaris Linux" --class caelaris --class kde --class gnu-linux --clas
     initrd /live/initrd.img
     if [ -n "$dtb_file" -a -f "$dtb_file" ]; then
         devicetree $dtb_file
-    elif [ -f /live/dtbs/qcom/x1e80100-hp-omnibook-x14.dtb ]; then
-        devicetree /live/dtbs/qcom/x1e80100-hp-omnibook-x14.dtb
     fi
 }
 
@@ -996,9 +1013,9 @@ menuentry "Caelaris Linux - ASUS Vivobook S 15 / Dell XPS 13 (Snapdragon X Elite
     fi
 }
 
-menuentry "Caelaris Linux - Generic ARM64 PC / Server (ACPI Mode)" --class caelaris --class gnu-linux {
+menuentry "Caelaris Linux - VMware Fusion / Generic ARM64 (ACPI Mode)" --class caelaris --class gnu-linux {
     search --no-floppy --set=root --file /live/vmlinuz
-    linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0 session=plasma plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
+    linux /live/vmlinuz archisobasedir=live archisolabel=CAELARIS_ARM64_PC boot=live clk_ignore_unused pd_ignore_unused arm64.nopauth earlycon=efifb console=tty0 panic=60 session=plasma plymouth.enable=0 modprobe.blacklist=pcspkr,snd_pcsp
     initrd /live/initrd.img
 }
 
@@ -1034,6 +1051,10 @@ EOF
 # Ensure grub.cfg is available at standard search locations
 cp -f "${ISO_STAGING}/EFI/BOOT/grub.cfg" "${ISO_STAGING}/boot/grub/grub.cfg"
 cp -f "${ISO_STAGING}/EFI/BOOT/grub.cfg" "${ISO_STAGING}/boot/grub/arm64-efi/grub.cfg"
+if [ -d "${ROOTFS_DIR}/usr/share/grub/themes/caelaris" ]; then
+    mkdir -p "${ISO_STAGING}/boot/grub/themes/caelaris"
+    cp -rf "${ROOTFS_DIR}/usr/share/grub/themes/caelaris/." "${ISO_STAGING}/boot/grub/themes/caelaris/"
+fi
 
 # Ensure BOOTAA64.EFI exists in ISO_STAGING
 if [ -f "${ROOTFS_DIR}/boot/BOOTAA64.EFI" ]; then
@@ -1102,7 +1123,7 @@ GRUB_EARLY
         --output="${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" \
         --locales="" \
         --fonts="" \
-        --modules="part_gpt part_msdos iso9660 fat ext2 btrfs search search_fs_file search_fs_uuid search_label test echo normal linux devicetree fdt smbios terminal terminfo at_keyboard usb usbms usb_keyboard uhci ohci ehci xhci all_video gfxterm font loadenv configfile reboot sleep" \
+        --modules="part_gpt part_msdos iso9660 fat ext2 btrfs search search_fs_file search_fs_uuid search_label test echo normal linux devicetree fdt smbios terminal terminfo at_keyboard usb usbms usb_keyboard uhci ohci ehci xhci all_video gfxterm gfxmenu png font loadenv configfile reboot sleep" \
         "boot/grub/grub.cfg=${WORK_DIR}/host_early_grub.cfg" 2>/dev/null || {
         grub-mkstandalone \
             --format=arm64-efi \
@@ -1110,7 +1131,7 @@ GRUB_EARLY
             --output="${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" \
             --locales="" \
             --fonts="" \
-            --modules="part_gpt part_msdos iso9660 fat ext2 btrfs search search_fs_file search_fs_uuid search_label test echo normal linux devicetree fdt smbios terminal terminfo at_keyboard usb usbms usb_keyboard uhci ohci ehci xhci all_video gfxterm font loadenv configfile reboot sleep" \
+            --modules="part_gpt part_msdos iso9660 fat ext2 btrfs search search_fs_file search_fs_uuid search_label test echo normal linux devicetree fdt smbios terminal terminfo at_keyboard usb usbms usb_keyboard uhci ohci ehci xhci all_video gfxterm gfxmenu png font loadenv configfile reboot sleep" \
             "boot/grub/grub.cfg=${WORK_DIR}/host_early_grub.cfg" 2>/dev/null || true
     }
     rm -f "${WORK_DIR}/host_early_grub.cfg"
@@ -1125,6 +1146,9 @@ if [ -f "${ISO_STAGING}/EFI/BOOT/BOOTAA64.EFI" ]; then
 fi
 mcopy -i "${ISO_STAGING}/efi.img" "${ISO_STAGING}/EFI/BOOT/grub.cfg" ::EFI/BOOT/ || true
 mcopy -i "${ISO_STAGING}/efi.img" "${ISO_STAGING}/EFI/BOOT/grub.cfg" ::boot/grub/ || true
+if [ -d "${ISO_STAGING}/boot/grub/themes" ]; then
+    mcopy -s -i "${ISO_STAGING}/efi.img" "${ISO_STAGING}/boot/grub/themes" ::boot/grub/ 2>/dev/null || true
+fi
 if [ -f "${ISO_STAGING}/live/vmlinuz" ]; then
     mcopy -i "${ISO_STAGING}/efi.img" "${ISO_STAGING}/live/vmlinuz" ::live/vmlinuz || true
 fi
