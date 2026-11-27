@@ -5,7 +5,7 @@
 **Target Platform:** x86_64 (UEFI & Legacy BIOS)  
 **Base Distribution:** Arch Linux Rolling Baseline  
 **Author:** Caelaris Core Architecture & Engineering Team  
-**Last Updated:** September 2026  
+**Last Updated:** November 2026  
 
 ---
 
@@ -34,13 +34,14 @@ Caelaris Linux is organized into distinct, modular subsystem layers that separat
 |   VirtualBox Guest Additions      |  QEMU / SPICE VDAgentd Daemon         |
 +-------------------------------------------------------------------------+
 |                 KERNEL & SYSTEM CORE OPTIMIZATIONS                      |
-|   Linux Kernel 6.x Rolling        |  mkinitcpio (Default & Fallback)     |
+|   Linux Kernel 6.x Rolling        |  Optional linux-cachyos (BORE)      |
+|   sched-ext (scx-scheds) Switcher |  Optional x86-64-v3/v4 LTO/PGO/BOLT |
 |   sysctl Gaming Performance       |  ZRAM Compressed Swap Engine (zstd)   |
 |   Google BBR TCP Congestion       |  CAKE Active Queue Management         |
 +-------------------------------------------------------------------------+
 |                    BOOTLOADER & STORAGE FOUNDATION                      |
-|   GRUB 2 (UEFI x86_64 & BIOS MBR) |  systemd-boot (Live ISO UEFI)         |
-|   Btrfs with Subvolume Layout     |  Ext4 Standard Filesystem             |
+|   GRUB 2 (Obsidian Glass Theme)   |  systemd-boot (Live ISO UEFI)         |
+|   os-prober Dual-Boot Support     |  Btrfs Subvolumes / Ext4              |
 |   SquashFS (Zstandard Level 19)   |  OverlayFS Copy-on-Write Live Layer   |
 +-------------------------------------------------------------------------+
 ```

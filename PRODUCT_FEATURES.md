@@ -5,7 +5,7 @@
 **Target Platform:** x86_64 (UEFI & Legacy BIOS)  
 **Base Distribution:** Arch Linux Rolling Baseline  
 **Author:** Caelaris Core Architecture & Engineering Team  
-**Last Updated:** September 2026  
+**Last Updated:** November 2026  
 
 ---
 
@@ -87,10 +87,11 @@ Hyprland is a next-generation, animated, dynamic tiling desktop environment desi
 - **AccountsService Registration:** Configures the newly created user as the sole system profile in `/var/lib/AccountsService/users/`.
 - **Clean Desktop:** Automatically strips installer desktop shortcuts from `/home/{user}/Desktop/` and `/etc/skel/Desktop/`.
 
-### 4.3 Silent Direct Bootloader
-- **Clean Menu Title:** Configures GRUB with a single entry titled **`Caelaris Linux`** (and `Caelaris Linux (Recovery Mode)`).
+### 4.3 Custom Obsidian Glass Bootloader
+- **Bespoke HiDPI GRUB Theme:** Replaces the legacy plain-text GRUB menu with `/usr/share/grub/themes/caelaris/theme.txt` featuring a 1080p/4K dark obsidian glass aesthetic, 9-slice frosted selection pills, compiled `.pf2` typography, and custom OS/firmware icons.
+- **Dual-Boot Ready:** Enables `os-prober` (`GRUB_DISABLE_OS_PROBER=false`) to automatically detect and display Windows Boot Manager alongside **`Caelaris Linux`**.
 - **Console Clutter Suppression:** Silent kernel parameters (`quiet loglevel=3 rd.udev.log_level=3 systemd.show_status=0 vt.global_cursor_default=0`) eliminate console text and service start lines, booting directly into the graphical SDDM login screen.
-- **Universal Removable Fallback:** Installs both NVRAM and fallback `EFI/BOOT/BOOTX64.EFI` bootloaders, eliminating boot loops on hypervisors.
+- **Universal Removable Fallback:** Installs both NVRAM and fallback `EFI/BOOT/BOOTX64.EFI` / `BOOTAA64.EFI` bootloaders, eliminating boot loops on hypervisors.
 
 ---
 
@@ -116,6 +117,10 @@ Hyprland is a next-generation, animated, dynamic tiling desktop environment desi
 - **Cross-Desktop Dynamic VRAM Booster (`caelaris-vram-booster`):** Real-time foreground focus tracking daemon supporting all three desktop environments (KDE Plasma 6 KWin, GNOME 4x Mutter, and Hyprland). When a game or high-performance 3D process is active, it dynamically assigns ~88% of total dedicated VRAM to the game's cgroup via `dmem.low`.
 - **Zero-Stutter Gaming Guarantee:** Forces background applications (not the active game) to spill into system RAM (GTT) during VRAM contention, keeping textures, shaders, and geometry strictly pinned inside high-speed hardware VRAM.
 - **Upstream Tool Compatibility:** Ships with built-in compatibility wrappers for `plasma-foreground-booster` and `gnome-vram-booster` to integrate seamlessly with AUR and upstream tooling.
+
+### 5.4 CPU ISA Optimization & Scheduler Choice (`caelaris-optimize-cpu` & `caelaris-scheduler`)
+- **`sched-ext` (`scx-scheds`) Pre-Integrated:** Ships with Arch Linux's `scx-scheds` eBPF scheduler framework. Users can run `sudo caelaris-scheduler` to switch live or persistently (`scx.service`) between `scx_lavd` (gaming/ultra-low latency), `scx_bpfland` (desktop responsiveness), `scx_rusty` (multi-core throughput), `scx_flash`, or default `EEVDF`.
+- **Safe `x86-64-v3` / `x86-64-v4` & BORE Kernel Optimizer (`caelaris-optimize-cpu`):** Inspects `/usr/lib/ld-linux-x86-64.so.2 --help` to verify hardware ISA capabilities. On supported CPUs (AVX2 / AVX-512), it safely imports the CachyOS keyring, configures `x86-64-v3`/`v4` LTO/PGO/BOLT repositories, and installs `linux-cachyos` (BORE scheduler) alongside the fallback kernel; on `x86-64-v1` CPUs or non-AVX2 VMs, it gracefully preserves baseline compatibility to prevent `SIGILL` crashes.
 
 ---
 

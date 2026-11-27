@@ -44,7 +44,8 @@
 ### 🎮 High-Performance Gaming & Low-Latency Tuning
 * **Valve VRAM Management & dmemcg-booster (Natalie Vock Optimization)**: Integrates Valve contractor Natalie Vock's revolutionary Device Memory Control Groups (`dmemcg`) architecture and `dmemcg-booster` daemon. Prioritizes foreground games over background applications when video memory is saturated on GPUs with 8 GB of VRAM or less, preventing background apps (browsers, Electron, Discord) from stealing VRAM and eliminating game stutter caused by TTM eviction into system RAM via GTT (Graphics Translation Table).
 * **Cross-Desktop Dynamic VRAM Booster (`caelaris-vram-booster`)**: Real-time foreground focus monitor natively supporting KDE Plasma 6, GNOME 4x, and Hyprland, dynamically assigning `dmem.low` memory protection reservations to active games.
-* **Low-Latency Scheduling & Responsiveness**: Dynamic kernel preemption and real-time process priority dispatching (`rtkit`) ensure competitive input responsiveness.
+* **Low-Latency Scheduling & `sched-ext` (`caelaris-scheduler`)**: Ships with Arch's `scx-scheds` (`sched-ext` eBPF scheduler framework) out of the box. Switch live or persistently between `scx_lavd` (gaming/low-latency), `scx_bpfland`, `scx_rusty`, `scx_flash`, or default `EEVDF` via `sudo caelaris-scheduler`.
+* **Optional CPU-Optimized Repos & `linux-cachyos` BORE Kernel (`caelaris-optimize-cpu`)**: Run `sudo caelaris-optimize-cpu` to automatically detect `x86-64-v3` / `x86-64-v4` (AVX2/AVX-512) support, enable CachyOS LTO/PGO/BOLT optimized repositories, and install `linux-cachyos` (BORE scheduler) — with safe automatic `x86-64-v1` fallback on older CPUs or VMs.
 * **Memory & Storage Optimization**: Pre-configured `vm.max_map_count=2147483642` eliminates crashes and allocation bottlenecks in modern DirectX 12, Unreal Engine 5, and Proton/Wine gaming titles.
 * **ZRAM with zstd Compression**: High-speed memory compression prevents out-of-memory slowdowns and eliminates disk-thrashing hitches during heavy gameplay.
 * **GameMode Pre-Integrated**: Automatically sets CPU governors to peak performance, boosts GPU frequencies, and isolates background processes when launching games.
@@ -53,7 +54,7 @@
 ### 💿 Custom Graphical Installer (`caelaris-installer-gui`)
 * **Modern Glassmorphic Wizard**: Fast, intuitive installer built with Python 3 and PyQt6.
 * **Smart Btrfs Layout**: One-click automatic partitioning with subvolumes (`@`, `@home`, `@snapshots`) and zstd transparent compression for instant rollbacks and disk savings. Standard Ext4 is also available.
-* **Architecture-Aware Bootloader**: Automatically provisions EFI system partitions for both standard x86_64 UEFI and ARM64 fallback (`BOOTAA64.EFI`).
+* **Custom Obsidian Glass GRUB Bootloader**: Replaces the legacy plain-text GRUB screen with a bespoke 1080p/4K frosted-glass GRUB theme (`/usr/share/grub/themes/caelaris`), custom OS/firmware icons, `os-prober` dual-boot detection, and architecture-aware EFI fallback (`BOOTX64.EFI` / `BOOTAA64.EFI`).
 
 ### 🛡️ Built-In Native Ecosystem Applications
 * **Caelaris Store (`caelaris-store`)**: A modern, curated software center with real-time download speed (MB/s), live ETA, accurate progress tracking, official app logos, one-click install/removal, direct launch, and instant update actions.
@@ -77,7 +78,7 @@ Linux users frequently ask: *"Why not just use Arch, CachyOS, or Nobara?"* Here 
 | :--- | :--- | :--- | :--- | :--- |
 | **Architectural Focus** | **Dual Flagship: x86_64 & Native ARM64 PCs** *(Snapdragon X Elite, Apple Silicon, etc.)* | x86_64 micro-architecture *(ARM is experimental / secondary)* | x86_64 only | Raw upstream x86_64 *(ARM is a separate community port)* |
 | **Default Workflow** | **Pure Hyprland dynamic tiling + Waybar** *(< 400MB idle RAM)* with tri-desktop option | Traditional KDE Plasma / GNOME / Hyprland | Heavily customized KDE Plasma / GNOME | No desktop by default *(CLI)* |
-| **Memory & VRAM Tuning** | **Valve `dmemcg` + Dynamic VRAM Booster** *(prioritizes games over browser/Discord VRAM)* | BORE / EEVDF schedulers & `-O3 / x86-64-v3` compiler flags | WineSync / Fsync patched kernel & bundled launchers | Upstream generic kernel defaults |
+| **Memory & Kernel Tuning** | **Valve `dmemcg` VRAM Booster + `sched-ext` (`scx-scheds`) + optional `x86-64-v3/v4` BORE (`caelaris-optimize-cpu`)** | BORE / EEVDF schedulers & `x86-64-v3/v4` compiler flags | WineSync / Fsync patched kernel & bundled launchers | Upstream generic kernel defaults |
 | **System Delivery** | **Dedicated Python/PyQt6 GUI installer** + automated Btrfs subvolumes & quiet boot | Calamares installer | Calamares installer | Manual CLI `archinstall` / manual pacstrap |
 | **Ecosystem Tools** | In-house Store, Defender, Updater & Hot-Switcher | CachyOS Package Installer & kernel manager | Nobara Welcome, Driver & Update manager | Upstream Arch tools (`pacman`) |
 | **Continuous Integration** | Automated multi-arch GitHub Actions rolling builds | Hosted package build infrastructure | Custom Fedora RPM build coprs | Official package maintainers |
@@ -148,8 +149,8 @@ cd caelaris-linux
 # Make build scripts executable
 chmod +x scripts/*.sh
 
-# Build the Flagship ISO locally (requires Arch Linux with archiso installed)
-sudo ./scripts/build_flagship.sh
+# Build the Flagship KDE or GNOME ISO locally (requires Arch Linux with archiso installed)
+sudo ./scripts/build.sh kde
 ```
 
 ---

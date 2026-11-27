@@ -8,6 +8,7 @@
 - **Product:** Caelaris Linux
 - **Base Architecture:** Arch Linux Rolling Baseline, Linux Kernel 6.13+
 - **Desktop Stack:** Tri-Desktop Wayland: KDE Plasma 6.3, GNOME 47, & Hyprland (Hot-Switchable in 2s)
+- **Boot & Kernel Stack:** Custom Obsidian Glass GRUB Theme, `sched-ext` (`scx-scheds`), Valve `dmemcg` VRAM Booster, & optional `x86-64-v3/v4` + BORE (`caelaris-optimize-cpu`)
 - **Supported Tiers:** x86_64, Raspberry Pi (4/5), ARM64 (Apple Silicon, Snapdragon X)
 - **Publication:** Release 1.0 (Gold Master)
 - **Printable PDF:** `Caelaris_Linux_The_Superior_OS.pdf`

@@ -5,7 +5,7 @@
 **Target Architecture:** x86_64 (UEFI & Legacy BIOS)  
 **Base Distribution:** Arch Linux Rolling Baseline  
 **Author:** Caelaris Core Architecture & Engineering Team  
-**Last Updated:** September 2026  
+**Last Updated:** November 2026  
 
 ---
 
@@ -63,14 +63,18 @@ caelaris-linux/
 │   ├── pacman.conf             # Multi-mirror package repos + Multilib enabled
 │   ├── branding/               # Distro identity, os-release, logos
 │   └── airootfs/               # Overlay root filesystem
-│       ├── etc/default/grub    # Silent boot parameters & GRUB styling
+│       ├── etc/default/grub    # Silent boot parameters & Obsidian Glass GRUB theme
+│       ├── etc/pacman.d/       # Arch + CachyOS mirrorlists
 │       ├── etc/sysctl.d/       # Pro-grade low-latency gaming & network sysctl
 │       ├── etc/sysusers.d/     # Live preview systemd-sysusers provisioning
 │       ├── etc/sddm.conf.d/    # Display manager autologin & theme configs
+│       ├── usr/share/grub/themes/caelaris/ # Custom HiDPI Obsidian Glass GRUB theme
 │       └── usr/bin/
 │           ├── caelaris-installer-gui   # PyQt6 Graphical Installer
 │           ├── caelaris-welcome         # GTK3 Welcome & Setup Assistant
 │           ├── caelaris-switch-desktop  # Instant live session switcher
+│           ├── caelaris-optimize-cpu    # Safe x86-64-v3/v4 & linux-cachyos BORE optimizer
+│           ├── caelaris-scheduler       # sched-ext (scx_lavd/bpfland/rusty) switcher
 │           └── caelaris-autoresize      # VM display geometry listener
 ├── profiles/
 │   └── kde/                    # Primary ISO profile (KDE Plasma 6 + GNOME)
